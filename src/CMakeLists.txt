@@ -1,6 +1,8 @@
 
 
 add_subdirectory(grid)
+add_subdirectory(solvers)
+add_subdirectory(pde)
 add_executable(mpi main.cc)
 
 # MPI

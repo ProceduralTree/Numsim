@@ -2,16 +2,6 @@
 #include "grid.h"
 #include "indexing.h"
 
-void broadcast(std::function<void(PDESystem &, unit16_t, uint16_t)> Operator,
-               PDESystem system) {
-#pragma omp parallel for
-    for (uint32_t j = 1; j < system.size_y - 1; j++) {
-        for (uint32_t i = 1; i < system.size_x - 1; i++) {
-            Operator(system, i, j);
-        }
-    }
-}
-
 template <typename... Args>
 void broadcast<Indexing::Cartesian>(
     std::function<void(const Grid2D &, Grid2D &)> Operator, Args... args) {

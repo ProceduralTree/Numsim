@@ -7,16 +7,18 @@
 #include <memory>
 #include <mpi.h>
 #include <vector>
-template <Indexing I> void fill_inorder(Grid2D<I> &grid) {
+
+// #define CARTESIAN
+
+void fill_inorder(Grid2D &grid) {
     for (uint64_t i = 0; i < grid.size_x * grid.size_y; i++) {
         grid[i] = static_cast<double>(i);
     }
 };
-template <Indexing I>
 void benchmark_laplace(
-    int N, std::function<void(const Grid2D<I> &, Grid2D<I> &)> algorithm) {
-    auto grid = std::make_unique<Grid2D<I>>(N, N);
-    auto out = std::make_unique<Grid2D<I>>(N, N);
+    int N, std::function<void(const Grid2D &, Grid2D &)> algorithm) {
+    auto grid = std::make_unique<Grid2D>(N, N);
+    auto out = std::make_unique<Grid2D>(N, N);
     fill_inorder(*grid);
     std::cout << "\tBegin Timing with a " << N << "x" << N << " Grid"
               << std::endl;
@@ -40,10 +42,8 @@ auto main(int argc, char *argv[]) -> int {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     const int N = 1 << 11;
-    std::cout << "With Z-Order Index" << std::endl;
-    benchmark_laplace<Indexing::ZOrder>(N, laplace<Indexing::ZOrder>);
-    std::cout << "With Cartesian Index" << std::endl;
-    benchmark_laplace<Indexing::Cartesian>(N, laplace<Indexing::Cartesian>);
+    std::cout << "Begin Benchmark..." << std::endl;
+    benchmark_laplace(N, laplace);
     // std::cout << "With Z-Order Interleaving" << std::endl;
     // benchmark_laplace(N, laplace_cartesian);
 
