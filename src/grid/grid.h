@@ -5,22 +5,40 @@
 #include <iostream>
 #include <ostream>
 #include <vector>
-class Grid2D {
+
+#include "indexing.h"
+
+template <Indexing I> class Grid2D {
   private:
     std::vector<double> _data;
 
   public:
-    const uint32_t size_x;
-    const uint32_t size_y;
+    const uint16_t size_x;
+    const uint16_t size_y;
 
-    Grid2D(uint32_t x, uint32_t y);
-    double &operator[](uint32_t x, uint32_t y);
-    const double &operator[](uint32_t x, uint32_t y) const;
+    Grid2D(uint16_t x, uint16_t y);
+
+    double &operator[](uint16_t x, uint16_t y);
+    const double &operator[](uint16_t x, uint16_t y) const;
+    double &operator[](uint32_t z);
+    const double &operator[](uint32_t z) const;
+    double &operator()(uint16_t x, uint16_t y);
+    const double &operator()(uint16_t x, uint16_t y) const;
+
+    const uint32_t elements() const { return this->_data.size(); }
 };
-std::ostream &operator<<(std::ostream &os, const Grid2D &obj);
-uint64_t interleave(uint32_t x, uint32_t y);
+template <Indexing I> void laplace(const Grid2D<I> &in, Grid2D<I> &out);
 
-void laplace(const Grid2D &in, Grid2D &out);
-void hello();
+template <>
+void laplace(const Grid2D<Indexing::Cartesian> &in,
+             Grid2D<Indexing::Cartesian> &out);
+template <>
+void laplace(const Grid2D<Indexing::ZOrder> &in, Grid2D<Indexing::ZOrder> &out);
+
+template <Indexing I>
+std::ostream &operator<<(std::ostream &os, const Grid2D<I> &obj);
+
+template class Grid2D<Indexing::Cartesian>;
+template class Grid2D<Indexing::ZOrder>;
 
 #endif // GRID_H_
