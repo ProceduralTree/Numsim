@@ -1,0 +1,36 @@
+# Copyright (c) 2013      Mellanox Technologies, Inc.
+#                         All rights reserved.
+# Copyright (c) 2014-2015 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2020      Intel, Inc.  All rights reserved.
+# Copyright (c) 2016-2021 IBM Corporation. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+# There can be multiple blocks of configuration data, chosen by
+# compiler flags (using the compiler_args key to chose which block
+# should be activated.  This can be useful for multilib builds.  See the
+# multilib page at:
+#    https://github.com/open-mpi/ompi/wiki/compilerwrapper3264
+# for more information.
+
+project=Open SHMEM
+project_short=OSHMEM
+version=5.0.8
+language=C++
+compiler_env=CXX
+compiler_flags_env=CXXFLAGS
+compiler=g++
+preprocessor_flags=-I${includedir}
+compiler_flags= 
+linker_flags=-L${libdir}  -Wl,-rpath -Wl,${libdir} -Wl,--enable-new-dtags
+linker_flags_static= 
+libs=-loshmem -lmpi
+libs_static=
+dyn_lib_file=liboshmem.so
+static_lib_file=liboshmem.a
+required_file=
+includedir=${includedir}
+libdir=${libdir}

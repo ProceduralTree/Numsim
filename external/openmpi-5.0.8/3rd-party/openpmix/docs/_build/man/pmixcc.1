@@ -1,0 +1,152 @@
+.\" Man page generated from reStructuredText.
+.
+.TH "PMIXCC" "1" "May 30, 2025" "" "OpenPMIx"
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.sp
+pmixcc — wrapper compiler for PMIx\-based applications or tools
+.SH SYNOPSIS
+.sp
+\fBpmixcc [options] <file>\fP
+.SH DESCRIPTION
+.sp
+\fBpmixcc\fP is a wrapper compiler that can be used to build PMIx\-based
+applications or tools.
+.SH OPTIONS
+.sp
+\fBpmixcc\fP accepts the following options:
+.INDENT 0.0
+.IP \(bu 2
+\fB\-h\fP | \fB\-\-help\fP: Show help message
+.IP \(bu 2
+\fB\-\-help={common|optimizers|params|target|warnings|[^]{joined|separate|undocumented}}[,...].\fP: Display specific types of command line options
+.IP \(bu 2
+\fB\-v\fP | \fB\-\-verbose\fP: Enable debug output.
+.IP \(bu 2
+\fB\-V\fP | \fB\-\-version\fP: Print version and exit.
+.IP \(bu 2
+\fB\-dumpspecs\fP: Display all of the built in spec strings.
+.IP \(bu 2
+\fB\-dumpversion\fP: Display the version of the compiler.
+.IP \(bu 2
+\fB\-dumpmachine\fP: Display the compiler’s target processor.
+.IP \(bu 2
+\fB\-foffload=<targets>\fP: Specify offloading targets.
+.IP \(bu 2
+\fB\-print\-search\-dirs\fP: Display the directories in the compiler’s search path.
+.IP \(bu 2
+\fB\-print\-libgcc\-file\-name\fP: Display the name of the compiler’s companion library.
+.IP \(bu 2
+\fB\-print\-file\-name=<lib>\fP: Display the full path to library <lib>.
+.IP \(bu 2
+\fB\-print\-prog\-name=<prog>\fP: Display the full path to compiler component <prog>.
+.IP \(bu 2
+\fB\-print\-multiarch\fP: Display the target’s normalized GNU triplet, used as a component in the library path.
+.IP \(bu 2
+\fB\-print\-multi\-directory\fP: Display the root directory for versions of libgcc.
+.IP \(bu 2
+\fB\-print\-multi\-lib\fP: Display the mapping between command line options and multiple library search directories.
+.IP \(bu 2
+\fB\-print\-multi\-os\-directory\fP: Display the relative path to OS libraries.
+.IP \(bu 2
+\fB\-print\-sysroot\fP: Display the target libraries directory.
+.IP \(bu 2
+\fB\-print\-sysroot\-headers\-suffix\fP: Display the sysroot suffix used to find headers.
+.IP \(bu 2
+\fB\-Wa,<options>\fP: Pass comma\-separated <options> on to the assembler.
+.IP \(bu 2
+\fB\-Wp,<options>\fP: Pass comma\-separated <options> on to the preprocessor.
+.IP \(bu 2
+\fB\-Wl,<options>\fP: Pass comma\-separated <options> on to the linker.
+.IP \(bu 2
+\fB\-Xassembler <arg>\fP: Pass <arg> on to the assembler.
+.IP \(bu 2
+\fB\-Xpreprocessor <arg>\fP: Pass <arg> on to the preprocessor.
+.IP \(bu 2
+\fB\-Xlinker <arg>\fP: Pass <arg> on to the linker.
+.IP \(bu 2
+\fB\-save\-temps\fP: Do not delete intermediate files.
+.IP \(bu 2
+\fB\-save\-temps=<arg>\fP: Do not delete intermediate files.
+.IP \(bu 2
+\fB\-no\-canonical\-prefixes\fP: Do not canonicalize paths when building relative prefixes to other gcc components.
+.IP \(bu 2
+\fB\-pipe\fP: Use pipes rather than intermediate files.
+.IP \(bu 2
+\fB\-time\fP: Time the execution of each subprocess.
+.IP \(bu 2
+\fB\-specs=<file>\fP: Override built\-in specs with the contents of <file>.
+.IP \(bu 2
+\fB\-std=<standard>\fP: Assume that the input sources are for <standard>.
+.IP \(bu 2
+\fB\-\-sysroot=<directory>\fP: Use <directory> as the root directory for headers and libraries.
+.IP \(bu 2
+\fB\-B <directory>\fP: Add <directory> to the compiler’s search paths.
+.IP \(bu 2
+\fB\-v\fP: Display the programs invoked by the compiler.
+.IP \(bu 2
+\fB\-###\fP: Like \-v but options quoted and commands not executed.
+.IP \(bu 2
+\fB\-E\fP: Preprocess only; do not compile, assemble or link.
+.IP \(bu 2
+\fB\-S\fP: Compile only; do not assemble or link.
+.IP \(bu 2
+\fB\-c\fP: Compile and assemble, but do not link.
+.IP \(bu 2
+\fB\-o <file>\fP: Place the output into <file>.
+.IP \(bu 2
+\fB\-pie\fP: Create a dynamically linked position independent executable.
+.IP \(bu 2
+\fB\-shared\fP: Create a shared library.
+.IP \(bu 2
+\fB\-x <language>\fP: Specify the language of the following input files.
+Permissible languages include: c c++ assembler none
+‘none’ means revert to the default behavior of
+guessing the language based on the file’s extension.
+.UNINDENT
+.sp
+Options starting with \fB\-g\fP, \fB\-f\fP, \fB\-m\fP, \fB\-O\fP, \fB\-W\fP, or \fB\-\-param\fP are automatically
+passed on to the various sub\-processes invoked by the compiler.  In order to pass
+other options on to these processes the \fB\-W<letter>\fP options must be used.
+.SH EXIT STATUS
+.sp
+Returns 0 if build is successful, a non\-zero error code if otherwise.
+.SH EXAMPLES
+.sp
+Examples of using this command.
+.sp
+\fBSEE ALSO:\fP
+.INDENT 0.0
+.INDENT 3.5
+\fI\%openpmix(5)\fP
+.UNINDENT
+.UNINDENT
+.SH COPYRIGHT
+2014-2025, OpenPMIx Community
+.\" Generated by docutils manpage writer.
+.
