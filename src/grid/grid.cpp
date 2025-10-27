@@ -71,7 +71,7 @@ bool boundary(uint32_t zindex, uint16_t sx, uint16_t sy) {
 }
 
 #ifdef CARTESIAN
-void laplace(const CartesianGrid &in, CartesianGrid &out) {
+void laplace(const Grid2D &in, Grid2D &out) {
 #pragma omp parallel for
     for (uint16_t j = 0; j < in.size_y; j++) {
         for (uint16_t i = 0; i < in.size_x; i++) {
