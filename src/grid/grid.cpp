@@ -11,7 +11,7 @@
 
 Grid2D::Grid2D(uint16_t x, uint16_t y) : _data(), size_x(x), size_y(y) {
 
-    uint32_t size = std::bit_width(x) + std::bit_width(y) - 2;
+    uint32_t size = std::bit_width(x) + std::bit_width(y);
     this->_data.resize(1 << size, 0.);
     std::vector<double> &data = this->_data;
     std::fill(data.begin(), data.end(), 0);
@@ -23,7 +23,7 @@ double &Grid2D::operator[](uint16_t x, uint16_t y) {
 #else
     uint32_t index = z_order(x, y);
 #endif
-    return this->_data[index];
+    return this->_data.at(index);
 }
 
 const double &Grid2D::operator[](uint16_t x, uint16_t y) const {
@@ -32,13 +32,13 @@ const double &Grid2D::operator[](uint16_t x, uint16_t y) const {
 #else
     uint32_t index = z_order(x, y);
 #endif
-    return this->_data[index];
+    return this->_data.at(index);
 }
 
 double &Grid2D::operator[](uint32_t index) { return this->_data[index]; };
 
 const double &Grid2D::operator[](uint32_t index) const {
-    return this->_data[index];
+    return this->_data.at(index);
 };
 
 std::ostream &operator<<(std::ostream &os, const Grid2D &obj) {

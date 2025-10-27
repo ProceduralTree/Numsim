@@ -6,7 +6,6 @@ add_subdirectory(pde)
 add_subdirectory(utils)
 add_executable(mpi main.cc
    pde/system.cpp
-   pde/system.h
    utils/broadcast.cpp
    utils/broadcast.h
    solvers/jacoby.h
@@ -18,7 +17,12 @@ target_link_libraries(mpi PUBLIC MPI::MPI_CXX)
 target_link_libraries(mpi PRIVATE grid)
 
 # Profiling executable
-add_executable(mpi_profiling main.cc)
+add_executable(mpi_profiling main.cc
+   pde/system.cpp
+   utils/broadcast.cpp
+   utils/broadcast.h
+   solvers/jacoby.h
+)
 target_compile_options(mpi_profiling PRIVATE -pg)
 target_link_libraries(mpi_profiling PUBLIC MPI::MPI_CXX PRIVATE grid vtkbuild)
 target_link_options(mpi_profiling PRIVATE -pg)

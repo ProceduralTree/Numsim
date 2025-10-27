@@ -29,12 +29,14 @@ struct PDESystem {
 
     PDESystem(double Re, double dt, uint16_t size_x, uint16_t size_y, double hx,
               double hy)
-        : Re(Re), dt(dt) , size_x(size_x) , size_y(size_y), p(Grid2D(size_x, size_y)), u(Grid2D(size_x, size_y)),
+        : Re(Re), dt(dt), size_x(size_x), size_y(size_y),
+          p(Grid2D(size_x, size_y)), u(Grid2D(size_x, size_y)),
           v(Grid2D(size_x, size_y)), F(Grid2D(size_x, size_y)),
           G(Grid2D(size_x, size_y)), b(Grid2D(size_x, size_y)),
           h(Gridsize(hx, hy)) {}
 };
 
+void timestep(PDESystem system);
 void print_pde_system(const PDESystem &sys);
 
 #endif // SYSTEM_H_

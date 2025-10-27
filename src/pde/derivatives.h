@@ -1,9 +1,8 @@
 #ifndef DERIVATIVES_H_
 #define DERIVATIVES_H_
 
-#include "grid/grid.h"
+#include "grid.h"
 #include "indexing.h"
-#include "pde/system.h"
 #include "system.h"
 
 constexpr double dx(const Grid2D &field, uint32_t i, uint32_t j,

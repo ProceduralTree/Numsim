@@ -42,13 +42,14 @@ auto main(int argc, char *argv[]) -> int {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    const int N = 1 << 11;
+    const int N = 1 << 8;
     std::cout << "Begin Benchmark..." << std::endl;
     benchmark_laplace(N, laplace);
     // std::cout << "With Z-Order Interleaving" << std::endl;
     // benchmark_laplace(N, laplace_cartesian);
     auto test_system = PDESystem(1., 1., 100, 100, 0.01, 0.01);
     print_pde_system(test_system);
+    timestep(test_system);
 
     std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 

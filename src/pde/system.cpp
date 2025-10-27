@@ -1,6 +1,6 @@
 #include "system.h"
+#include "../utils/broadcast.h"
 #include "derivatives.h"
-#include "utils/broadcast.h"
 #include <cstdint>
 
 void calculate_FG(PDESystem &system, uint16_t i, uint16_t j) {
@@ -26,9 +26,7 @@ void update_uv(PDESystem &system, uint16_t i, uint16_t j) {
     system.v[i, j] = system.G[i, j] - system.dt * dy(p, i, j, h);
 };
 
-void solve_pressure(PDESystem &system, uint16_t i, uint16_t j) {
-    std::cout << "Hello World" << std::endl;
-};
+void solve_pressure(PDESystem &system, uint16_t i, uint16_t j) {};
 
 void timestep(PDESystem system) {
     broadcast(calculate_FG, system);
@@ -47,4 +45,4 @@ void print_pde_system(const PDESystem &sys) {
     printf("Grid spacing (dx, dy): %.6f, %.6f\n", sys.h.x, sys.h.y);
     printf("\n");
     printf("───────────────────────────────────────────────\n");
-};
+}
