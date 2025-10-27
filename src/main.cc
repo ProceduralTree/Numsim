@@ -9,8 +9,6 @@
 #include <mpi.h>
 #include <vector>
 
-#define CARTESIAN
-
 void fill_inorder(Grid2D &grid) {
     for (uint64_t i = 0; i < grid.size_x * grid.size_y; i++) {
         grid[i] = static_cast<double>(i);

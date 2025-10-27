@@ -8,6 +8,8 @@
 
 #include "indexing.h"
 
+#define CARTESIAN
+
 class Grid2D {
   private:
     std::vector<double> _data;
