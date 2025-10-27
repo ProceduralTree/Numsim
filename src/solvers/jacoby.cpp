@@ -1,4 +1,4 @@
-#include "jacopy.h"
+#include "jacoby.h"
 #include "grid.h"
 #include <memory>
 #include <utility>
@@ -31,7 +31,7 @@ void gauss_seidel(PDESystem &system) {
             p[i, j] = system.b[i, j];
             p[i, j] -= hx * hx * (p[i + 1, j] + p[i - 1, j]);
             p[i, j] -= hy * hy * (p[i, j + 1, j] + p[i, j - 1]);
-            p[i, j] /= -2 * hy * hy * p[i, j] - 2 * hx * hx * p[i, j]
+            p[i, j] /= -2 * hy * hy * p[i, j] - 2 * hx * hx * p[i, j];
         }
     }
 }

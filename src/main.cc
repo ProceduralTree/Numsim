@@ -1,5 +1,6 @@
 #include "grid/grid.h"
 #include "indexing.h"
+#include "pde/system.h"
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -8,7 +9,7 @@
 #include <mpi.h>
 #include <vector>
 
-// #define CARTESIAN
+#define CARTESIAN
 
 void fill_inorder(Grid2D &grid) {
     for (uint64_t i = 0; i < grid.size_x * grid.size_y; i++) {
@@ -46,6 +47,8 @@ auto main(int argc, char *argv[]) -> int {
     benchmark_laplace(N, laplace);
     // std::cout << "With Z-Order Interleaving" << std::endl;
     // benchmark_laplace(N, laplace_cartesian);
+    auto test_system = PDESystem(1., 1., 100, 100, 0.01, 0.01);
+    print_pde_system(test_system);
 
     std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 

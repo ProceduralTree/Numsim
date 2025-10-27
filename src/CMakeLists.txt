@@ -3,7 +3,14 @@
 add_subdirectory(grid)
 add_subdirectory(solvers)
 add_subdirectory(pde)
-add_executable(mpi main.cc)
+add_subdirectory(utils)
+add_executable(mpi main.cc
+   pde/system.cpp
+   pde/system.h
+   utils/broadcast.cpp
+   utils/broadcast.h
+   solvers/jacoby.h
+)
 
 # MPI
 find_package(MPI REQUIRED)
