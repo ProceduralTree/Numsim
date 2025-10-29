@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <grid/grid.h>
-#include <grid/indexing.h>
+#include <utils/settings.h>
 
 struct Gridsize
 {
@@ -31,8 +31,7 @@ struct PDESystem
   Grid2D v;
   Grid2D F;
   Grid2D G;
-  Grid2D b;
-  Grid2D tmp;
+  Grid2D rhs;
   const uint16_t size_x;
   const uint16_t size_y;
   const Gridsize h;
@@ -40,6 +39,7 @@ struct PDESystem
   const std::array<double, 2> boundaryTop;
   const std::array<double, 2> boundaryLeft;
   const std::array<double, 2> boundaryRight;
+  Settings settings;
 
   PDESystem(double Re, double dt, uint16_t size_x, uint16_t size_y, double hx,
     double hy, std::array<double, 2> boundaryBottom,
@@ -52,8 +52,7 @@ struct PDESystem
     , v(Grid2D(size_x, size_y))
     , F(Grid2D(size_x, size_y))
     , G(Grid2D(size_x, size_y))
-    , b(Grid2D(size_x, size_y))
-    , tmp(Grid2D(size_x, size_y))
+    , rhs(Grid2D(size_x + 2, size_y + 2))
     , size_x(size_x)
     , size_y(size_y)
     , h(Gridsize(hx, hy))
@@ -63,9 +62,11 @@ struct PDESystem
     , boundaryRight(boundaryRight)
   {
   }
+  PDESystem(const PDESystem&) = delete;
+  PDESystem& operator=(const PDESystem&) = delete;
 };
 
-void timestep(PDESystem system);
+void timestep(PDESystem& system);
 void print_pde_system(const PDESystem& sys);
 
 double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y);
