@@ -1,5 +1,7 @@
 #include "system.h"
 #include "derivatives.h"
+#include "pressuresolvers.cpp"
+#include "utils/settings.h"
 #include <cstdint>
 
 void calculate_FG(PDESystem& system)
@@ -43,7 +45,13 @@ void update_uv(PDESystem& system)
   }
 };
 
-void solve_pressure(PDESystem& system) { };
+void solve_pressure(PDESystem& system)
+{
+  if (system.settings.pressureSolver == Settings::PressureSolver::GaussSeidel)
+  {
+    gauss_seidel(system);
+  }
+};
 
 void calculate_rhs(PDESystem& system)
 {
@@ -101,7 +109,7 @@ void set_boundary_FG(PDESystem& system)
   }
 };
 
-void timestep(PDESystem system)
+void timestep(PDESystem& system)
 {
   set_boundary_uv(system);
   set_boundary_FG(system);

@@ -4,6 +4,7 @@
 #include "indexing.h"
 #include <array>
 #include <cstdint>
+#include <utils/settings.h>
 
 struct Gridsize
 {
@@ -38,6 +39,7 @@ struct PDESystem
   const std::array<double, 2> boundaryTop;
   const std::array<double, 2> boundaryLeft;
   const std::array<double, 2> boundaryRight;
+  Settings settings;
 
   PDESystem(double Re, double dt, uint16_t size_x, uint16_t size_y, double hx,
     double hy, std::array<double, 2> boundaryBottom,
@@ -60,6 +62,8 @@ struct PDESystem
     , boundaryRight(boundaryRight)
   {
   }
+  PDESystem(const PDESystem&) = delete;
+  PDESystem& operator=(const PDESystem&) = delete;
 };
 
 void timestep(PDESystem system);
