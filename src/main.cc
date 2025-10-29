@@ -1,5 +1,6 @@
 #include "grid/grid.h"
 #include "indexing.h"
+#include "output/vtk.h"
 #include "pde/system.h"
 #include <chrono>
 #include <cstdint>
@@ -46,8 +47,11 @@ auto main(int argc, char *argv[]) -> int {
     // std::cout << "With Z-Order Interleaving" << std::endl;
     // benchmark_laplace(N, laplace_cartesian);
     auto test_system = PDESystem(1., 1., 100, 100, 0.01, 0.01);
+    fill_inorder(test_system.p);
+
     print_pde_system(test_system);
     timestep(test_system);
+    write_vtk(test_system, 1.);
 
     std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 

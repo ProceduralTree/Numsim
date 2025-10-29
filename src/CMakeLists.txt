@@ -4,6 +4,7 @@ add_subdirectory(grid)
 add_subdirectory(solvers)
 add_subdirectory(pde)
 add_subdirectory(utils)
+add_subdirectory(output)
 add_executable(mpi main.cc
    pde/system.cpp
    utils/broadcast.cpp
@@ -22,9 +23,12 @@ add_executable(mpi_profiling main.cc
    utils/broadcast.cpp
    utils/broadcast.h
    solvers/jacoby.h
+   output/vtk.h
+   output/vtk.cpp
 )
+
 target_compile_options(mpi_profiling PRIVATE -pg)
-target_link_libraries(mpi_profiling PUBLIC MPI::MPI_CXX PRIVATE grid vtkbuild)
+target_link_libraries(mpi_profiling PUBLIC MPI::MPI_CXX PRIVATE grid VTK::CommonCore VTK::CommonDataModel VTK::IOXML VTK::FiltersCore)
 target_link_options(mpi_profiling PRIVATE -pg)
 
 

@@ -5,11 +5,9 @@
 #include "vtkImageData.h"
 #include "vtkPointData.h"
 
-#include "grid.h"
+#include "system.h"
 
-struct VTKWriter {
-    vtkSmartPointer<vtkXMLImageDataWriter> vtkWriter_
-};
+#include "grid.h"
 
 void write_vtk(const PDESystem &system, double time);
 
