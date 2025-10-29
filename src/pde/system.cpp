@@ -106,6 +106,7 @@ void timestep(PDESystem system)
   set_boundary_uv(system);
   set_boundary_FG(system);
   calculate_FG(system);
+  calculate_rhs(system);
   solve_pressure(system);
   update_uv(system);
   //
