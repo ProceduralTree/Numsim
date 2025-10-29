@@ -56,6 +56,7 @@ auto main(int argc, char* argv[]) -> int
   print_pde_system(test_system);
   timestep(test_system);
   write_vtk(test_system, 1.);
+  write_vtk(test_system, 2.);
 
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 

@@ -12,6 +12,7 @@ void set_filename(const vtkSmartPointer<vtkXMLImageDataWriter> writer, int& file
   // increment file no.
   // assign the new file name to the output vtkWriter_
   writer->SetFileName(fileName.str().c_str());
+  fileNumber++;
 };
 
 vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
