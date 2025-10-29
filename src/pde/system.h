@@ -30,7 +30,7 @@ struct PDESystem
   Grid2D v;
   Grid2D F;
   Grid2D G;
-  Grid2D b;
+  Grid2D rhs;
   const uint16_t size_x;
   const uint16_t size_y;
   const Gridsize h;
@@ -52,7 +52,7 @@ struct PDESystem
     , v(Grid2D(size_x + 2, size_y + 2))
     , F(Grid2D(size_x + 2, size_y + 2))
     , G(Grid2D(size_x + 2, size_y + 2))
-    , b(Grid2D(size_x + 2, size_y + 2))
+    , rhs(Grid2D(size_x + 2, size_y + 2))
     , h(Gridsize(hx, hy))
     , boundaryBottom(boundaryBottom)
     , boundaryTop(boundaryTop)

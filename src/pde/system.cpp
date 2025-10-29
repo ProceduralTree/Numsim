@@ -45,6 +45,20 @@ void update_uv(PDESystem& system)
 
 void solve_pressure(PDESystem& system) { };
 
+void calculate_rhs(PDESystem& system)
+{
+  auto& F = system.F;
+  auto& G = system.G;
+  auto& h = system.h;
+  for (uint16_t i = 1; i < system.size_x + 1; i++)
+  {
+    for (uint16_t j = 1; j < system.size_y + 1; j++)
+    {
+      system.rhs[i, j] = 1 / system.dt * (dx(F, i - 1, j, h) + dy(G, i, j - 1, h));
+    }
+  }
+};
+
 void set_boundary_uv(PDESystem& system)
 {
   for (uint16_t j = 1; j < system.size_y + 1; j++)
