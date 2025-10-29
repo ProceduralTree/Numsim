@@ -1,8 +1,7 @@
 #ifndef SYSTEM_H_
 #define SYSTEM_H_
-#include "grid.h"
-#include "indexing.h"
-#include <array>
+#include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <utils/settings.h>
 
@@ -47,14 +46,15 @@ struct PDESystem
     std::array<double, 2> boundaryRight)
     : Re(Re)
     , dt(dt)
+    , p(Grid2D(size_x, size_y))
+    , u(Grid2D(size_x, size_y))
+    , v(Grid2D(size_x, size_y))
+    , F(Grid2D(size_x, size_y))
+    , G(Grid2D(size_x, size_y))
+    , b(Grid2D(size_x, size_y))
+    , rhs(Grid2D(size_x + 2, size_y + 2))
     , size_x(size_x)
     , size_y(size_y)
-    , p(Grid2D(size_x + 2, size_y + 2))
-    , u(Grid2D(size_x + 2, size_y + 2))
-    , v(Grid2D(size_x + 2, size_y + 2))
-    , F(Grid2D(size_x + 2, size_y + 2))
-    , G(Grid2D(size_x + 2, size_y + 2))
-    , rhs(Grid2D(size_x + 2, size_y + 2))
     , h(Gridsize(hx, hy))
     , boundaryBottom(boundaryBottom)
     , boundaryTop(boundaryTop)
@@ -68,5 +68,7 @@ struct PDESystem
 
 void timestep(PDESystem system);
 void print_pde_system(const PDESystem& sys);
+
+double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y);
 
 #endif // SYSTEM_H_

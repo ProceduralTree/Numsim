@@ -17,10 +17,10 @@ class Grid2D
 {
 private:
   std::vector<double> _data;
-  uint16_t size_x;
-  uint16_t size_y;
 
 public:
+  uint16_t size_x;
+  uint16_t size_y;
   Grid2D(uint16_t x, uint16_t y);
 
   Grid2D(const Grid2D&) = delete;
