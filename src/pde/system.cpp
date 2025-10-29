@@ -109,3 +109,17 @@ void print_pde_system(const PDESystem& sys)
   printf("\n");
   printf("───────────────────────────────────────────────\n");
 }
+double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y)
+{
+  assert(x >= 0);
+  assert(y >= 0);
+  uint16_t ix = std::floor(x);
+  uint16_t iy = std::floor(y);
+  double dx = x - iy;
+  double dy = y - iy;
+  auto w11 = (1 - dx) * (1 - dy);
+  auto w12 = (1 - dx) * dy;
+  auto w21 = dx * (1 - dy);
+  auto w22 = dx * dy;
+  return w11 * field[ix, iy] + w12 * field[ix + 1, iy] + w21 * field[ix, iy + 1] + w22 * field[ix + 1, iy + 1];
+};
