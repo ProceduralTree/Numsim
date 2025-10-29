@@ -1,9 +1,12 @@
 #pragma once
 
-#include <string>
+#include <filesystem>
 
 struct Settings
 {
+  Settings() = default;
+  Settings(std::filesystem::path filename) { loadFromFile(filename); }
+
   int nCells[2]; //< number of cells in x and y direction
   double physicalSize[2]; //< physical size of the domain
   double re = 1000; //< reynolds number
@@ -32,7 +35,7 @@ struct Settings
   int maximumNumberOfIterations = 1e5; //< maximum number of iterations in the solver
 
   //! parse a text file with settings, each line contains "<parameterName> = <value>"
-  void loadFromFile(std::string filename);
+  bool loadFromFile(std::filesystem::path filename);
 
   //! output all settings to console
   void printSettings();

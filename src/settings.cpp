@@ -2,6 +2,8 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <fstream>
+#include <iostream>
 #include <sstream>
 
 #define LOG(...) 0
@@ -159,10 +161,43 @@ void parseSettings(const std::string& input, Settings* settings)
   }
 }
 
-void Settings::loadFromFile(std::string filename)
+bool Settings::loadFromFile(std::filesystem::path filename)
 {
+  std::ifstream file(filename);
+  if (!file.is_open())
+  {
+    return false;
+  }
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  parseSettings(buffer.str(), this);
+  return true;
 }
 
+// clang-format off
 void Settings::printSettings()
 {
+  std::cout <<
+    "nCells: " << nCells[0] << "," << nCells[1] << "\n"
+    "physicalSize: " << physicalSize[0] << "," << physicalSize[1] << "\n"
+    "re: " << re << "\n"
+    "endTime: " << endTime << "\n"
+    "tau: " << tau << "\n"
+    "maximumDt: " << maximumDt << "\n"
+    "g: " << g[0] << "," << g[1] << "\n"
+    "useDonorCell: " << useDonorCell << "\n"
+    "alpha: " << alpha << "\n"
+    "dirichletBcBottom: " << dirichletBcBottom[0] << "," << dirichletBcBottom[1] << "\n"
+    "dirichletBcTop: " << dirichletBcTop[0] << "," << dirichletBcTop[1] << "\n"
+    "dirichletBcLeft: " << dirichletBcLeft[0] << "," << dirichletBcLeft[1] << "\n"
+    "dirichletBcRight: " << dirichletBcRight[0] << "," << dirichletBcRight[1] << "\n"
+    "pressureSolver: ";
+  if(pressureSolver == SOR) std::cout << "SOR\n";
+  else std::cout << "GaussSeidel\n";
+  std::cout <<
+    "omega: " << omega << "\n"
+    "epsilon: " << epsilon << "\n"
+    "maximumNumberOfIterations: " << maximumNumberOfIterations << std::endl;
+    
 }
+// clang-format on
