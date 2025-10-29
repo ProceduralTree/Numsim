@@ -1,14 +1,21 @@
 #ifndef VTK_H_
 #define VTK_H_
 
-#include "vtkDoubleArray.h"
-#include "vtkImageData.h"
-#include "vtkPointData.h"
+#include <vtkDoubleArray.h>
+#include <vtkImageData.h>
+#include <vtkPointData.h>
+#include <vtkXMLImageDataWriter.h>
 
-#include "system.h"
+#include <pde/system.h>
 
-#include "grid.h"
+#include <grid/grid.h>
 
-void write_vtk(const PDESystem &system, double time);
+struct ParaviewOutput
+{
+  vtkSmartPointer<vtkXMLImageDataWriter> vtkWriter_; //< vtk writer to write ImageData
+  int fileNo_;
+};
+
+void write_vtk(const PDESystem& system, double time);
 
 #endif // VTK_H_
