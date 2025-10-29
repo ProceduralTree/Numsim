@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <iostream>
 #include <ostream>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "indexing.h"
@@ -15,12 +17,29 @@ class Grid2D
 {
 private:
   std::vector<double> _data;
+  uint16_t size_x;
+  uint16_t size_y;
 
 public:
-  const uint16_t size_x;
-  const uint16_t size_y;
-
   Grid2D(uint16_t x, uint16_t y);
+
+  Grid2D(const Grid2D&) = delete;
+  Grid2D& operator=(const Grid2D&) = delete;
+
+  Grid2D(Grid2D&& other) noexcept
+  {
+    std::swap(size_x, other.size_x);
+    std::swap(size_y, other.size_y);
+    std::swap(_data, other._data);
+  }
+
+  Grid2D& operator=(Grid2D&& other) noexcept
+  {
+    std::swap(size_x, other.size_x);
+    std::swap(size_y, other.size_y);
+    std::swap(_data, other._data);
+    return *this;
+  }
 
   double& operator[](uint16_t x, uint16_t y);
   const double& operator[](uint16_t x, uint16_t y) const;
