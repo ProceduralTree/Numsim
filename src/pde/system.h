@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <grid/grid.h>
 #include <utils/settings.h>
 
 struct Gridsize
@@ -51,7 +52,6 @@ struct PDESystem
     , v(Grid2D(size_x, size_y))
     , F(Grid2D(size_x, size_y))
     , G(Grid2D(size_x, size_y))
-    , b(Grid2D(size_x, size_y))
     , rhs(Grid2D(size_x + 2, size_y + 2))
     , size_x(size_x)
     , size_y(size_y)
@@ -66,7 +66,7 @@ struct PDESystem
   PDESystem& operator=(const PDESystem&) = delete;
 };
 
-void timestep(PDESystem system);
+void timestep(PDESystem& system);
 void print_pde_system(const PDESystem& sys);
 
 double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y);

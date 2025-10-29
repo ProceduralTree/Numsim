@@ -1,6 +1,6 @@
-#include "grid.h"
-#include "indexing.h"
-#include "system.h"
+#include <grid/grid.h>
+#include <grid/indexing.h>
+#include <pde/system.h>
 
 void gauss_seidel(PDESystem& system)
 {
@@ -24,4 +24,4 @@ void gauss_seidel(PDESystem& system)
       converged = true;
     }
   }
-};
+}

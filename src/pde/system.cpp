@@ -1,8 +1,8 @@
-#include "system.h"
-#include "derivatives.h"
-#include "pressuresolvers.cpp"
-#include "utils/settings.h"
 #include <cstdint>
+#include <pde/derivatives.h>
+#include <pde/pressuresolvers.h>
+#include <pde/system.h>
+#include <utils/settings.h>
 
 void calculate_FG(PDESystem& system)
 {

@@ -50,7 +50,7 @@ auto main(int argc, char* argv[]) -> int
   benchmark_laplace(N, laplace);
   // std::cout << "With Z-Order Interleaving" << std::endl;
   // benchmark_laplace(N, laplace_cartesian);
-  auto test_system = PDESystem(1., 1., 100, 100, 0.01, 0.01, std::array<double, 2>(), std::array<double, 2>(), std::array<double, 2>(), std::array<double, 2>());
+  PDESystem test_system = PDESystem(1., 1., 100, 100, 0.01, 0.01, std::array<double, 2>(), std::array<double, 2>(), std::array<double, 2>(), std::array<double, 2>());
   fill_inorder(test_system.p);
 
   print_pde_system(test_system);
