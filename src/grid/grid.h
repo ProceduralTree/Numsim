@@ -48,6 +48,7 @@ public:
 
   const uint32_t elements() const { return this->_data.size(); }
   constexpr double max() { return *std::max_element(_data.begin(), _data.end()); }
+  constexpr double min() { return *std::min_element(_data.begin(), _data.end()); }
 };
 
 void laplace(const Grid2D& in, Grid2D& out);

@@ -38,5 +38,5 @@ struct Settings
   bool loadFromFile(std::filesystem::path filename);
 
   //! output all settings to console
-  void printSettings();
+  void printSettings() const;
 };

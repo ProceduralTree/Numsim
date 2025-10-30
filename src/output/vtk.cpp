@@ -65,20 +65,17 @@ void write_vtk(const PDESystem& system, double time)
   // set spacing of mesh
   //
   vtkSmartPointer<vtkDoubleArray> arrayPressure = vtkDoubleArray::New();
-
   // the pressure is a scalar which means the number of components is 1
   arrayPressure->SetNumberOfComponents(1);
-
   // Set the number of pressure values and allocate memory for it. We
   // already know the number, it has to be the same as there are nodes in
   // the mesh.
   arrayPressure->SetNumberOfTuples(dataSet->GetNumberOfPoints());
-
   arrayPressure->SetName("pressure");
-
   double index = write_pressure(arrayPressure, system);
   dataSet->GetPointData()->AddArray(arrayPressure);
   assert(index == dataSet->GetNumberOfPoints());
+
   // loop over the nodes of the mesh and assign the interpolated p values
   // in the vtk data structure we only consider the cells that are the
   // actual computational domain, not the helper values in the "halo"

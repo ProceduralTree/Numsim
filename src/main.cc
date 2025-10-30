@@ -41,22 +41,22 @@ void benchmark_laplace(
 auto main(int argc, char* argv[]) -> int
 {
   MPI_Init(&argc, &argv);
-  std::vector<int> init;
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  const int N = 1 << 8;
-  std::cout << "Begin Benchmark..." << std::endl;
-  benchmark_laplace(N, laplace);
   // std::cout << "With Z-Order Interleaving" << std::endl;
   // benchmark_laplace(N, laplace_cartesian);
-  PDESystem test_system = PDESystem(1., 1., 100, 100, 0.01, 0.01, std::array<double, 2>(), std::array<double, 2>(), std::array<double, 2>(), std::array<double, 2>());
-  fill_inorder(test_system.p);
-
+  //
+  PDESystem test_system = PDESystem(1., 1e-4, 100, 100, 0.01, 0.01, { 0, 0 }, { 0, 0.1 }, { 0, 0 }, { 0, 0 });
+  test_system.settings.loadFromFile("");
   print_pde_system(test_system);
-  timestep(test_system);
-  write_vtk(test_system, 1.);
-  write_vtk(test_system, 2.);
+
+  for (int i = 0; i < 10; i++)
+  {
+    std::cout << "[Iteration]: " << i << "\t\r" << std::flush;
+    timestep(test_system);
+    write_vtk(test_system, static_cast<double>(i));
+  }
 
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 

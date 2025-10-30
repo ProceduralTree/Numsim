@@ -47,10 +47,7 @@ void update_uv(PDESystem& system)
 
 void solve_pressure(PDESystem& system)
 {
-  if (system.settings.pressureSolver == Settings::PressureSolver::GaussSeidel)
-  {
-    gauss_seidel(system);
-  }
+  gauss_seidel(system);
 };
 
 void calculate_rhs(PDESystem& system)
@@ -62,7 +59,7 @@ void calculate_rhs(PDESystem& system)
   {
     for (uint16_t j = 1; j < system.size_y + 1; j++)
     {
-      system.rhs[i, j] = 1 / system.dt * (dx(F, i - 1, j, h) + dy(G, i, j - 1, h));
+      system.rhs[i, j] = (1 / system.dt) * (dx(F, i - 1, j, h) + dy(G, i, j - 1, h));
     }
   }
 };
@@ -124,13 +121,7 @@ void print_pde_system(const PDESystem& sys)
   printf("╔═══════════════════════════════════════════════╗\n");
   printf("║              PDE System Summary               ║\n");
   printf("╚═══════════════════════════════════════════════╝\n");
-
-  printf("Reynolds number (Re): %.6f\n", sys.Re);
-  printf("Time step (dt):       %.6f\n", sys.dt);
-  printf("Grid size (x, y):     %u x %u\n", sys.size_x, sys.size_y);
-  printf("Grid spacing (dx, dy): %.6f, %.6f\n", sys.h.x, sys.h.y);
-  printf("\n");
-  printf("───────────────────────────────────────────────\n");
+  sys.settings.printSettings();
 }
 double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y)
 {
