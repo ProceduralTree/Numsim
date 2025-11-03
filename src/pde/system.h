@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <grid/grid.h>
+#include <utils/index.h>
 #include <utils/settings.h>
 
 struct Gridsize
@@ -24,6 +25,9 @@ struct Gridsize
 
 struct PDESystem
 {
+  double residual = 0;
+  const Index begin;
+  const Index end;
   const double Re;
   double dt;
   Grid2D p;
@@ -45,14 +49,16 @@ struct PDESystem
     double hy, std::array<double, 2> boundaryBottom,
     std::array<double, 2> boundaryTop, std::array<double, 2> boundaryLeft,
     std::array<double, 2> boundaryRight)
-    : Re(Re)
+    : begin({ 2, 2 })
+    , end(Index(size_x + 2, size_y + 2)) //+ Offset(1, 1))
+    , Re(Re)
     , dt(dt)
-    , p(Grid2D(size_x, size_y))
-    , u(Grid2D(size_x, size_y))
-    , v(Grid2D(size_x, size_y))
-    , F(Grid2D(size_x, size_y))
-    , G(Grid2D(size_x, size_y))
-    , rhs(Grid2D(size_x + 2, size_y + 2))
+    , p(Grid2D(begin, end))
+    , u(Grid2D(begin - Ix, end))
+    , v(Grid2D(begin - Iy, end))
+    , F(Grid2D(begin - Ix, end))
+    , G(Grid2D(begin - Iy, end))
+    , rhs(Grid2D(begin, end))
     , size_x(size_x)
     , size_y(size_y)
     , h(Gridsize(hx, hy))
@@ -67,6 +73,7 @@ struct PDESystem
 };
 
 void timestep(PDESystem& system);
+void step(PDESystem& system);
 void print_pde_system(const PDESystem& sys);
 
 double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y);

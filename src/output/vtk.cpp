@@ -28,7 +28,7 @@ vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
 
   // set number of points in each dimension, 1 cell in z direction
   dataSet->SetDimensions(
-    system.size_x + 1, system.size_y + 1,
+    system.size_x + 4, system.size_y + 4,
     1); // we want to have points at each corner of each cell
 
   return dataSet;
@@ -39,10 +39,10 @@ double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESy
 
   double index = 0; // index for the vtk data structure, will be incremented
                     // in the inner loop
-  for (int j = 0; j < system.size_x + 1; j++)
+  for (int j = 0; j < system.size_x + 4; j++)
   {
     const double y = static_cast<double>(j) * system.h.y;
-    for (int i = 0; i < system.size_y + 1; i++, index++)
+    for (int i = 0; i < system.size_y + 4; i++, index++)
     {
       const double x = static_cast<double>(i) * system.h.x;
 
@@ -103,11 +103,11 @@ void write_vtk(const PDESystem& system, double time)
   // vtk data structure
   index = 0; // index for the vtk data structure
              //
-  for (int j = 0; j < system.size_x + 1; j++)
+  for (int j = 0; j < system.size_x + 4; j++)
   {
     const double y = static_cast<double>(j) * system.h.y;
 
-    for (int i = 0; i < system.size_y + 1; i++, index++)
+    for (int i = 0; i < system.size_y + 4; i++, index++)
     {
       const double x = static_cast<double>(i) * system.h.y;
 

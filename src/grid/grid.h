@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "indexing.h"
+#include "utils/index.h"
 
 #define CARTESIAN
 
@@ -21,7 +22,13 @@ private:
 public:
   uint16_t size_x;
   uint16_t size_y;
+  Index begin;
+  Index end;
+  Offset len_x;
+  Offset len_y;
+  Range range;
   Grid2D(uint16_t x, uint16_t y);
+  Grid2D(Index beg, Index end);
 
   Grid2D(const Grid2D&) = delete;
   Grid2D& operator=(const Grid2D&) = delete;
@@ -41,6 +48,10 @@ public:
     return *this;
   }
 
+  // double& operator[](Index index) { return (*this)[index.x + begin.x, index.y + begin.y]; };
+  // const double& operator[](Index index) const { return (*this)[index.x + begin.x, index.y + begin.y]; };
+  double& operator[](Index index) { return (*this)[index.x, index.y]; };
+  const double& operator[](Index index) const { return (*this)[index.x, index.y]; };
   double& operator[](uint16_t x, uint16_t y);
   const double& operator[](uint16_t x, uint16_t y) const;
   double& operator[](uint32_t z);

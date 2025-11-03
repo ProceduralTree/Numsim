@@ -1,5 +1,6 @@
 #include "grid.h"
 #include "indexing.h"
+#include "utils/index.h"
 #include <algorithm>
 #include <bit>
 #include <cassert>
@@ -7,19 +8,35 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 
 Grid2D::Grid2D(uint16_t x, uint16_t y)
-  : _data()
+  : _data(x * y, 0.)
   , size_x(x)
   , size_y(y)
-{
-
-  uint32_t size = std::bit_width(x) + std::bit_width(y);
-  this->_data.resize(1 << size, 0.);
-  std::vector<double>& data = this->_data;
-  std::fill(data.begin(), data.end(), 0);
-};
+  , begin(0, 0)
+  , end(size_x, size_y)
+  , len_x(size_x, 0)
+  , len_y(size_y, 0)
+  , range(begin, end) {
+    // uint32_t size = std::bit_width(x) + std::bit_width(y);
+    // this->_data.resize(1 << size, 0.);
+    // this->_data.resize(x * y, init);
+  };
+Grid2D::Grid2D(Index beg, Index end)
+  : _data((end.x - beg.x + 2) * (end.y - beg.y + 2), 0.)
+  , size_x(end.x - beg.x)
+  , size_y(end.y - beg.y)
+  , begin(beg)
+  , end(end)
+  , len_x(size_x, 0)
+  , len_y(0, size_y)
+  , range(beg, end) {
+    // uint32_t size = std::bit_width(x) + std::bit_width(y);
+    // this->_data.resize(1 << size, 0.);
+    // this->_data.resize(x * y, init);
+  };
 
 double& Grid2D::operator[](uint16_t x, uint16_t y)
 {
@@ -50,28 +67,28 @@ const double& Grid2D::operator[](uint32_t index) const
 
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
 {
-  os << std::endl;
+  os << std::scientific << std::setprecision(1) << std::endl;
   os << obj.size_x << "x" << obj.size_y << " Grid2D" << std::endl;
   for (uint16_t i = 0; i < obj.size_x; i++)
   {
-    if (i < 10 || i > obj.size_x - 10)
+    if (i < 5 || i > obj.size_x - 5)
     {
       for (uint16_t j = 0; j < obj.size_y; j++)
       {
-        if (j < 10 || j > obj.size_x - 10)
+        if (j < 5 || j > obj.size_x - 5)
         {
-          os << std::round(obj[i, j] * 1e5) / 1e5 << "\t";
-        } else if (j == 10)
+          os << std::setw(8) << std::round(obj[i, j] * 1e3) / 1e5 << "\t";
+        } else if (j == 5)
         {
           os << "…\t";
         }
       }
       os << std::endl;
-    } else if (i == 10)
+    } else if (i == 5)
     {
       for (uint16_t j = 0; j < obj.size_x; j++)
       {
-        if (j < 10 || j > obj.size_x - 10)
+        if (j < 5 || j > obj.size_x - 5)
         {
           os << "⋮\t";
         }
