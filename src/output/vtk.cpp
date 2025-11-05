@@ -28,8 +28,7 @@ vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
 
   // set number of points in each dimension, 1 cell in z direction
   dataSet->SetDimensions(
-    system.size_x + 4, system.size_y + 4,
-    1); // we want to have points at each corner of each cell
+    system.end.x - system.begin.x, system.end.y - system.begin.y, 1); // we want to have points at each corner of each cell
 
   return dataSet;
 };
@@ -39,10 +38,10 @@ double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESy
 
   double index = 0; // index for the vtk data structure, will be incremented
                     // in the inner loop
-  for (int j = 0; j < system.size_x + 4; j++)
+  for (int j = system.begin.y; j < system.end.y; j++)
   {
     const double y = static_cast<double>(j) * system.h.y;
-    for (int i = 0; i < system.size_y + 4; i++, index++)
+    for (int i = system.begin.x; i < system.end.x; i++, index++)
     {
       const double x = static_cast<double>(i) * system.h.x;
 
@@ -103,17 +102,17 @@ void write_vtk(const PDESystem& system, double time)
   // vtk data structure
   index = 0; // index for the vtk data structure
              //
-  for (int j = 0; j < system.size_x + 4; j++)
+  for (int j = system.begin.y - 1; j < system.end.y; j++)
   {
     const double y = static_cast<double>(j) * system.h.y;
 
-    for (int i = 0; i < system.size_y + 4; i++, index++)
+    for (int i = system.begin.x; i < system.end.x; i++, index++)
     {
-      const double x = static_cast<double>(i) * system.h.y;
+      const double x = static_cast<double>(i) * system.h.x;
 
       std::array<double, 3> velocityVector;
       velocityVector[0] = interpolate_at(system, system.u, x, y);
-      velocityVector[0] = interpolate_at(system, system.v, x, y);
+      velocityVector[1] = interpolate_at(system, system.v, x, y);
       velocityVector[2] = 0.0; // z-direction is 0
 
       arrayVelocity->SetTuple(index, velocityVector.data());

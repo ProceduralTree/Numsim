@@ -69,68 +69,70 @@ const double& Grid2D::operator[](uint32_t index) const
 
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
 {
-  for (int i = obj.begin.x - 1; i < obj.end.x + 2; i++)
+  // std::cout << "\n";
+  // for (int j = obj.begin.y - 1; j < obj.end.y + 2; j++)
+  //{
+  //   for (int i = obj.begin.x - 1; i < obj.end.x + 2; i++)
+  //   {
+  //     std::cout << obj[i, j] << "\t";
+  //   }
+  //   std::cout << "\n";
+  // }
+  //
+  os << std::scientific << std::setprecision(1) << std::endl;
+  os << obj.size_x << "x" << obj.size_y << " Grid2D" << std::endl;
+
+  const int width = 5;
+  const int len = 10;
+
+  for (uint16_t j = obj.begin.y - 1; j < std::min(obj.begin.y + width, static_cast<int>(obj.end.y)); j++)
   {
-    for (int j = obj.begin.y - 1; j < obj.end.y + 2; j++)
+    for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
     {
-      std::cout << obj[i, j] << "\t";
+      os << std::setw(len) << obj[i, j] << "";
     }
-    std::cout << "\n";
+    if (obj.len_x.x > 2 * width + 2)
+    {
+      os << std::setw(3) << "  …";
+    }
+    for (uint16_t i = std::max(obj.end.x - width, obj.begin.x + width); i < obj.end.x + 2; i++)
+    {
+      os << std::setw(len) << obj[i, j] << "";
+    }
+    os << std::endl;
   }
-  // os << std::scientific << std::setprecision(1) << std::endl;
-  // os << obj.size_x << "x" << obj.size_y << " Grid2D" << std::endl;
-  //
-  // const int width = 3;
-  // const int len = 12;
-  //
-  // for (uint16_t j = obj.begin.y - 1; j < std::min(obj.begin.y + width, static_cast<int>(obj.end.y)); j++)
-  //{
-  // for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
-  //{
-  // os << std::setw(len) << obj[j, i] << "\t";
-  //}
-  // if (obj.len_x.x > 2 * width + 2)
-  //{
-  // os << std::setw(len) << "…";
-  //}
-  // for (uint16_t i = std::max(obj.end.x - width, static_cast<int>(obj.begin.x + width)); i < obj.end.x + 1; i++)
-  //{
-  // os << std::setw(len) << obj[j, i] << "\t";
-  //}
-  // os << std::endl;
-  //}
-  // if (obj.len_y.y > 2 * width + 2)
-  //{
-  // for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
-  //{
-  // os << std::setw(len) << " ⋮ " << "\t";
-  //}
-  // if (obj.len_x.x > 2 * width + 2)
-  //{
-  // os << std::setw(len) << "   ";
-  //}
-  // for (uint16_t i = std::max(obj.end.x - width, obj.begin.x + width); i < obj.end.x + 1; i++)
-  //{
-  // os << std::setw(len) << " ⋮ " << "\t";
-  //}
-  // os << std::endl;
-  //}
-  // for (uint16_t j = std::max(obj.end.y - width, obj.begin.y + width); j < obj.end.y + 1; j++)
-  //{
-  // for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
-  //{
-  // os << std::setw(len) << obj[j, i] << "\t";
-  //}
-  // if (obj.len_x.x > 2 * width + 2)
-  //{
-  // os << std::setw(len) << "…";
-  //}
-  // for (uint16_t i = std::max(obj.end.x - width, obj.begin.x + width); i < obj.end.x + 1; i++)
-  //{
-  // os << std::setw(len) << obj[j, i] << "\t";
-  //}
-  // os << std::endl;
-  //}
+  if (obj.len_y.y > 2 * width + 2)
+  {
+    for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
+    {
+      os << std::setw(len) << "  ⋮" << "";
+    }
+    if (obj.len_x.x > 2 * width + 2)
+    {
+      os << std::setw(3) << "  ⋱";
+    }
+    for (uint16_t i = std::max(obj.end.x - width, obj.begin.x + width); i < obj.end.x + 2; i++)
+    {
+      os << std::setw(len) << "  ⋮" << "";
+    }
+    os << std::endl;
+  }
+  for (uint16_t j = std::max(obj.end.y - width, obj.begin.y + width); j < obj.end.y + 2; j++)
+  {
+    for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
+    {
+      os << std::setw(len) << obj[i, j] << "";
+    }
+    if (obj.len_x.x > 2 * width + 2)
+    {
+      os << std::setw(3) << "  …";
+    }
+    for (uint16_t i = std::max(obj.end.x - width, obj.begin.x + width); i < obj.end.x + 2; i++)
+    {
+      os << std::setw(len) << obj[i, j] << "";
+    }
+    os << std::endl;
+  }
 
   return os;
 }

@@ -44,7 +44,7 @@ constexpr double d(Offset Direction, const Grid2D& field, Index I, double h)
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);
-  return 1 / h * (field[I + Direction] + field[I - Direction] - 2 * field[I]);
+  return 1 / h * (field[I + Direction] - field[I]);
 };
 constexpr double dd(Offset Direction, const Grid2D& field, Index I, double h_squared)
 {

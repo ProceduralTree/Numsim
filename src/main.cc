@@ -31,7 +31,7 @@ void test_boundary(PDESystem& system)
   std::cout << "\n";
   broadcast_boundary(
     [&](PDESystem& s, Index I, Offset o) {
-      s.p[I] = o.x + o.y;
+      s.p[I + o] = o.x + o.y;
     },
     system, system.p);
   std::cout << system.p;
@@ -88,18 +88,18 @@ auto main(int argc, char* argv[]) -> int
   // std::cout << "With Z-Order Interleaving" << std::endl;
   // benchmark_laplace(N, laplace_cartesian);
   //
-  PDESystem test_system = PDESystem(1., 1e-4, 6, 6, 0.01, 0.01, { 0, 0 }, { 0, 1. }, { 0, 0 }, { 0, 0 });
+  PDESystem test_system = PDESystem(1., 1e-4, 60, 60, 0.01, 0.01, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
   test_system.settings.loadFromFile("");
   print_pde_system(test_system);
 
-  test_boundary(test_system);
+  // test_boundary(test_system);
 
-  // for (int i = 0; i < 1; i++)
-  //{
-  //   std::cout << "[Iteration]: " << i << "\t\r" << std::flush;
-  //   step(test_system);
-  //   write_vtk(test_system, static_cast<double>(i));
-  // }
+  for (int i = 0; i < 4; i++)
+  {
+    std::cout << "[Iteration]: " << i << "\t\r" << std::flush;
+    step(test_system);
+    // write_vtk(test_system, static_cast<double>(i));
+  }
 
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 

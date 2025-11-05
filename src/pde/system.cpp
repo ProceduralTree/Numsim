@@ -89,22 +89,23 @@ void solve_pressure(PDESystem& system)
   std::cout << "Max Velocity y: \t" << system.v.max() << "\n";
   std::cout << "Min Velocity y: \t" << system.v.min() << "\n";
   std::cout << "RHS: \t" << system.rhs << "\n";
+  std::cout << "G: \t" << system.F << "\n";
   std::cout << "G: \t" << system.G << "\n";
   std::cout << "v: \t" << system.v << "\n";
+  std::cout << "u: \t" << system.u << "\n";
   std::cout << "p: \t" << system.p << "\n";
   std::cout << std::endl;
   for (int iter = 0; iter < 10000; iter++)
   {
+    system.residual = 0;
     broadcast_boundary(
       [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
       system, system.p);
-    std::cout << "Residual : \t" << system.residual << "\t\r"
-              << std::flush;
     broadcast(gauss_seidel_step, system, system.p.range);
     std::cout << "Residual : \t" << system.residual << "\t\r"
               << std::flush;
-    if (system.residual < 1e-4)
-      break;
+    // if (system.residual < 1e-4)
+    //   break;
   }
   // gauss_seidel(system);
 };
@@ -182,20 +183,20 @@ auto copy_boundary(const Grid2D& from, Grid2D& to)
 void step(PDESystem& system)
 {
 
-  // broadcast_x_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = boundary(s, o)[0]; },
-  //   system, system.u);
+  broadcast_x_boundary(
+    [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = boundary(s, o)[0]; },
+    system, system.u);
   broadcast_x_boundary(
     [&](PDESystem& s, Index I, Offset o) {
       s.v[I + o] = 2 * boundary(s, o)[1] - s.v[I];
     },
     system, system.v);
-  // broadcast_y_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = 2 * boundary(s, o)[0] - s.u[I]; },
-  //   system, system.u);
-  // broadcast_y_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.v[I + o] = boundary(s, o)[1]; },
-  //   system, system.v);
+  broadcast_y_boundary(
+    [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = 2 * boundary(s, o)[0] - s.u[I]; },
+    system, system.u);
+  broadcast_y_boundary(
+    [&](PDESystem& s, Index I, Offset o) { s.v[I + o] = boundary(s, o)[1]; },
+    system, system.v);
 
   broadcast_x_boundary(
     [&](PDESystem& s, Index I, Offset o) { s.F[I + o] = s.u[I + o]; },
@@ -245,7 +246,7 @@ double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, doubl
   assert(y >= 0);
   uint16_t ix = std::floor(x);
   uint16_t iy = std::floor(y);
-  double dx = x - iy;
+  double dx = x - ix;
   double dy = y - iy;
   auto w11 = (1 - dx) * (1 - dy);
   auto w12 = (1 - dx) * dy;
