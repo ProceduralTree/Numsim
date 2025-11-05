@@ -79,7 +79,7 @@ std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
   //   std::cout << "\n";
   // }
   //
-  os << std::scientific << std::setprecision(1) << std::endl;
+  os << std::scientific << std::setprecision(3) << std::endl;
   os << obj.size_x << "x" << obj.size_y << " Grid2D" << std::endl;
 
   const int width = 5;

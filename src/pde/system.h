@@ -73,7 +73,7 @@ struct PDESystem
 };
 
 void timestep(PDESystem& system);
-void step(PDESystem& system);
+void step(PDESystem& system, uint16_t i);
 void print_pde_system(const PDESystem& sys);
 
 double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y);
