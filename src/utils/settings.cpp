@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 
@@ -163,6 +164,9 @@ void parseSettings(const std::string& input, Settings* settings)
 
 bool Settings::loadFromFile(std::filesystem::path filename)
 {
+  parseSettings(testString, this);
+  // TODO Debug
+  return true;
   std::ifstream file(filename);
   if (!file.is_open())
   {
@@ -175,9 +179,9 @@ bool Settings::loadFromFile(std::filesystem::path filename)
 }
 
 // clang-format off
-void Settings::printSettings()
+void Settings::printSettings() const
 {
-  std::cout <<
+  std::cout << std::fixed << std::setprecision(4) <<
     "nCells: " << nCells[0] << "," << nCells[1] << "\n"
     "physicalSize: " << physicalSize[0] << "," << physicalSize[1] << "\n"
     "re: " << re << "\n"
@@ -191,7 +195,7 @@ void Settings::printSettings()
     "dirichletBcTop: " << dirichletBcTop[0] << "," << dirichletBcTop[1] << "\n"
     "dirichletBcLeft: " << dirichletBcLeft[0] << "," << dirichletBcLeft[1] << "\n"
     "dirichletBcRight: " << dirichletBcRight[0] << "," << dirichletBcRight[1] << "\n"
-    "pressureSolver: ";
+    "pressureSolver: " ;
   if(pressureSolver == SOR) std::cout << "SOR\n";
   else std::cout << "GaussSeidel\n";
   std::cout <<

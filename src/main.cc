@@ -1,3 +1,4 @@
+#include "utils/broadcast.h"
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -8,6 +9,45 @@
 #include <output/vtk.h>
 #include <pde/system.h>
 #include <vector>
+#define ASSERT(condition, message)                               \
+  do                                                             \
+  {                                                              \
+    if (!(condition))                                            \
+    {                                                            \
+      std::cerr << "Assertion failed: " << message << std::endl; \
+      assert(condition);                                         \
+    }                                                            \
+  } while (0)
+
+void test_boundary(PDESystem& system)
+{
+
+  broadcast_x_boundary(
+    [&](PDESystem& s, Index I, Offset o) {
+      s.v[I + o] = o.y;
+    },
+    system, system.v);
+  std::cout << system.v;
+  std::cout << "\n";
+  broadcast_boundary(
+    [&](PDESystem& s, Index I, Offset o) {
+      s.p[I + o] = o.x + o.y;
+    },
+    system, system.p);
+  std::cout << system.p;
+  std::cout << "\n";
+}
+
+void test_index()
+{
+  Index I = { 1, 1 };
+  Index Ipx = I + Ix;
+  ASSERT(Ipx.x == 2 && Ipx.y == 1, "Plus Failed I.x=" << Ipx.x << " I.y=" << Ipx.y);
+  Index Imx = I - Ix;
+  ASSERT(Imx.x == 0 && Imx.y == 1, "Minus Failed I.x=" << Imx.x << " I.y=" << Imx.y);
+  ASSERT((-5 * Ix).x == -5 && (-5 * Ix).y == 0, "Invert Failed I.x=" << (-5 * Ix).x << " I.y=" << (-5 * Ix).y);
+  ASSERT((-Ix).x == -1 && (-Ix).y == 0, "Invert Failed I.x=" << (-Ix).x << " I.y=" << (-Ix).y);
+}
 
 void fill_inorder(Grid2D& grid)
 {
@@ -40,23 +80,26 @@ void benchmark_laplace(
 
 auto main(int argc, char* argv[]) -> int
 {
+  test_index();
   MPI_Init(&argc, &argv);
-  std::vector<int> init;
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  const int N = 1 << 8;
-  std::cout << "Begin Benchmark..." << std::endl;
-  benchmark_laplace(N, laplace);
   // std::cout << "With Z-Order Interleaving" << std::endl;
   // benchmark_laplace(N, laplace_cartesian);
-  PDESystem test_system = PDESystem(1., 1., 100, 100, 0.01, 0.01, std::array<double, 2>(), std::array<double, 2>(), std::array<double, 2>(), std::array<double, 2>());
-  fill_inorder(test_system.p);
-
+  //
+  PDESystem test_system = PDESystem(1., 1e-4, 60, 60, 0.01, 0.01, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
+  test_system.settings.loadFromFile("");
   print_pde_system(test_system);
-  timestep(test_system);
-  write_vtk(test_system, 1.);
-  write_vtk(test_system, 2.);
+
+  // test_boundary(test_system);
+
+  for (int i = 0; i < 4; i++)
+  {
+    std::cout << "[Iteration]: " << i << "\t\r" << std::flush;
+    step(test_system);
+    // write_vtk(test_system, static_cast<double>(i));
+  }
 
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 

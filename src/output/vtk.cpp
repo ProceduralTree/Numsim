@@ -28,8 +28,7 @@ vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
 
   // set number of points in each dimension, 1 cell in z direction
   dataSet->SetDimensions(
-    system.size_x + 1, system.size_y + 1,
-    1); // we want to have points at each corner of each cell
+    system.end.x - system.begin.x, system.end.y - system.begin.y, 1); // we want to have points at each corner of each cell
 
   return dataSet;
 };
@@ -39,10 +38,10 @@ double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESy
 
   double index = 0; // index for the vtk data structure, will be incremented
                     // in the inner loop
-  for (int j = 0; j < system.size_x + 1; j++)
+  for (int j = system.begin.y; j < system.end.y; j++)
   {
     const double y = static_cast<double>(j) * system.h.y;
-    for (int i = 0; i < system.size_y + 1; i++, index++)
+    for (int i = system.begin.x; i < system.end.x; i++, index++)
     {
       const double x = static_cast<double>(i) * system.h.x;
 
@@ -65,20 +64,17 @@ void write_vtk(const PDESystem& system, double time)
   // set spacing of mesh
   //
   vtkSmartPointer<vtkDoubleArray> arrayPressure = vtkDoubleArray::New();
-
   // the pressure is a scalar which means the number of components is 1
   arrayPressure->SetNumberOfComponents(1);
-
   // Set the number of pressure values and allocate memory for it. We
   // already know the number, it has to be the same as there are nodes in
   // the mesh.
   arrayPressure->SetNumberOfTuples(dataSet->GetNumberOfPoints());
-
   arrayPressure->SetName("pressure");
-
   double index = write_pressure(arrayPressure, system);
   dataSet->GetPointData()->AddArray(arrayPressure);
   assert(index == dataSet->GetNumberOfPoints());
+
   // loop over the nodes of the mesh and assign the interpolated p values
   // in the vtk data structure we only consider the cells that are the
   // actual computational domain, not the helper values in the "halo"
@@ -106,17 +102,17 @@ void write_vtk(const PDESystem& system, double time)
   // vtk data structure
   index = 0; // index for the vtk data structure
              //
-  for (int j = 0; j < system.size_x + 1; j++)
+  for (int j = system.begin.y - 1; j < system.end.y; j++)
   {
     const double y = static_cast<double>(j) * system.h.y;
 
-    for (int i = 0; i < system.size_y + 1; i++, index++)
+    for (int i = system.begin.x; i < system.end.x; i++, index++)
     {
-      const double x = static_cast<double>(i) * system.h.y;
+      const double x = static_cast<double>(i) * system.h.x;
 
       std::array<double, 3> velocityVector;
       velocityVector[0] = interpolate_at(system, system.u, x, y);
-      velocityVector[0] = interpolate_at(system, system.v, x, y);
+      velocityVector[1] = interpolate_at(system, system.v, x, y);
       velocityVector[2] = 0.0; // z-direction is 0
 
       arrayVelocity->SetTuple(index, velocityVector.data());
