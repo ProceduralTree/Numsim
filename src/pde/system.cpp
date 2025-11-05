@@ -127,7 +127,7 @@ void calculate_rhs(PDESystem& system)
   {
     for (uint16_t j = 1; j < system.size_y + 1; j++)
     {
-      system.rhs[i, j] = (1 / system.dt) * (dx(F, i - 1, j, h) + dy(G, i, j - 1, h));
+      system.rhs[i, j] = 1 / system.dt * (dx(F, i - 1, j, h) + dy(G, i, j - 1, h));
     }
   }
 };
