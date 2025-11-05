@@ -36,9 +36,9 @@ void writeTextVelocity(const PDESystem& system, double currentTime)
 
   const int fieldWidth = 9; // number of characters to use for a single value
 
-  auto writeGrid = [&](const Grid2D& grid, const std::string& name, uint16_t offsetX, uint16_t offsetY) {
-    uint16_t sizeX = grid.size_x + offsetX;
-    uint16_t sizeY = grid.size_y + offsetY;
+  auto writeGrid = [&](const Grid2D& grid, const std::string& name) {
+    uint16_t sizeX = grid.end.x - grid.begin.x + 2;
+    uint16_t sizeY = grid.end.y - grid.begin.y + 2;
 
     file << name << " (" << sizeX << "x" << sizeY << "): " << std::endl
          << std::string(fieldWidth, ' ') << "|";
@@ -49,13 +49,13 @@ void writeTextVelocity(const PDESystem& system, double currentTime)
     file << std::endl
          << std::string(fieldWidth * (sizeX + 2) + 1, '-') << std::endl;
 
-    // write u values
-    for (int j = sizeY - 1; j >= -1; j--)
+    // write values
+    for (int j = grid.end.y + 1; j >= grid.begin.y - 1; j--)
     {
-      file << std::setw(fieldWidth) << j << "|";
-      for (int i = 0; i < sizeX; i++)
+      file << std::setw(fieldWidth) << j - grid.begin.y - 1 << "|";
+      for (int i = grid.begin.x - 1; i <= grid.end.x + 1; i++)
       {
-        file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid[i, j + 1];
+        file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid[i, j];
       }
       file << std::endl;
     }
@@ -65,32 +65,32 @@ void writeTextVelocity(const PDESystem& system, double currentTime)
   // write u
   // ---------
   // write header lines
-  writeGrid(system.u, "u", -1, 0);
+  writeGrid(system.u, "u");
 
   // write v
   // ---------
   // write header lines
-  writeGrid(system.v, "v", 0, -1);
+  writeGrid(system.v, "v");
 
   // write p
   // ---------
   // write header lines
-  writeGrid(system.p, "p", 0, 0);
+  writeGrid(system.p, "p");
 
   // write f
   // ---------
   // write header lines
-  writeGrid(system.F, "F", -1, 0);
+  writeGrid(system.F, "F");
 
   // write g
   // ---------
   // write header lines
-  writeGrid(system.G, "G", 0, -1);
+  writeGrid(system.G, "G");
 
   // write rhs
   // ---------
   // write header lines
-  writeGrid(system.b, "rhs", 0, 0);
+  writeGrid(system.b, "rhs");
 }
 
 void writeTextPressure(const PDESystem& system)
@@ -121,22 +121,26 @@ void writeTextPressure(const PDESystem& system)
   // write p
   // ---------
   // write header lines
-  file << "p (" << system.p.size_x << "x" << system.p.size_y << "): " << std::endl
+
+  Grid2D& p = system.p;
+  uint16_t sizeX = p.end.x - p.begin.x + 2;
+  uint16_t sizeY = p.end.y - p.begin.y + 2;
+  file << "p (" << sizeX << "x" << sizeY << "): " << std::endl
        << std::string(fieldWidth, ' ') << "|";
-  for (int i = -1; i < system.p.size_x - 1; i++)
+  for (int i = -1; i < sizeX - 1; i++)
   {
     file << std::setw(fieldWidth) << i;
   }
   file << std::endl
-       << std::string(fieldWidth * (system.p.size_x + 2) + 1, '-') << std::endl;
+       << std::string(fieldWidth * (sizeX + 2) + 1, '-') << std::endl;
 
   // write p values
-  for (int j = system.p.size_y - 2; j >= -1; j--)
+  for (int j = p.end.y + 1; j >= p.begin - 1; j--)
   {
-    file << std::setw(fieldWidth) << j << "|";
-    for (int i = 0; i < system.p.size_y; i++)
+    file << std::setw(fieldWidth) << j - p.begin.y - 1 << "|";
+    for (int i = p.begin.x - 1; i <= p.end.y + 1; i++)
     {
-      file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << system.p[i, j];
+      file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << p[i, j];
     }
     file << std::endl;
   }
