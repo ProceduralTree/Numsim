@@ -88,13 +88,13 @@ auto main(int argc, char* argv[]) -> int
   // std::cout << "With Z-Order Interleaving" << std::endl;
   // benchmark_laplace(N, laplace_cartesian);
   //
-  PDESystem test_system = PDESystem(100., 1e-3, 20, 20, 0.01, 0.01, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
+  PDESystem test_system = PDESystem(100., 1e-3, 30, 30, 0.01, 0.01, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
   test_system.settings.loadFromFile("");
   print_pde_system(test_system);
 
   // test_boundary(test_system);
 
-  for (int i = 0; i < 1000; i++)
+  for (int i = 0; i < 300; i++)
   {
     std::cout << "[Iteration]: " << i << "\t\n"
               << std::flush;

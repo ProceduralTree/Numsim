@@ -102,10 +102,10 @@ void solve_pressure(PDESystem& system)
       [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
       system, system.p);
     broadcast(gauss_seidel_step, system, system.p.range);
-    std::cout << "Residual : \t" << system.residual << "\t\r"
-              << std::flush;
-    // if (system.residual < 1e-4)
-    //   break;
+    // std::cout << "Residual : \t" << system.residual << "\t\r"
+    //           << std::flush;
+    if (system.residual < 1e-4)
+      break;
   }
   // gauss_seidel(system);
 };
