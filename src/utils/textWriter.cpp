@@ -1,5 +1,6 @@
 #include "textWriter.h"
 
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -7,6 +8,13 @@
 #include <pde/system.h>
 
 namespace Writer {
+
+void checkForDir(const std::string& name)
+{
+  if (std::filesystem::is_directory(name))
+    return;
+  std::filesystem::create_directory(name);
+}
 void writeTextVelocity(const PDESystem& system, double currentTime)
 {
   static uint32_t fileNo = 0;
@@ -18,6 +26,7 @@ void writeTextVelocity(const PDESystem& system, double currentTime)
   fileNo++;
 
   // open file
+  checkForDir("out");
   std::ofstream file(fileName.str().c_str());
 
   if (!file.is_open())
@@ -37,8 +46,8 @@ void writeTextVelocity(const PDESystem& system, double currentTime)
   const int fieldWidth = 9; // number of characters to use for a single value
 
   auto writeGrid = [&](const Grid2D& grid, const std::string& name) {
-    uint16_t sizeX = grid.end.x - grid.begin.x + 2;
-    uint16_t sizeY = grid.end.y - grid.begin.y + 2;
+    uint16_t sizeX = grid.end.x - grid.begin.x + 3;
+    uint16_t sizeY = grid.end.y - grid.begin.y + 3;
 
     file << name << " (" << sizeX << "x" << sizeY << "): " << std::endl
          << std::string(fieldWidth, ' ') << "|";
@@ -52,7 +61,7 @@ void writeTextVelocity(const PDESystem& system, double currentTime)
     // write values
     for (int j = grid.end.y + 1; j >= grid.begin.y - 1; j--)
     {
-      file << std::setw(fieldWidth) << j - grid.begin.y - 1 << "|";
+      file << std::setw(fieldWidth) << j - grid.begin.y << "|";
       for (int i = grid.begin.x - 1; i <= grid.end.x + 1; i++)
       {
         file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid[i, j];
@@ -103,6 +112,7 @@ void writeTextPressure(const PDESystem& system)
   fileName << "out/pressure_" << std::setw(4) << std::setfill('0') << pressurefileNo++ << ".txt";
 
   // open file
+  checkForDir("out");
   std::ofstream file(fileName.str().c_str());
 
   if (!file.is_open())
@@ -123,8 +133,8 @@ void writeTextPressure(const PDESystem& system)
   // write header lines
 
   const Grid2D& p = system.p;
-  uint16_t sizeX = p.end.x - p.begin.x + 2;
-  uint16_t sizeY = p.end.y - p.begin.y + 2;
+  uint16_t sizeX = p.end.x - p.begin.x + 3;
+  uint16_t sizeY = p.end.y - p.begin.y + 3;
   file << "p (" << sizeX << "x" << sizeY << "): " << std::endl
        << std::string(fieldWidth, ' ') << "|";
   for (int i = -1; i < sizeX - 1; i++)
@@ -137,7 +147,7 @@ void writeTextPressure(const PDESystem& system)
   // write p values
   for (int j = p.end.y + 1; j >= p.begin.y - 1; j--)
   {
-    file << std::setw(fieldWidth) << j - p.begin.y - 1 << "|";
+    file << std::setw(fieldWidth) << j - p.begin.y << "|";
     for (int i = p.begin.x - 1; i <= p.end.y + 1; i++)
     {
       file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << p[i, j];

@@ -1,7 +1,8 @@
 #pragma once
+struct PDESystem;
 
 namespace Writer {
-void writeTextVelocity(double currentTime);
+void writeTextVelocity(const PDESystem& system, double currentTime);
 
-void writeTextPressure();
+void writeTextPressure(const PDESystem& system);
 }
