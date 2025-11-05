@@ -113,7 +113,7 @@ void write_vtk(const PDESystem& system, double time)
 
       std::array<double, 3> velocityVector;
       velocityVector[0] = interpolate_at(system, system.u, x, y);
-      velocityVector[0] = interpolate_at(system, system.v, x, y);
+      velocityVector[1] = interpolate_at(system, system.v, x, y);
       velocityVector[2] = 0.0; // z-direction is 0
 
       arrayVelocity->SetTuple(index, velocityVector.data());
