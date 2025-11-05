@@ -90,7 +90,7 @@ void writeTextVelocity(const PDESystem& system, double currentTime)
   // write rhs
   // ---------
   // write header lines
-  writeGrid(system.b, "rhs");
+  writeGrid(system.rhs, "rhs");
 }
 
 void writeTextPressure(const PDESystem& system)
@@ -122,7 +122,7 @@ void writeTextPressure(const PDESystem& system)
   // ---------
   // write header lines
 
-  Grid2D& p = system.p;
+  const Grid2D& p = system.p;
   uint16_t sizeX = p.end.x - p.begin.x + 2;
   uint16_t sizeY = p.end.y - p.begin.y + 2;
   file << "p (" << sizeX << "x" << sizeY << "): " << std::endl
@@ -135,7 +135,7 @@ void writeTextPressure(const PDESystem& system)
        << std::string(fieldWidth * (sizeX + 2) + 1, '-') << std::endl;
 
   // write p values
-  for (int j = p.end.y + 1; j >= p.begin - 1; j--)
+  for (int j = p.end.y + 1; j >= p.begin.y - 1; j--)
   {
     file << std::setw(fieldWidth) << j - p.begin.y - 1 << "|";
     for (int i = p.begin.x - 1; i <= p.end.y + 1; i++)
