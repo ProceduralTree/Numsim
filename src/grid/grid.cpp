@@ -1,5 +1,6 @@
 #include "grid.h"
 #include "indexing.h"
+#include "utils/broadcast.h"
 #include "utils/index.h"
 #include <algorithm>
 #include <bit>
@@ -25,13 +26,13 @@ Grid2D::Grid2D(uint16_t x, uint16_t y)
     // this->_data.resize(x * y, init);
   };
 Grid2D::Grid2D(Index beg, Index end)
-  : _data((end.x - beg.x + 2) * (end.y - beg.y + 2), 0.)
-  , size_x(end.x - beg.x)
-  , size_y(end.y - beg.y)
+  : _data((end.x + 2) * (end.y + 2), 0.)
+  , size_x(end.x - beg.x + 3)
+  , size_y(end.y - beg.y + 3)
   , begin(beg)
   , end(end)
-  , len_x(size_x, 0)
-  , len_y(0, size_y)
+  , len_x(size_x - 3, 0)
+  , len_y(0, size_y - 3)
   , range(beg, end) {
     // uint32_t size = std::bit_width(x) + std::bit_width(y);
     // this->_data.resize(1 << size, 0.);
@@ -41,8 +42,9 @@ Grid2D::Grid2D(Index beg, Index end)
 double& Grid2D::operator[](uint16_t x, uint16_t y)
 {
 #ifdef CARTESIAN
-  uint32_t index = x + this->size_x * y;
+  uint32_t index = x + size_x * y;
 #else
+  std::cout << "!ZORDER" << std::endl;
   uint32_t index = z_order(x, y);
 #endif
   return this->_data.at(index);
@@ -51,7 +53,7 @@ double& Grid2D::operator[](uint16_t x, uint16_t y)
 const double& Grid2D::operator[](uint16_t x, uint16_t y) const
 {
 #ifdef CARTESIAN
-  uint32_t index = x + this->size_x * y;
+  uint32_t index = x + size_x * y;
 #else
   uint32_t index = z_order(x, y);
 #endif
@@ -67,70 +69,73 @@ const double& Grid2D::operator[](uint32_t index) const
 
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
 {
-  os << std::scientific << std::setprecision(1) << std::endl;
-  os << obj.size_x << "x" << obj.size_y << " Grid2D" << std::endl;
-  for (uint16_t i = 0; i < obj.size_x; i++)
+  for (int i = obj.begin.x - 1; i < obj.end.x + 2; i++)
   {
-    if (i < 5 || i > obj.size_x - 5)
+    for (int j = obj.begin.y - 1; j < obj.end.y + 2; j++)
     {
-      for (uint16_t j = 0; j < obj.size_y; j++)
-      {
-        if (j < 5 || j > obj.size_x - 5)
-        {
-          os << std::setw(8) << std::round(obj[i, j] * 1e3) / 1e5 << "\t";
-        } else if (j == 5)
-        {
-          os << "…\t";
-        }
-      }
-      os << std::endl;
-    } else if (i == 5)
-    {
-      for (uint16_t j = 0; j < obj.size_x; j++)
-      {
-        if (j < 5 || j > obj.size_x - 5)
-        {
-          os << "⋮\t";
-        }
-      }
-      os << std::endl;
+      std::cout << obj[i, j] << "\t";
     }
+    std::cout << "\n";
   }
+  // os << std::scientific << std::setprecision(1) << std::endl;
+  // os << obj.size_x << "x" << obj.size_y << " Grid2D" << std::endl;
+  //
+  // const int width = 3;
+  // const int len = 12;
+  //
+  // for (uint16_t j = obj.begin.y - 1; j < std::min(obj.begin.y + width, static_cast<int>(obj.end.y)); j++)
+  //{
+  // for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
+  //{
+  // os << std::setw(len) << obj[j, i] << "\t";
+  //}
+  // if (obj.len_x.x > 2 * width + 2)
+  //{
+  // os << std::setw(len) << "…";
+  //}
+  // for (uint16_t i = std::max(obj.end.x - width, static_cast<int>(obj.begin.x + width)); i < obj.end.x + 1; i++)
+  //{
+  // os << std::setw(len) << obj[j, i] << "\t";
+  //}
+  // os << std::endl;
+  //}
+  // if (obj.len_y.y > 2 * width + 2)
+  //{
+  // for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
+  //{
+  // os << std::setw(len) << " ⋮ " << "\t";
+  //}
+  // if (obj.len_x.x > 2 * width + 2)
+  //{
+  // os << std::setw(len) << "   ";
+  //}
+  // for (uint16_t i = std::max(obj.end.x - width, obj.begin.x + width); i < obj.end.x + 1; i++)
+  //{
+  // os << std::setw(len) << " ⋮ " << "\t";
+  //}
+  // os << std::endl;
+  //}
+  // for (uint16_t j = std::max(obj.end.y - width, obj.begin.y + width); j < obj.end.y + 1; j++)
+  //{
+  // for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
+  //{
+  // os << std::setw(len) << obj[j, i] << "\t";
+  //}
+  // if (obj.len_x.x > 2 * width + 2)
+  //{
+  // os << std::setw(len) << "…";
+  //}
+  // for (uint16_t i = std::max(obj.end.x - width, obj.begin.x + width); i < obj.end.x + 1; i++)
+  //{
+  // os << std::setw(len) << obj[j, i] << "\t";
+  //}
+  // os << std::endl;
+  //}
+
   return os;
 }
-bool boundary(uint32_t zindex, uint16_t sx, uint16_t sy)
-{
-  auto [x, y] = decode_z_order(zindex);
-  return ((x < sx) && (x > 0)) || ((y < sy) && (y > 0));
-}
-
-#ifdef CARTESIAN
-void laplace(const Grid2D& in, Grid2D& out)
-{
-#pragma omp parallel for
-  for (uint16_t j = 0; j < in.size_y; j++)
-  {
-    for (uint16_t i = 0; i < in.size_x; i++)
-    {
-      if (i == 0 || i == in.size_x - 1 || j == 0 || j == in.size_y - 1)
-        continue;
-      out[i, j] = (in[i + 1, j] + in[i, j + 1] + in[i - 1, j] + in[i, j - 1]) - 4 * in[i, j];
-    }
-  }
-}
-#else
-void laplace(const Grid2D& in, Grid2D& out)
-{
-  uint32_t N = in.elements();
-#pragma omp parallel for
-  for (uint32_t z = 1; z < N; z++)
-  {
-    if (boundary(z, in.size_x, in.size_y))
-      continue;
-    auto Idx = indices(z);
-    // if (Idx.top > N || Idx.bottom > N || Idx.left > N || Idx.right > N)
-    // continue;
-    out[z] = (in[Idx.top] + in[Idx.bottom] + in[Idx.left] + in[Idx.right]) - 4 * in[z];
-  }
-}
-#endif
+// bool boundary(uint32_t zindex, uint16_t sx, uint16_t sy)
+//{
+//   auto [x, y] = decode_z_order(zindex);
+//   return ((x < sx) && (x > 0)) || ((y < sy) && (y > 0));
+// }

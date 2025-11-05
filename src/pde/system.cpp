@@ -4,11 +4,11 @@
 #include <pde/derivatives.h>
 #include <pde/pressuresolvers.h>
 #include <pde/system.h>
+#include <type_traits>
 #include <utils/broadcast.h>
 #include <utils/index.h>
 #include <utils/settings.h>
 
-#define P_RANGE system.begin, system.end
 #define U_RANGE system.begin - Ix, system.end
 #define V_RANGE system.begin - Iy, system.end
 
@@ -89,6 +89,9 @@ void solve_pressure(PDESystem& system)
   std::cout << "Max Velocity y: \t" << system.v.max() << "\n";
   std::cout << "Min Velocity y: \t" << system.v.min() << "\n";
   std::cout << "RHS: \t" << system.rhs << "\n";
+  std::cout << "G: \t" << system.G << "\n";
+  std::cout << "v: \t" << system.v << "\n";
+  std::cout << "p: \t" << system.p << "\n";
   std::cout << std::endl;
   for (int iter = 0; iter < 10000; iter++)
   {
@@ -100,6 +103,8 @@ void solve_pressure(PDESystem& system)
     broadcast(gauss_seidel_step, system, system.p.range);
     std::cout << "Residual : \t" << system.residual << "\t\r"
               << std::flush;
+    if (system.residual < 1e-4)
+      break;
   }
   // gauss_seidel(system);
 };
@@ -176,21 +181,21 @@ auto copy_boundary(const Grid2D& from, Grid2D& to)
 
 void step(PDESystem& system)
 {
-  broadcast(calculate_F, system, system.begin - Ix, system.end);
-  broadcast(calculate_G, system, system.begin - Iy, system.end);
 
+  // broadcast_x_boundary(
+  //   [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = boundary(s, o)[0]; },
+  //   system, system.u);
   broadcast_x_boundary(
-    [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = s.boundaryTop[1]; },
-    system, system.u);
-  broadcast_x_boundary(
-    [&](PDESystem& s, Index I, Offset o) { s.v[I + o] = 2 * s.boundaryTop[1] - s.v[I]; },
+    [&](PDESystem& s, Index I, Offset o) {
+      s.v[I + o] = 2 * boundary(s, o)[1] - s.v[I];
+    },
     system, system.v);
-  broadcast_y_boundary(
-    [&](PDESystem& s, Index I, Offset o) { s.v[I + o] = 2 * s.boundaryLeft[0] - s.u[I]; },
-    system, system.u);
-  broadcast_y_boundary(
-    [&](PDESystem& s, Index I, Offset o) { s.v[I + o] = s.boundaryLeft[0]; },
-    system, system.v);
+  // broadcast_y_boundary(
+  //   [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = 2 * boundary(s, o)[0] - s.u[I]; },
+  //   system, system.u);
+  // broadcast_y_boundary(
+  //   [&](PDESystem& s, Index I, Offset o) { s.v[I + o] = boundary(s, o)[1]; },
+  //   system, system.v);
 
   broadcast_x_boundary(
     [&](PDESystem& s, Index I, Offset o) { s.F[I + o] = s.u[I + o]; },
@@ -205,17 +210,17 @@ void step(PDESystem& system)
     [&](PDESystem& s, Index I, Offset o) { s.G[I + o] = s.v[I + o]; },
     system, system.v);
 
-  broadcast(calculate_F, system, system.u.begin, system.u.end);
-  broadcast(calculate_G, system, V_RANGE);
+  broadcast(calculate_F, system, system.u.range);
+  broadcast(calculate_G, system, system.v.range);
 
-  broadcast(calculate_pressure_rhs, system, P_RANGE);
+  broadcast(calculate_pressure_rhs, system, system.p.range);
 
   solve_pressure(system);
 
   // u update
-  broadcast(update_u, system, U_RANGE);
+  broadcast(update_u, system, system.u.range);
   // v update
-  broadcast(update_v, system, V_RANGE);
+  broadcast(update_v, system, system.v.range);
 };
 
 void timestep(PDESystem& system)

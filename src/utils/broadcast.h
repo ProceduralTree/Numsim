@@ -6,20 +6,7 @@
 #include <grid/grid.h>
 #include <pde/system.h>
 #include <utils/index.h>
-
-void broadcast(std::function<void(PDESystem&, uint16_t, uint16_t)> Operator,
-  PDESystem system)
-{
-  // #pragma omp parallel for
-  for (uint16_t j = 1; j < system.size_y - 1; j++)
-  {
-    for (uint16_t i = 1; i < system.size_x - 1; i++)
-    {
-      Operator(system, i, j);
-    }
-  }
-}
-
+#define LOG(x) std::cout << #x << "=" << x << std::endl
 constexpr void
 broadcast(
   std::function<void(PDESystem&, Index)> Operator,
@@ -28,9 +15,9 @@ broadcast(
   Index End)
 {
 
-  for (uint16_t i = Begin.y; i < End.y + 1; i++)
+  for (uint16_t j = Begin.y; j <= End.y; j++)
   {
-    for (uint16_t j = Begin.x; j < End.x + 1; j++)
+    for (uint16_t i = Begin.x; i <= End.x; i++)
     {
       Operator(system, { i, j });
     }
@@ -78,7 +65,7 @@ constexpr void broadcast_y_boundary(
 
   // RIGHT
   broadcast(
-    [&](PDESystem& s, Index I) { Operator(s, I, Iy); },
+    [&](PDESystem& s, Index I) { Operator(s, I, Ix); },
     system, grid.end - grid.len_y, grid.end);
 };
 constexpr void broadcast_boundary(

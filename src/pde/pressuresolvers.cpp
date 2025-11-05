@@ -31,7 +31,7 @@ void gauss_seidel_step(PDESystem& system, Index I)
   auto& h = system.h;
   double sum_of_neighbours = ((p[I - Ix] + p[I + Ix]) / h.x_squared) + ((p[I - Iy] + p[I + Iy]) / h.y_squared);
   double a_ij = 2 * (1 / h.y_squared) + 2 * (1 / h.x_squared);
-  double residual = std::abs(sum_of_neighbours + a_ij * p[I] - system.rhs[I]);
+  double residual = std::abs(sum_of_neighbours - a_ij * p[I] - system.rhs[I]);
   system.residual = std::max(residual, system.residual);
   p[I] = (sum_of_neighbours - system.rhs[I]) / a_ij;
 };

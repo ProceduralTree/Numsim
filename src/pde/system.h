@@ -78,4 +78,16 @@ void print_pde_system(const PDESystem& sys);
 
 double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y);
 
+constexpr std::array<double, 2> boundary(PDESystem& system, Offset offset)
+{
+  if (offset == Offset(1, 0))
+    return system.boundaryRight;
+  else if (offset == Offset(-1, 0))
+    return system.boundaryLeft;
+  else if (offset == Offset(0, 1))
+    return system.boundaryTop;
+  else
+    return system.boundaryBottom;
+};
+
 #endif // SYSTEM_H_
