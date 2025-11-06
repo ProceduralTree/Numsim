@@ -56,6 +56,6 @@ constexpr double duv(Offset Direction, const Grid2D& field1, const Grid2D& field
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);
-  return 1 / h * ((field1[I + Direction] * field2[I + Direction] + field1[I] * field2[I]) / 2 - (field1[I] * field2[I] + field1[I - Direction] * field2[I - Direction]) / 2);
+  return 1 / h * (((field1[I + Direction] + field1[I]) * (field2[I + Direction] + field2[I])) / 4 - ((field1[I] + field1[I - Direction]) * (field2[I] + field2[I - Direction])) / 4);
 };
 #endif // DERIVATIVES_H_
