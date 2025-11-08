@@ -27,6 +27,7 @@ public:
   Offset len_x;
   Offset len_y;
   Range range;
+
   Grid2D(uint16_t x, uint16_t y);
   Grid2D(Index beg, Index end);
 

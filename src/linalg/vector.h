@@ -7,7 +7,7 @@
 #include <grid/grid.h>
 
 template <typename Operator, typename... Args>
-double reduce(Operator&& O, Grid2D&& g, Args&&... args)
+double reduce(Operator&& O, const Grid2D& g, Args&&... args)
 {
   double result = 0;
 
@@ -36,7 +36,7 @@ double Adot(LaplaceMatrixOperator A, Grid2D& a, Grid2D& b)
 {
 
   return reduce(
-    [&](Index I, auto a, auto b, auto A) {
+    [&](Index I, const Grid2D& a, const Grid2D& b, LaplaceMatrixOperator A) {
       return A(a, I) * b[I];
     },
     a, b, A);

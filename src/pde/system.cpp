@@ -79,35 +79,8 @@ void update_uv(PDESystem& system)
 
 void solve_pressure(PDESystem& system)
 {
-  system.residual = 0;
-  // std::cout << std::scientific << std::endl;
-  // std::cout << std::endl;
-  // std::cout << "Max Pressure: \t" << system.p.max() << "\n";
-  // std::cout << "Min Pressure: \t" << system.p.min() << "\n";
-  // std::cout << "Max Velocity x: \t" << system.u.max() << "\n";
-  // std::cout << "Min Velocity x: \t" << system.u.min() << "\n";
-  // std::cout << "Max Velocity y: \t" << system.v.max() << "\n";
-  // std::cout << "Min Velocity y: \t" << system.v.min() << "\n";
-  // std::cout << "RHS: \t" << system.rhs << "\n";
-  // std::cout << "F: \t" << system.F << "\n";
-  // std::cout << "G: \t" << system.G << "\n";
-  // std::cout << "v: \t" << system.v << "\n";
-  // std::cout << "u: \t" << system.u << "\n";
-  // std::cout << "p: \t" << system.p << "\n";
-  // std::cout << std::endl;
-  for (int iter = 0; iter < 10000; iter++)
-  {
-    system.residual = 0;
-    broadcast_boundary(
-      [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
-      system, system.p);
-    broadcast(gauss_seidel_step, system, system.p.range);
-    // std::cout << "Residual : \t" << system.residual << "\t\r"
-    //           << std::flush;
-    if (system.residual < 1e-4)
-      break;
-  }
-  // gauss_seidel(system);
+  CGSolver solver = CGSolver(system);
+  solve(solver, system);
 };
 
 void calculate_pressure_rhs(PDESystem& system, Index I)
