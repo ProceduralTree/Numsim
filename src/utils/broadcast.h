@@ -76,4 +76,18 @@ constexpr void broadcast_boundary(
   broadcast_y_boundary(Operator, system, grid);
 };
 
+template <typename Operator, typename... Args>
+void broadcast(Operator&& O, Range r, Args&&... args)
+{
+
+#pragma omp parallel for simd collapse(2)
+  for (uint16_t j = r.begin.y; j <= r.end.y; j++)
+  {
+    for (uint16_t i = r.begin.x; i <= r.end.x; i++)
+    {
+      std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
+    }
+  }
+};
+
 #endif // BROADCAST_H_

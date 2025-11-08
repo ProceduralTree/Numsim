@@ -1,29 +1,13 @@
+#include "pde/pressuresolvers.h"
+#include "linalg/matrix.h"
+#include "linalg/vector.h"
 #include "output/vtk.h"
+#include "utils/broadcast.h"
+#include <cmath>
 #include <grid/grid.h>
 #include <grid/indexing.h>
 #include <ios>
 #include <pde/system.h>
-
-void set_pressure_boundary(PDESystem& system)
-{
-  auto& p = system.p;
-  for (int i = 0; i < system.size_x; i++)
-  {
-    p[i, 0] = p[i, 1];
-  }
-  for (int i = 0; i < system.size_x; i++)
-  {
-    p[i, system.size_y] = p[i, system.size_y - 1];
-  }
-  for (int j = 0; j < system.size_y; j++)
-  {
-    p[0, j] = p[1, j];
-  }
-  for (int j = 0; j < system.size_y; j++)
-  {
-    p[system.size_x, j] = p[system.size_x - 1, j];
-  }
-};
 
 void gauss_seidel_step(PDESystem& system, Index I)
 {
@@ -36,43 +20,60 @@ void gauss_seidel_step(PDESystem& system, Index I)
   p[I] = (system.rhs[I] - sum_of_neighbours) / a_ij;
 };
 
-void gauss_seidel(PDESystem& system)
+void cg_iteration(PDESystem& system, CGSolver& cg)
 {
 
-  auto& p = system.p;
-  auto& h = system.h;
-  Grid2D residual(system.size_x + 2, system.size_y + 2);
-  std::cout << std::scientific << std::endl;
-  std::cout << std::endl;
-  std::cout << "Max Pressure: \t" << system.p.max() << "\n";
-  std::cout << "Min Pressure: \t" << system.p.min() << "\n";
-  std::cout << "Max Velocity x: \t" << system.u.max() << "\n";
-  std::cout << "Min Velocity x: \t" << system.u.min() << "\n";
-  std::cout << "Max Velocity y: \t" << system.v.max() << "\n";
-  std::cout << "Min Velocity y: \t" << system.v.min() << "\n";
-  std::cout << "Max RHS: \t" << system.rhs.max() << "\n";
-  std::cout << "Min RHS: \t" << system.rhs.min() << "\n";
-  std::cout << std::endl;
-  // for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
-  for (int iter = 0; iter < 10000; iter++)
+  double residual_norm = INFINITY;
+  double old_residual_norm = INFINITY;
+
+  LaplaceMatrixOperator A = LaplaceMatrixOperator(system.h);
+
+  // cg.residual = rhs - A*p;
+  broadcast(
+    [&](Index I, CGSolver& cg, PDESystem& s, LaplaceMatrixOperator A) {
+      cg.residual[I] = s.rhs[I] - A(s.p, I);
+    },
+    system.p.range, system, cg, A);
+
+  residual_norm = dot(cg.residual, cg.residual);
+
+  // cg.search_direction = cg.residual;
+  broadcast(
+    [&](Index I, CGSolver& cg, LaplaceMatrixOperator A) {
+      cg.search_direction[I] = cg.residual[I];
+    },
+    system.p.range, system, cg, A);
+
+  for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
   {
-    std::cout << "Residual : \t" << residual.max() << "\t\r"
-              << std::flush;
-    set_pressure_boundary(system);
-    for (uint16_t i = 1; i < system.size_x + 1; i++)
-    {
-      for (uint16_t j = 1; j < system.size_y + 1; j++)
-      {
-        double new_p = ((h.x_squared * h.y_squared) / (2 * (h.x_squared + h.y_squared))) * (((p[i - 1, j] + p[i + 1, j]) / h.x_squared) + ((p[i, j - 1] + p[i, j + 1]) / h.y_squared) - system.rhs[i, j]);
-        residual[i, j] = std::abs(p[i, j] - new_p);
-        p[i, j] = new_p;
-      }
-    }
-    if (residual.max() < 1e-4)
-    {
-      std::cout << "Residual: \t" << residual.max() << "\n";
+    old_residual_norm = residual_norm;
+
+    double alpha = residual_norm / Adot(A, cg.search_direction, cg.search_direction);
+
+    // system.p = system.p + a * cg.search_direction;
+    broadcast(
+      [&](Index I, CGSolver& cg, PDESystem& s, double a) {
+        system.p[I] = system.p[I] + a * cg.search_direction[I];
+      },
+      system.p.range, system, cg, alpha);
+
+    // cg.residual = cg.residual - a * A * cg.search_direction;
+    broadcast(
+      [&](Index I, CGSolver& cg, PDESystem& s, double a, LaplaceMatrixOperator A) {
+        cg.residual[I] = cg.residual[I] - a * A(cg.search_direction, I);
+      },
+      system.p.range, system, cg, alpha, A);
+
+    if (cg.residual.max() < system.settings.epsilon)
       break;
-    }
+    residual_norm = dot(cg.residual, cg.residual);
+    double beta = residual_norm / old_residual_norm;
+
+    broadcast(
+      [&](Index I, CGSolver& cg, double beta) {
+        cg.search_direction[I] = cg.residual[I] + beta * cg.search_direction[I];
+      },
+      system.p.range,
+      cg, beta);
   }
-  std::cout << std::endl;
 }
