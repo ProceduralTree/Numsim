@@ -7,14 +7,30 @@
 #include <pde/system.h>
 #include <utils/index.h>
 #define LOG(x) std::cout << #x << "=" << x << std::endl
-constexpr void
-broadcast(
+inline void broadcast(
   std::function<void(PDESystem&, Index)> Operator,
   PDESystem& system,
   Index Begin,
   Index End)
 {
 
+  // #pragma omp parallel for simd collapse(2)
+  for (uint16_t j = Begin.y; j <= End.y; j++)
+  {
+    for (uint16_t i = Begin.x; i <= End.x; i++)
+    {
+      Operator(system, { i, j });
+    }
+  }
+};
+inline void parallel_broadcast(
+  std::function<void(PDESystem&, Index)> Operator,
+  PDESystem& system,
+  Index Begin,
+  Index End)
+{
+
+#pragma omp parallel for simd collapse(2)
   for (uint16_t j = Begin.y; j <= End.y; j++)
   {
     for (uint16_t i = Begin.x; i <= End.x; i++)
@@ -90,4 +106,14 @@ void broadcast(Operator&& O, Range r, Args&&... args)
   }
 };
 
+template <typename Operator, typename... Args>
+void broadcast_boundary(Operator&& O, Boundaries boundaries, Args&&... args)
+{
+  for (auto [b, o] : boundaries)
+  {
+    broadcast(std::forward<Operator>(O), b, o, std::forward<Args>(args)...);
+  };
+};
+
+constexpr void copy(Index I, Offset O, const Grid2D& from, Grid2D& to) { to[I] = from[I]; };
 #endif // BROADCAST_H_

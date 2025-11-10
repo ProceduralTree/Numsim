@@ -3,6 +3,7 @@
 
 #include "grid/grid.h"
 #include "pde/system.h"
+#include "utils/broadcast.h"
 #include "utils/index.h"
 struct SparseMatrixOperator
 {
@@ -14,7 +15,12 @@ struct LaplaceMatrixOperator
   const double h_x_squared_inv;
   const double h_y_squared_inv;
   const double a_ij;
+  const double factor = 1.;
 
+  LaplaceMatrixOperator(const LaplaceMatrixOperator&) = default;
+  LaplaceMatrixOperator(LaplaceMatrixOperator&&) = default;
+  LaplaceMatrixOperator& operator=(const LaplaceMatrixOperator&) = delete;
+  LaplaceMatrixOperator& operator=(LaplaceMatrixOperator&&) = delete;
   LaplaceMatrixOperator(const Gridsize& grid)
     : h(grid)
     , h_x_squared_inv(1.0 / (grid.x_squared))
@@ -24,11 +30,9 @@ struct LaplaceMatrixOperator
 
   constexpr double operator()(const Grid2D& vec, Index I) const
   {
-
-    double res = ((vec[I - Ix] + vec[I + Ix]) * h_x_squared_inv) + ((vec[I - Iy] + vec[I + Iy]) / h_y_squared_inv);
-    double a_ij = -2 * (1 / h.y_squared) - 2 * (1 / h.x_squared);
+    double res = ((vec[I - Ix] + vec[I + Ix]) * h_x_squared_inv) + ((vec[I - Iy] + vec[I + Iy]) * h_y_squared_inv);
     res += a_ij * vec[I];
-    return res;
+    return factor * res;
   }
 };
 

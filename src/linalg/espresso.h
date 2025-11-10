@@ -1,6 +1,7 @@
 #ifndef ESPRESSO_H_
 #define ESPRESSO_H_
 
+#include "linalg/matrix.h"
 #include <utils/index.h>
 
 // ChatGTP supported gcc abuse:
@@ -37,6 +38,11 @@ template <typename L>
 auto operator*(const L& l, double scalar)
 {
   return Expr<L, double, std::multiplies<>> { l, scalar, std::multiplies<> {} };
+}
+template <typename L>
+auto operator*(const L& l, LaplaceMatrixOperator A)
+{
+  return Expr<L, double, std::multiplies<>> { l, A, [](L l, LaplaceMatrixOperator A) { return [&](Index I) { A(l, I); }; } };
 }
 
 template <typename R>

@@ -14,6 +14,25 @@
 
 #define CARTESIAN
 
+struct Boundaries
+{
+  const Range top;
+  const Range bottom;
+  const Range left;
+  const Range right;
+  const std::array<std::tuple<Range, Offset>, 4> all;
+  Boundaries(Index begin, Index end)
+    : top(Index { begin.x, end.y } + Iy, end + Iy)
+    , bottom(begin - Iy, Index { end.x, begin.y } - Iy)
+    , left(begin - Ix, Index { begin.x, end.y } - Ix)
+    , right(Index { end.x, begin.y } + Ix, end + Ix)
+    , all({ { top, Iy }, { bottom, -Iy }, { left, -Ix }, { right, Ix } })
+
+  { };
+  auto begin() const { return all.begin(); };
+  auto end() const { return all.end(); };
+};
+
 class Grid2D
 {
 private:
@@ -27,6 +46,7 @@ public:
   Offset len_x;
   Offset len_y;
   Range range;
+  Boundaries boundary;
 
   Grid2D(uint16_t x, uint16_t y);
   Grid2D(Index beg, Index end);
@@ -35,6 +55,7 @@ public:
   Grid2D& operator=(const Grid2D&) = delete;
 
   Grid2D(Grid2D&& other) noexcept
+    : boundary(other.boundary)
   {
     std::swap(size_x, other.size_x);
     std::swap(size_y, other.size_y);

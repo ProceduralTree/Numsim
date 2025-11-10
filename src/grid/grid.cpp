@@ -12,6 +12,8 @@
 #include <iomanip>
 #include <iostream>
 
+#define NDEBUG
+
 Grid2D::Grid2D(uint16_t x, uint16_t y)
   : _data(x * y, 0.)
   , size_x(x)
@@ -20,7 +22,8 @@ Grid2D::Grid2D(uint16_t x, uint16_t y)
   , end(size_x, size_y)
   , len_x(size_x, 0)
   , len_y(size_y, 0)
-  , range(begin, end) {
+  , range(begin, end)
+  , boundary(begin, end) {
     // uint32_t size = std::bit_width(x) + std::bit_width(y);
     // this->_data.resize(1 << size, 0.);
     // this->_data.resize(x * y, init);
@@ -33,7 +36,8 @@ Grid2D::Grid2D(Index beg, Index end)
   , end(end)
   , len_x(size_x - 3, 0)
   , len_y(0, size_y - 3)
-  , range(beg, end) {
+  , range(beg, end)
+  , boundary(beg, end) {
     // uint32_t size = std::bit_width(x) + std::bit_width(y);
     // this->_data.resize(1 << size, 0.);
     // this->_data.resize(x * y, init);
@@ -47,7 +51,11 @@ double& Grid2D::operator[](uint16_t x, uint16_t y)
   std::cout << "!ZORDER" << std::endl;
   uint32_t index = z_order(x, y);
 #endif
+#ifdef NDEBUG
   return this->_data.at(index);
+#else
+  return this->_data.[index];
+#endif
 }
 
 const double& Grid2D::operator[](uint16_t x, uint16_t y) const
@@ -57,14 +65,22 @@ const double& Grid2D::operator[](uint16_t x, uint16_t y) const
 #else
   uint32_t index = z_order(x, y);
 #endif
+#ifdef NDEBUG
   return this->_data.at(index);
+#else
+  return this->_data.[index];
+#endif
 }
 
 double& Grid2D::operator[](uint32_t index) { return this->_data[index]; };
 
 const double& Grid2D::operator[](uint32_t index) const
 {
+#ifdef NDEBUG
   return this->_data.at(index);
+#else
+  return this->_data.[index];
+#endif
 };
 
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj)

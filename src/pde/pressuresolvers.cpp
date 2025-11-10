@@ -4,12 +4,15 @@
 #include "output/vtk.h"
 #include "utils/broadcast.h"
 #include "utils/settings.h"
+#include <algorithm>
 #include <cmath>
 #include <grid/grid.h>
 #include <grid/indexing.h>
 #include <ios>
 #include <pde/system.h>
+#include <set>
 
+void copy_with_offset(Index I, Offset O, Grid2D& array) { array[I] = array[I - O]; };
 void gauss_seidel_step(PDESystem& system, Index I)
 {
   auto& p = system.p;
@@ -21,6 +24,15 @@ void gauss_seidel_step(PDESystem& system, Index I)
   p[I] = (system.rhs[I] - sum_of_neighbours) / a_ij;
 };
 
+void sor_step(PDESystem& system, Index I)
+{
+  double omega = 1.8;
+  double p_old = system.p[I];
+  gauss_seidel_step(system, I);
+  system.p[I] *= omega;
+  system.p[I] += (1 - omega) * p_old;
+};
+
 void cg_iteration(PDESystem& system, CGSolver& cg)
 {
 
@@ -29,26 +41,25 @@ void cg_iteration(PDESystem& system, CGSolver& cg)
 
   LaplaceMatrixOperator A = LaplaceMatrixOperator(system.h);
 
-  // cg.residual = rhs - A*p;
-  broadcast(
-    [&](Index I, CGSolver& cg, PDESystem& s, LaplaceMatrixOperator A) {
-      cg.residual[I] = s.rhs[I] - A(s.p, I);
-    },
-    system.p.range, cg, system, A);
+  // cg.residual = system.rhs - A*system.p;
+  // broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
+  broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
+  broadcast_boundary(copy, system.p.boundary, system.p, cg.search_direction);
+  broadcast([&](Index I, CGSolver& cg, PDESystem& s, LaplaceMatrixOperator A) { cg.residual[I] = s.rhs[I] - A(s.p, I); }, system.p.range, cg, system, A);
 
   residual_norm = dot(cg.residual, cg.residual);
 
   // cg.search_direction = cg.residual;
-  broadcast(
-    [&](Index I, CGSolver& cg, LaplaceMatrixOperator A) {
-      cg.search_direction[I] = cg.residual[I];
-    },
-    system.p.range, cg, A);
+  broadcast([&](Index I, CGSolver& cg, LaplaceMatrixOperator A) { cg.search_direction[I] = cg.residual[I]; }, system.p.range, cg, A);
 
   for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
   {
+
     old_residual_norm = residual_norm;
 
+    broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
+    broadcast_boundary(copy_with_offset, cg.search_direction.boundary, cg.search_direction);
+    // broadcast_boundary(copy, system.p.boundary, system.p, cg.search_direction);
     double alpha = residual_norm / Adot(A, cg.search_direction, cg.search_direction);
 
     // system.p = system.p + a * cg.search_direction;
@@ -65,10 +76,11 @@ void cg_iteration(PDESystem& system, CGSolver& cg)
       },
       system.p.range, cg, system, alpha, A);
 
+    // std::cout << "\rResidual:\t" << residual_norm << " Iterations:\t" << iter << std::flush;
     if (cg.residual.max() < system.settings.epsilon)
     {
-
-      std::cout << "Residual: " << cg.residual.max() << std::endl;
+      std::cout << std::scientific << std::setprecision(14) << "Residual: " << cg.residual.max() << std::endl;
+      std::cout << "converged after n=" << iter << " Iterations" << std::endl;
       break;
     }
     residual_norm = dot(cg.residual, cg.residual);
@@ -91,32 +103,37 @@ void solve(CGSolver& cg, PDESystem& system)
 void solve(GaussSeidelSolver gs, PDESystem& system)
 {
   system.residual = 0;
-  // std::cout << std::scientific << std::endl;
-  // std::cout << std::endl;
-  // std::cout << "Max Pressure: \t" << system.p.max() << "\n";
-  // std::cout << "Min Pressure: \t" << system.p.min() << "\n";
-  // std::cout << "Max Velocity x: \t" << system.u.max() << "\n";
-  // std::cout << "Min Velocity x: \t" << system.u.min() << "\n";
-  // std::cout << "Max Velocity y: \t" << system.v.max() << "\n";
-  // std::cout << "Min Velocity y: \t" << system.v.min() << "\n";
-  // std::cout << "RHS: \t" << system.rhs << "\n";
-  // std::cout << "F: \t" << system.F << "\n";
-  // std::cout << "G: \t" << system.G << "\n";
-  // std::cout << "v: \t" << system.v << "\n";
-  // std::cout << "u: \t" << system.u << "\n";
-  // std::cout << "p: \t" << system.p << "\n";
-  // std::cout << std::endl;
-  for (int iter = 0; iter < 10000; iter++)
+  for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
   {
     system.residual = 0;
     broadcast_boundary(
       [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
       system, system.p);
     broadcast(gauss_seidel_step, system, system.p.range);
-    // std::cout << "Residual : \t" << system.residual << "\t\r"
-    //           << std::flush;
-    if (system.residual < 1e-4)
+    if (system.residual < system.settings.epsilon)
+    {
+
+      std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
+      std::cout << "converged after n=" << iter << " Iterations" << std::endl;
       break;
+    }
   }
-  // gauss_seidel(system);
+}
+
+void solve(SORSolver gs, PDESystem& system)
+{
+  system.residual = 0;
+  for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
+  {
+    system.residual = 0;
+    broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
+    broadcast(sor_step, system, system.p.range);
+    if (system.residual < system.settings.epsilon)
+    {
+
+      std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
+      std::cout << "converged after n=" << iter << " Iterations" << std::endl;
+      break;
+    }
+  }
 }

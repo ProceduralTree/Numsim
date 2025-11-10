@@ -20,10 +20,15 @@ struct GaussSeidelSolver
   double residual = 0;
 };
 
+struct SORSolver
+{
+  double residual = 0;
+};
 void gauss_seidel_step(PDESystem& system, Index I);
 
 void cg_iteration(PDESystem& system, CGSolver& cg);
 
 void solve(GaussSeidelSolver gs, PDESystem& system);
+void solve(SORSolver gs, PDESystem& system);
 void solve(CGSolver& gs, PDESystem& system);
 #endif // PRESSURESOLVERS_H_
