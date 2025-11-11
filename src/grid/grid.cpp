@@ -96,7 +96,7 @@ std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
   // }
   //
   os << std::scientific << std::setprecision(3) << std::endl;
-  os << obj.size_x << "x" << obj.size_y << " Grid2D" << std::endl;
+  os << (obj.end.x - obj.begin.x) << "x" << (obj.end.y - obj.begin.y) << " Grid2D" << std::endl;
 
   const int width = 5;
   const int len = 10;

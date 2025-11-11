@@ -37,10 +37,10 @@ class Grid2D
 {
 private:
   std::vector<double> _data;
-
-public:
   uint16_t size_x;
   uint16_t size_y;
+
+public:
   Index begin;
   Index end;
   Offset len_x;
