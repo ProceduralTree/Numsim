@@ -4,6 +4,6 @@
 #include <pde/system.h>
 #include <utils/index.h>
 
-void gauss_seidel(PDESystem& system);
+void sor_step(PDESystem& system, Index I);
 void gauss_seidel_step(PDESystem& system, Index I);
 #endif // PRESSURESOLVERS_H_

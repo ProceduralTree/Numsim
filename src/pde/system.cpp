@@ -1,6 +1,7 @@
 #include "grid/grid.h"
 #include "output/vtk.h"
 #include <cstdint>
+#include <iostream>
 #include <pde/derivatives.h>
 #include <pde/pressuresolvers.h>
 #include <pde/system.h>
@@ -17,36 +18,16 @@ void calculate_F(PDESystem& system, Index I)
   auto& u = system.u;
   auto& v = system.v;
   auto& h = system.h;
-  system.F[I] = u[I] + system.dt * (1 / system.Re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - duv(Ix, u, u, I, h.x) - duv(Iy, u, v, I, h.y));
+  system.F[I] = u[I] + system.dt * (1 / system.Re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x) - duv(Iy, u, v, I, h.y));
 };
+
 void calculate_G(PDESystem& system, Index I)
 {
   auto& u = system.u;
   auto& v = system.v;
   auto& h = system.h;
-  system.G[I] = v[I] + system.dt * (1 / system.Re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - duv(Iy, v, v, I, h.y) - duv(Ix, u, v, I, h.x));
+  system.G[I] = v[I] + system.dt * (1 / system.Re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y) - duv(Ix, u, v, I, h.x));
 };
-
-void calculate_FG(PDESystem& system)
-{
-  auto& u = system.u;
-  auto& v = system.v;
-  auto& h = system.h;
-  for (uint16_t i = 1; i < system.size_x; i++)
-  {
-    for (uint16_t j = 1; j < system.size_x + 1; j++)
-    {
-      system.F[i, j] = u[i, j] + system.dt * (1 / system.Re * (ddx(u, i, j, h) + ddy(u, i, j, h)) - dx_interpolated(u, u, i, j, h) - dx_interpolated(u, v, i, j, h));
-    }
-  }
-  for (uint16_t i = 1; i < system.size_x + 1; i++)
-  {
-    for (uint16_t j = 1; j < system.size_x; j++)
-    {
-      system.G[i, j] = v[i, j] + system.dt * (1 / system.Re * (ddy(v, i, j, h) + ddx(v, i, j, h)) - dy_interpolated(v, v, i, j, h) - dy_interpolated(u, v, i, j, h));
-    }
-  }
-}
 
 void update_u(PDESystem& system, Index index)
 {
@@ -57,57 +38,39 @@ void update_v(PDESystem& system, Index index)
   system.v[index] = system.G[index] - system.dt * d(Iy, system.p, index, system.h.y);
 };
 
-void update_uv(PDESystem& system)
-{
-  auto& p = system.p;
-  auto& h = system.h;
-  for (uint16_t i = 1; i < system.size_x; i++)
-  {
-    for (uint16_t j = 1; j < system.size_x + 1; j++)
-    {
-      system.u[i, j] = system.F[i, j] - system.dt * dx(p, i, j, h);
-    }
-  }
-  for (uint16_t i = 1; i < system.size_x + 1; i++)
-  {
-    for (uint16_t j = 1; j < system.size_x; j++)
-    {
-      system.v[i, j] = system.G[i, j] - system.dt * dy(p, i, j, h);
-    }
-  }
-};
-
 void solve_pressure(PDESystem& system)
 {
-  system.residual = 0;
-  // std::cout << std::scientific << std::endl;
-  // std::cout << std::endl;
-  // std::cout << "Max Pressure: \t" << system.p.max() << "\n";
-  // std::cout << "Min Pressure: \t" << system.p.min() << "\n";
-  // std::cout << "Max Velocity x: \t" << system.u.max() << "\n";
-  // std::cout << "Min Velocity x: \t" << system.u.min() << "\n";
-  // std::cout << "Max Velocity y: \t" << system.v.max() << "\n";
-  // std::cout << "Min Velocity y: \t" << system.v.min() << "\n";
-  // std::cout << "RHS: \t" << system.rhs << "\n";
-  // std::cout << "F: \t" << system.F << "\n";
-  // std::cout << "G: \t" << system.G << "\n";
-  // std::cout << "v: \t" << system.v << "\n";
-  // std::cout << "u: \t" << system.u << "\n";
-  // std::cout << "p: \t" << system.p << "\n";
-  // std::cout << std::endl;
-  for (int iter = 0; iter < 10000; iter++)
+  if (system.settings.pressureSolver == Settings::SOR)
   {
-    system.residual = 0;
-    broadcast_boundary(
-      [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
-      system, system.p);
-    broadcast(gauss_seidel_step, system, system.p.range);
-    // std::cout << "Residual : \t" << system.residual << "\t\r"
-    //           << std::flush;
-    if (system.residual < 1e-4)
-      break;
+    int i;
+    for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
+    {
+      system.residual = 0;
+      broadcast_boundary(
+        [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
+        system, system.p);
+      broadcast(sor_step, system, system.p.range);
+      i = iter;
+      if (system.residual < system.settings.epsilon)
+        break;
+    }
+    cout << "SOR Steps: " << i << endl;
+  } else
+  {
+    int i;
+    for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
+    {
+      system.residual = 0;
+      broadcast_boundary(
+        [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
+        system, system.p);
+      broadcast(gauss_seidel_step, system, system.p.range);
+      i = iter;
+      if (system.residual < system.settings.epsilon)
+        break;
+    }
+    cout << "Gauss-Seidel Steps: " << i << endl;
   }
-  // gauss_seidel(system);
 };
 
 void calculate_pressure_rhs(PDESystem& system, Index I)
@@ -118,71 +81,8 @@ void calculate_pressure_rhs(PDESystem& system, Index I)
   system.rhs[I] = (1 / system.dt) * (d(Ix, F, I - Ix, h.x) + d(Iy, G, I - Iy, h.y));
 };
 
-void calculate_rhs(PDESystem& system)
-{
-  auto& F = system.F;
-  auto& G = system.G;
-  auto& h = system.h;
-  for (uint16_t i = 1; i < system.size_x + 1; i++)
-  {
-    for (uint16_t j = 1; j < system.size_y + 1; j++)
-    {
-      system.rhs[i, j] = 1 / system.dt * (dx(F, i - 1, j, h) + dy(G, i, j - 1, h));
-    }
-  }
-};
-
 void set_boundary_uv(PDESystem& system)
 {
-  for (uint16_t j = system.u.begin.y; j < system.u.end.y; j++)
-  {
-    system.u[system.u.begin.y - 1, j] = system.boundaryLeft[0];
-    system.u[system.size_x, j] = system.boundaryRight[0];
-  }
-  for (uint16_t i = system.u.begin.x; i < system.u.end.x; i++)
-  {
-    system.u[i, 0] = 2 * system.boundaryBottom[0] - system.u[i, 1];
-    system.u[i, system.size_y + 1] = 2 * system.boundaryTop[0] - system.u[i, system.size_y];
-  }
-  for (uint16_t i = 1; i < system.size_x + 1; i++)
-  {
-    system.v[i, 0] = system.boundaryBottom[1];
-    system.v[i, system.size_y] = system.boundaryTop[1];
-  }
-  for (uint16_t j = 0; j < system.size_y + 1; j++)
-  {
-    system.v[0, j] = 2 * system.boundaryLeft[1] - system.v[1, j];
-    system.v[system.size_x + 1, j] = 2 * system.boundaryRight[1] - system.v[system.size_x, j];
-  }
-};
-
-void set_boundary_FG(PDESystem& system)
-{
-  for (uint16_t i = 0; i < system.size_x + 2; i++)
-  {
-    system.F[i, 0] = system.u[i, 0];
-    system.F[i, system.size_y + 1] = system.u[i, system.size_y + 1];
-    system.G[i, 0] = system.v[i, 0];
-    system.G[i, system.size_y] = system.v[i, system.size_y];
-  }
-  for (uint16_t j = 0; j < system.size_y + 1; j++)
-  {
-    system.F[0, j] = system.u[0, j];
-    system.F[system.size_x, j] = system.u[system.size_x, j];
-    system.G[0, j] = system.v[0, j];
-    system.G[system.size_y + 1, j] = system.v[system.size_x + 1, j];
-  }
-};
-
-auto copy_boundary(const Grid2D& from, Grid2D& to)
-{
-
-  return [&](PDESystem& s, Index I, Offset o) { to[I + o] = from[I + o]; };
-}
-
-void step(PDESystem& system, uint16_t i)
-{
-
   broadcast_x_boundary(
     [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = 2 * boundary(s, o)[0] - s.u[I]; },
     system, system.u);
@@ -197,7 +97,10 @@ void step(PDESystem& system, uint16_t i)
   broadcast_y_boundary(
     [&](PDESystem& s, Index I, Offset o) { s.v[I + o] = 2 * boundary(s, o)[1] - s.v[I]; },
     system, system.v);
+};
 
+void set_boundary_FG(PDESystem& system)
+{
   broadcast_x_boundary(
     [&](PDESystem& s, Index I, Offset o) { s.F[I + o] = s.u[I + o]; },
     system, system.u);
@@ -210,6 +113,38 @@ void step(PDESystem& system, uint16_t i)
   broadcast_y_boundary(
     [&](PDESystem& s, Index I, Offset o) { s.G[I + o] = s.v[I + o]; },
     system, system.v);
+};
+
+void compute_dt(PDESystem& system)
+{
+  double umax = 0;
+  double vmax = 0;
+  for (uint16_t j = system.begin.y; j < system.end.y; j++)
+  {
+    for (uint16_t i = system.begin.x; i < system.end.x; i++)
+    {
+      umax = std::max(std::abs(system.u[i, j]), umax);
+      vmax = std::max(std::abs(system.v[i, j]), vmax);
+    }
+  }
+  double dt1 = (system.Re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
+  double dt2 = system.h.x / umax;
+  double dt3 = system.h.y / vmax;
+  system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
+};
+
+auto copy_boundary(const Grid2D& from, Grid2D& to)
+{
+
+  return [&](PDESystem& s, Index I, Offset o) { to[I + o] = from[I + o]; };
+}
+
+void step(PDESystem& system, uint16_t i)
+{
+
+  set_boundary_uv(system);
+  compute_dt(system);
+  set_boundary_FG(system);
 
   broadcast(calculate_F, system, system.u.range);
   broadcast(calculate_G, system, system.v.range);
@@ -226,15 +161,6 @@ void step(PDESystem& system, uint16_t i)
   write_vtk(system, static_cast<double>(i));
 };
 
-void timestep(PDESystem& system)
-{
-  set_boundary_uv(system);
-  set_boundary_FG(system);
-  calculate_FG(system);
-  calculate_rhs(system);
-  solve_pressure(system);
-  update_uv(system);
-}
 void print_pde_system(const PDESystem& sys)
 {
   printf("╔═══════════════════════════════════════════════╗\n");
