@@ -106,9 +106,7 @@ void solve(GaussSeidelSolver gs, PDESystem& system)
   for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
   {
     system.residual = 0;
-    broadcast_boundary(
-      [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
-      system, system.p);
+    broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
     broadcast(gauss_seidel_step, system, system.p.range);
     if (system.residual < system.settings.epsilon)
     {

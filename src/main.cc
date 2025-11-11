@@ -96,26 +96,22 @@ auto main(int argc, char* argv[]) -> int
   // std::cout << "With Z-Order Interleaving" << std::endl;
   // benchmark_laplace(N, laplace_cartesian);
   //
-  PDESystem test_system = PDESystem(100., 1e-4, 50, 50, 0.02, 0.02, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
+  PDESystem test_system = PDESystem(100., 1e-3, 50, 50, 0.02, 0.02, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
   test_system.settings.loadFromFile("");
 
   print_pde_system(test_system);
 
   // test_boundary(test_system);
 
-  for (int i = 0; i < 300; i++)
+  for (int i = 0; i < 10000; i++)
   {
     std::cout << "\r[Iteration]: " << i << "\t"
               << std::flush;
     step(test_system, i);
     if (i % 10 == 0)
     {
-      std::cout << "Pressure \n"
-                << test_system.p << std::endl;
-      std::cout << "Velocity \n"
-                << test_system.u << std::endl;
+      write_vtk(test_system, static_cast<double>(i));
     }
-    write_vtk(test_system, static_cast<double>(i));
   }
 
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;

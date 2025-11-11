@@ -38,9 +38,9 @@ void update_v(PDESystem& system, Index index)
 
 void solve_pressure(PDESystem& system)
 {
-  // CGSolver solver = CGSolver(system);
-  SORSolver solver = SORSolver();
-  //     GaussSeidelSolver solver = GaussSeidelSolver();
+  CGSolver solver = CGSolver(system);
+  // SORSolver solver = SORSolver();
+  //       GaussSeidelSolver solver = GaussSeidelSolver();
   solve(solver, system);
 };
 
@@ -80,36 +80,8 @@ void step(PDESystem& system, uint16_t i)
 
   set_uv_boundary(system);
 
-  // broadcast_x_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = 2 * boundary(s, o)[0] - s.u[I]; },
-  //   system, system.u);
-  // broadcast_x_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) {
-  //     s.v[I + o] = boundary(s, o)[1];
-  //   },
-  //   system, system.v);
-  // broadcast_y_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.u[I + o] = boundary(s, o)[0]; },
-  //   system, system.u);
-  // broadcast_y_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.v[I + o] = 2 * boundary(s, o)[1] - s.v[I]; },
-  //   system, system.v);
-
   broadcast_boundary(copy, system.F.boundary, system.u, system.F);
   broadcast_boundary(copy, system.G.boundary, system.v, system.G);
-
-  // broadcast_x_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.F[I + o] = s.u[I + o]; },
-  //   system, system.u);
-  // broadcast_x_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.G[I + o] = s.v[I + o]; },
-  //   system, system.v);
-  // broadcast_y_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.F[I + o] = s.u[I + o]; },
-  //   system, system.u);
-  // broadcast_y_boundary(
-  //   [&](PDESystem& s, Index I, Offset o) { s.G[I + o] = s.v[I + o]; },
-  //   system, system.v);
 
   broadcast(calculate_F, system, system.u.range);
   broadcast(calculate_G, system, system.v.range);
@@ -118,10 +90,10 @@ void step(PDESystem& system, uint16_t i)
 
   solve_pressure(system);
 
-  // u update
   broadcast(update_u, system, system.u.range);
-  // v update
   broadcast(update_v, system, system.v.range);
+
+  set_uv_boundary(system);
 };
 
 void print_pde_system(const PDESystem& sys)
