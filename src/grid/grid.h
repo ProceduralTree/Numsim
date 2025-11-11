@@ -43,8 +43,6 @@ private:
 public:
   Index begin;
   Index end;
-  Offset len_x;
-  Offset len_y;
   Range range;
   Boundaries boundary;
 

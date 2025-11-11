@@ -20,8 +20,6 @@ Grid2D::Grid2D(uint16_t x, uint16_t y)
   , size_y(y)
   , begin(0, 0)
   , end(size_x, size_y)
-  , len_x(size_x, 0)
-  , len_y(size_y, 0)
   , range(begin, end)
   , boundary(begin, end) {
     // uint32_t size = std::bit_width(x) + std::bit_width(y);
@@ -34,8 +32,6 @@ Grid2D::Grid2D(Index beg, Index end)
   , size_y(end.y - beg.y + 3)
   , begin(beg)
   , end(end)
-  , len_x(size_x - 3, 0)
-  , len_y(0, size_y - 3)
   , range(beg, end)
   , boundary(beg, end) {
     // uint32_t size = std::bit_width(x) + std::bit_width(y);
@@ -107,7 +103,7 @@ std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
     {
       os << std::setw(len) << obj[i, j] << "";
     }
-    if (obj.len_x.x > 2 * width + 2)
+    if (obj.end.x - obj.begin.x > 2 * width + 2)
     {
       os << std::setw(3) << "  …";
     }
@@ -117,13 +113,13 @@ std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
     }
     os << std::endl;
   }
-  if (obj.len_y.y > 2 * width + 2)
+  if (obj.end.y - obj.begin.y > 2 * width + 2)
   {
     for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
     {
       os << std::setw(len) << "  ⋮" << "";
     }
-    if (obj.len_x.x > 2 * width + 2)
+    if (obj.end.x - obj.begin.x > 2 * width + 2)
     {
       os << std::setw(3) << "  ⋱";
     }
@@ -139,7 +135,7 @@ std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
     {
       os << std::setw(len) << obj[i, j] << "";
     }
-    if (obj.len_x.x > 2 * width + 2)
+    if (obj.end.x - obj.begin.x > 2 * width + 2)
     {
       os << std::setw(3) << "  …";
     }
