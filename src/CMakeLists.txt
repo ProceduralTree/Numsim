@@ -39,3 +39,5 @@ vtk_module_autoinit(
 target_include_directories(simnum PRIVATE ${VTK_INCLUDE_DIRS})
 target_include_directories(simnum PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(simnum_profiling PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+install(TARGETS numsim RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/build)
