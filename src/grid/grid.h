@@ -108,7 +108,7 @@ public:
     // }
     // }
     // return result;
-    //};
+    ;
   };
 
   std::ostream& operator<<(std::ostream& os, const Grid2D& obj);
