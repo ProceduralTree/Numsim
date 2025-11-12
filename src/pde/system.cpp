@@ -15,7 +15,7 @@
 #define U_RANGE system.begin - Ix, system.end
 #define V_RANGE system.begin - Iy, system.end
 
-void calculate_F(PDESystem& system, Index I)
+void calculate_F(Index I, PDESystem& system)
 {
   auto& u = system.u;
   auto& v = system.v;
@@ -24,7 +24,7 @@ void calculate_F(PDESystem& system, Index I)
   system.F[I] = u[I] + system.dt * (1 / system.Re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha));
 };
 
-void calculate_G(PDESystem& system, Index I)
+void calculate_G(Index I, PDESystem& system)
 {
   auto& u = system.u;
   auto& v = system.v;
@@ -33,13 +33,13 @@ void calculate_G(PDESystem& system, Index I)
   system.G[I] = v[I] + system.dt * (1 / system.Re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha));
 };
 
-void update_u(PDESystem& system, Index index)
+void update_u(Index I, PDESystem& system)
 {
-  system.u[index] = system.F[index] - system.dt * d(Ix, system.p, index, system.h.x);
+  system.u[I] = system.F[I] - system.dt * d(Ix, system.p, I, system.h.x);
 };
-void update_v(PDESystem& system, Index index)
+void update_v(Index I, PDESystem& system)
 {
-  system.v[index] = system.G[index] - system.dt * d(Iy, system.p, index, system.h.y);
+  system.v[I] = system.G[I] - system.dt * d(Iy, system.p, I, system.h.y);
 };
 
 void solve_pressure(PDESystem& system)
@@ -55,7 +55,7 @@ void solve_pressure(PDESystem& system)
   }
 };
 
-void calculate_pressure_rhs(PDESystem& system, Index I)
+void calculate_pressure_rhs(Index I, PDESystem& system)
 {
   auto& F = system.F;
   auto& G = system.G;
@@ -108,15 +108,15 @@ void step(PDESystem& system, uint16_t i)
   broadcast_boundary(copy, system.F.boundary, system.u, system.F);
   broadcast_boundary(copy, system.G.boundary, system.v, system.G);
 
-  broadcast(calculate_F, system, system.u.range);
-  broadcast(calculate_G, system, system.v.range);
+  broadcast(calculate_F, system.u.range, system);
+  broadcast(calculate_G, system.v.range, system);
 
-  broadcast(calculate_pressure_rhs, system, system.p.range);
+  broadcast(calculate_pressure_rhs, system.p.range, system);
 
   solve_pressure(system);
 
-  broadcast(update_u, system, system.u.range);
-  broadcast(update_v, system, system.v.range);
+  broadcast(update_u, system.u.range, system);
+  broadcast(update_v, system.v.range, system);
 
   set_uv_boundary(system);
 };

@@ -44,7 +44,7 @@ void cg_iteration(PDESystem& system, CGSolver& cg)
   LaplaceMatrixOperator A = LaplaceMatrixOperator(system.h);
 
   // cg.residual = system.rhs - A*system.p;
-  // broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
+  //  broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
   broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
   broadcast_boundary(copy, system.p.boundary, system.p, cg.search_direction);
   broadcast([&](Index I, CGSolver& cg, PDESystem& s, LaplaceMatrixOperator A) { cg.residual[I] = s.rhs[I] - A(s.p, I); }, system.p.range, cg, system, A);
