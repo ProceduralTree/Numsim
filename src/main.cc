@@ -1,3 +1,4 @@
+#include "utils/Logger.h"
 #include "utils/broadcast.h"
 #include <chrono>
 #include <cstdint>
@@ -59,13 +60,23 @@ void test_index()
 
 auto main(int argc, char* argv[]) -> int
 {
+  LOG::Init(LOG::LoggerType::STDOUT);
+  if (argc < 2)
+  {
+    LOG::Warning("missing file name");
+    return -1;
+  }
   test_index();
   MPI_Init(&argc, &argv);
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   PDESystem test_system = PDESystem(500., 1e-3, 1000, 1000, 0.001, 0.001, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
-  test_system.settings.loadFromFile("");
+  if (!test_system.settings.loadFromFile(argv[1]))
+  {
+    LOG::Warning("couldn't parse settings file");
+    return -1;
+  }
 
   print_pde_system(test_system);
 
@@ -85,5 +96,6 @@ auto main(int argc, char* argv[]) -> int
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 
   MPI_Finalize();
+  LOG::Close();
   return 0;
 }
