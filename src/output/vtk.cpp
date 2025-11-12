@@ -39,9 +39,9 @@ double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESy
 
   double index = 0; // index for the vtk data structure, will be incremented
                     // in the inner loop
-  for (int j = system.begin.y; j < system.end.y; j++)
+  for (int j = system.begin.y; j <= system.end.y; j++)
   {
-    for (int i = system.begin.x; i < system.end.x; i++, index++)
+    for (int i = system.begin.x; i <= system.end.x; i++, index++)
     {
       arrayPressure->SetValue(index, system.p[i, j]);
     }
@@ -101,9 +101,9 @@ void write_vtk(const PDESystem& system, double time)
   index = 0; // index for the vtk data structure
   Index I = { 0, 0 };
   Offset o = { 0, 0 };
-  for (int j = system.begin.y; j < system.end.y; j++)
+  for (int j = system.begin.y; j <= system.end.y; j++)
   {
-    for (int i = system.begin.x; i < system.end.x; i++, index++)
+    for (int i = system.begin.x; i <= system.end.x; i++, index++)
     {
       I = { static_cast<uint16_t>(i), static_cast<uint16_t>(j) };
       o = { 1, 0 };

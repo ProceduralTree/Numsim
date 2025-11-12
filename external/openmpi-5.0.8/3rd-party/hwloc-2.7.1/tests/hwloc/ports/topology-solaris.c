@@ -1,1 +1,0 @@
-../../../hwloc/topology-solaris.c

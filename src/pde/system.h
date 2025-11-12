@@ -48,8 +48,8 @@ struct PDESystem
     double hy, std::array<double, 2> boundaryBottom,
     std::array<double, 2> boundaryTop, std::array<double, 2> boundaryLeft,
     std::array<double, 2> boundaryRight)
-    : begin({ 2, 2 })
-    , end(Index(size_x + 2, size_y + 2)) //+ Offset(1, 1))
+    : begin({ 1, 1 })
+    , end(Index(size_x, size_y)) //+ Offset(1, 1))
     , Re(Re)
     , dt(dt)
     , p(Grid2D(begin, end))

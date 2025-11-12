@@ -7,10 +7,20 @@
 #include <pde/system.h>
 #include <utils/index.h>
 
+#define ASSERT(condition, message)                               \
+  do                                                             \
+  {                                                              \
+    if (!(condition))                                            \
+    {                                                            \
+      std::cerr << "Assertion failed: " << message << std::endl; \
+      assert(condition);                                         \
+    }                                                            \
+  } while (0)
+
 constexpr double d(Offset Direction, const Grid2D& field, Index I, double h)
 {
-  assert(Direction.x <= I.x);
-  assert(Direction.y <= I.y);
+  assert(Direction.x <= I.x + 1);
+  assert(Direction.y <= I.y + 1);
   return 1 / h * (field[I + Direction] - field[I]);
 };
 constexpr double dd(Offset Direction, const Grid2D& field, Index I, double h_squared)
