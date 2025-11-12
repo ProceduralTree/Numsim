@@ -22,10 +22,10 @@ struct Boundaries
   const Range right;
   const std::array<std::tuple<Range, Offset>, 4> all;
   Boundaries(Index begin, Index end)
-    : top(Index { begin.x, end.y } + Iy, end + Iy)
-    , bottom(begin - Iy, Index { end.x, begin.y } - Iy)
-    , left(begin - Ix, Index { begin.x, end.y } - Ix)
-    , right(Index { end.x, begin.y } + Ix, end + Ix)
+    : top(Index { begin.x, end.y } + Iy - Ix, end + Iy + Ix)
+    , bottom(begin - Iy - Ix, Index { end.x, begin.y } + Ix - Iy)
+    , left(begin - Ix - Iy, Index { begin.x, end.y } - Ix + Iy)
+    , right(Index { end.x, begin.y } + Ix - Iy, end + Ix + Iy)
     , all({ { top, Iy }, { bottom, -Iy }, { left, -Ix }, { right, Ix } })
 
   { };
