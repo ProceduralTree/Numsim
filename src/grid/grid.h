@@ -79,36 +79,38 @@ public:
   const uint32_t elements() const { return this->_data.size(); }
   inline double max()
   {
-    double result = 0;
+    return *std::max_element(_data.begin(), _data.end());
+    // double result = 0;
 
-#pragma omp parallel for collapse(2) reduction(max : result)
-    for (uint16_t j = begin.y; j <= end.y; j++)
-    {
-      for (uint16_t i = begin.x; i <= end.x; i++)
-      {
-        Index I = { i, j };
-        result = std::max(result, (*this)[I]);
-      }
-    }
-    return result;
+    // #pragma omp parallel for collapse(2) reduction(max : result)
+    // for (uint16_t j = begin.y; j <= end.y; j++)
+    //{
+    // for (uint16_t i = begin.x; i <= end.x; i++)
+    //{
+    // Index I = { i, j };
+    // result = std::max(result, (*this)[I]);
+    //}
+    //}
+    // return result;
   };
   inline double min()
   {
-    double result = 0;
+    return *std::min_element(_data.begin(), _data.end());
+    // double result = 0;
 
-#pragma omp parallel for collapse(2) reduction(min : result)
-    for (uint16_t j = begin.y; j <= end.y; j++)
-    {
-      for (uint16_t i = begin.x; i <= end.x; i++)
-      {
-        Index I = { i, j };
-        result = std::max(result, (*this)[I]);
-      }
-    }
-    return result;
+    // #pragma omp parallel for collapse(2) reduction(min : result)
+    // for (uint16_t j = begin.y; j <= end.y; j++)
+    //{
+    // for (uint16_t i = begin.x; i <= end.x; i++)
+    //{
+    // Index I = { i, j };
+    // result = std::max(result, (*this)[I]);
+    // }
+    // }
+    // return result;
+    //};
   };
-};
 
-std::ostream& operator<<(std::ostream& os, const Grid2D& obj);
+  std::ostream& operator<<(std::ostream& os, const Grid2D& obj);
 
 #endif // GRID_H_
