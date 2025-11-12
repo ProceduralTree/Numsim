@@ -7,6 +7,23 @@
 #include <pde/system.h>
 #include <utils/index.h>
 #define LOG(x) std::cout << #x << "=" << x << std::endl
+template <typename OPERATOR>
+inline void broadcast(
+  OPERATOR Operator,
+  PDESystem& system,
+  Index Begin,
+  Index End)
+{
+
+  // #pragma omp parallel for simd collapse(2)
+  for (uint16_t j = Begin.y; j <= End.y; j++)
+  {
+    for (uint16_t i = Begin.x; i <= End.x; i++)
+    {
+      Operator(system, { i, j });
+    }
+  }
+};
 inline void parallel_broadcast(
   std::function<void(PDESystem&, Index)> Operator,
   PDESystem& system,
@@ -22,6 +39,24 @@ inline void parallel_broadcast(
       Operator(system, { i, j });
     }
   }
+};
+template <typename OPERATOR>
+constexpr void broadcast(
+  OPERATOR Operator,
+  PDESystem& system,
+  Range r)
+{
+  broadcast(Operator, system, r.begin, r.end);
+};
+
+template <typename OPERATOR>
+constexpr void broadcast(
+  OPERATOR Operator,
+  PDESystem& system,
+  std::vector<Range> ranges)
+{
+  for (auto r : ranges)
+    broadcast(Operator, system, r.begin, r.end);
 };
 
 // template <typename Operator, typename... Args>
