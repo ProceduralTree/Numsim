@@ -1,7 +1,9 @@
 #pragma once
+#ifdef DEBUG
 #include <format>
-#include <string>
 #include <utility>
+#endif
+#include <string>
 
 namespace LOG {
 enum class LoggerType
@@ -16,14 +18,17 @@ void Close();
 void Debug(const std::string& string);
 void Warning(const std::string& string);
 void Error(const std::string& string);
+#define DebugF(str, ...) LOG::Debug(std::format(str, __VA_ARGS__))
+#define WarningF(str, ...) LOG::Warning(std::format(str, __VA_ARGS__))
+#define ErrorF(str, ...) LOG::Error(std::format(str, __VA_ARGS__))
 #else
 constexpr void Init(LoggerType type) { }
 constexpr void Close() { }
 constexpr void Debug(const std::string& string) { }
 constexpr void Warning(const std::string& string) { }
 constexpr void Error(const std::string& string) { }
+#define DebugF(str, ...) 0
+#define WarningF(str, ...) 0
+#define ErrorF(str, ...) 0
 #endif
-#define DebugF(str, ...) LOG::Debug(std::format(str, __VA_ARGS__))
-#define WarningF(str, ...) LOG::Warning(std::format(str, __VA_ARGS__))
-#define ErrorF(str, ...) LOG::Error(std::format(str, __VA_ARGS__))
 }
