@@ -7,7 +7,7 @@
 #include <grid/grid.h>
 
 template <typename Operator, typename... Args>
-double reduce(Operator&& O, const Grid2D& g, Args&&... args)
+inline double reduce(Operator&& O, const Grid2D& g, Args&&... args)
 {
   double result = 0;
 

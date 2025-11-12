@@ -69,10 +69,34 @@ public:
 
   // double& operator[](Index index) { return (*this)[index.x + begin.x, index.y + begin.y]; };
   // const double& operator[](Index index) const { return (*this)[index.x + begin.x, index.y + begin.y]; };
-  double& operator[](Index index) { return (*this)[index.x, index.y]; };
-  const double& operator[](Index index) const { return (*this)[index.x, index.y]; };
-  double& operator[](uint16_t x, uint16_t y);
-  const double& operator[](uint16_t x, uint16_t y) const;
+  constexpr double& operator[](Index I)
+  {
+#ifdef CARTESIAN
+    uint32_t index = I.x + size_x * I.y;
+#else
+    uint32_t index = z_order(x, y);
+#endif
+#ifdef NDEBUG
+    return this->_data[index];
+#else
+    return this->_data.at(index);
+#endif
+  };
+
+  constexpr const double& operator[](Index I) const
+  {
+#ifdef CARTESIAN
+    uint32_t index = I.x + size_x * I.y;
+#else
+    uint32_t index = z_order(x, y);
+#endif
+#ifdef NDEBUG
+    return this->_data[index];
+#else
+    return this->_data.at(index);
+#endif
+  };
+
   double& operator[](uint32_t z);
   const double& operator[](uint32_t z) const;
 

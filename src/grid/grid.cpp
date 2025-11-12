@@ -21,35 +21,6 @@ Grid2D::Grid2D(Index beg, Index end)
     // this->_data.resize(x * y, init);
   };
 
-double& Grid2D::operator[](uint16_t x, uint16_t y)
-{
-#ifdef CARTESIAN
-  uint32_t index = x + size_x * y;
-#else
-  std::cout << "!ZORDER" << std::endl;
-  uint32_t index = z_order(x, y);
-#endif
-#ifdef NDEBUG
-  return this->_data[index];
-#else
-  return this->_data.at(index);
-#endif
-}
-
-const double& Grid2D::operator[](uint16_t x, uint16_t y) const
-{
-#ifdef CARTESIAN
-  uint32_t index = x + size_x * y;
-#else
-  uint32_t index = z_order(x, y);
-#endif
-#ifdef NDEBUG
-  return this->_data[index];
-#else
-  return this->_data.at(index);
-#endif
-}
-
 double& Grid2D::operator[](uint32_t index) { return this->_data[index]; };
 
 const double& Grid2D::operator[](uint32_t index) const
@@ -73,7 +44,7 @@ std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
   {
     for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
     {
-      os << std::setw(len) << obj[i, j] << "";
+      os << std::setw(len) << obj[Index { i, j }] << "";
     }
     if (obj.end.x - obj.begin.x > 2 * width + 2)
     {
@@ -81,7 +52,7 @@ std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
     }
     for (uint16_t i = std::max(obj.end.x - width, obj.begin.x + width); i < obj.end.x + 2; i++)
     {
-      os << std::setw(len) << obj[i, j] << "";
+      os << std::setw(len) << obj[Index { i, j }] << "";
     }
     os << std::endl;
   }
@@ -105,7 +76,7 @@ std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
   {
     for (uint16_t i = obj.begin.x - 1; i < std::min(obj.begin.x + width, static_cast<int>(obj.end.x)); i++)
     {
-      os << std::setw(len) << obj[i, j] << "";
+      os << std::setw(len) << obj[{ i, j }] << "";
     }
     if (obj.end.x - obj.begin.x > 2 * width + 2)
     {
@@ -113,7 +84,7 @@ std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
     }
     for (uint16_t i = std::max(obj.end.x - width, obj.begin.x + width); i < obj.end.x + 2; i++)
     {
-      os << std::setw(len) << obj[i, j] << "";
+      os << std::setw(len) << obj[{ i, j }] << "";
     }
     os << std::endl;
   }

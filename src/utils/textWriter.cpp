@@ -1,5 +1,6 @@
 #include "textWriter.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -64,7 +65,7 @@ void writeTextVelocity(const PDESystem& system, double currentTime)
       file << std::setw(fieldWidth) << j - grid.begin.y << "|";
       for (int i = grid.begin.x - 1; i <= grid.end.x + 1; i++)
       {
-        file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid[i, j];
+        file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << grid[Index { static_cast<uint16_t>(i), static_cast<uint16_t>(j) }];
       }
       file << std::endl;
     }
@@ -150,7 +151,7 @@ void writeTextPressure(const PDESystem& system)
     file << std::setw(fieldWidth) << j - p.begin.y << "|";
     for (int i = p.begin.x - 1; i <= p.end.y + 1; i++)
     {
-      file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << p[i, j];
+      file << std::setw(fieldWidth) << std::setprecision(fieldWidth - 6) << p[Index { static_cast<uint16_t>(i), static_cast<uint16_t>(j) }];
     }
     file << std::endl;
   }

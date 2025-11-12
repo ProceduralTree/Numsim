@@ -52,9 +52,8 @@ struct Range
   };
 };
 
-static const Offset Ix
-  = { 1, 0 };
-static const Offset Iy = { 0, 1 };
+constexpr Offset Ix = { 1, 0 };
+constexpr Offset Iy = { 0, 1 };
 
 constexpr bool operator==(Index lhs, Index rhs)
 {
