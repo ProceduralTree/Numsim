@@ -1,5 +1,6 @@
 #include "utils/Logger.h"
 #include "utils/broadcast.h"
+#include "utils/settings.h"
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -71,14 +72,15 @@ auto main(int argc, char* argv[]) -> int
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  
-  PDESystem test_system = PDESystem(500., 1e-3, 1000, 1000, 0.001, 0.001, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
+
   if (!Settings::loadFromFile(argv[1]))
   {
     LOG::Warning("couldn't parse settings file");
     return -1;
   }
+  Settings::get().printSettings();
 
+  PDESystem test_system = PDESystem(Settings::get());
 
   print_pde_system(test_system);
 

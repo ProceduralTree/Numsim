@@ -21,7 +21,7 @@ void calculate_F(Index I, PDESystem& system)
   auto& v = system.v;
   auto& h = system.h;
   auto& alpha = Settings::get().alpha;
-  system.F[I] = u[I] + system.dt * (1 / system.Re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha));
+  system.F[I] = u[I] + system.dt * (1 / system.settings.re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha));
 };
 
 void calculate_G(Index I, PDESystem& system)
@@ -30,7 +30,7 @@ void calculate_G(Index I, PDESystem& system)
   auto& v = system.v;
   auto& h = system.h;
   auto& alpha = Settings::get().alpha;
-  system.G[I] = v[I] + system.dt * (1 / system.Re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha));
+  system.G[I] = v[I] + system.dt * (1 / system.settings.re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha));
 };
 
 void update_u(Index I, PDESystem& system)
@@ -75,15 +75,15 @@ void set_with_neighbour(Index I, Offset O, Grid2D& array, double value)
 
 void set_uv_boundary(PDESystem& system)
 {
-  broadcast(set, system.u.boundary.left, -Ix, system.u, system.boundaryLeft[0]);
-  broadcast(set, system.u.boundary.right, Ix, system.u, system.boundaryRight[0]);
-  broadcast(set_with_neighbour, system.u.boundary.top, Iy, system.u, system.boundaryTop[0]);
-  broadcast(set_with_neighbour, system.u.boundary.bottom, -Iy, system.u, system.boundaryBottom[0]);
+  broadcast(set, system.u.boundary.left, -Ix, system.u, system.settings.dirichletBcLeft[0]);
+  broadcast(set, system.u.boundary.right, Ix, system.u, system.settings.dirichletBcRight[0]);
+  broadcast(set_with_neighbour, system.u.boundary.top, Iy, system.u, system.settings.dirichletBcTop[0]);
+  broadcast(set_with_neighbour, system.u.boundary.bottom, -Iy, system.u, system.settings.dirichletBcBottom[0]);
 
-  broadcast(set_with_neighbour, system.v.boundary.left, -Ix, system.v, system.boundaryLeft[1]);
-  broadcast(set_with_neighbour, system.v.boundary.right, Ix, system.v, system.boundaryRight[1]);
-  broadcast(set, system.v.boundary.top, Iy, system.v, system.boundaryTop[1]);
-  broadcast(set, system.v.boundary.bottom, -Iy, system.v, system.boundaryBottom[1]);
+  broadcast(set_with_neighbour, system.v.boundary.left, -Ix, system.v, system.settings.dirichletBcLeft[1]);
+  broadcast(set_with_neighbour, system.v.boundary.right, Ix, system.v, system.settings.dirichletBcRight[1]);
+  broadcast(set, system.v.boundary.top, Iy, system.v, system.settings.dirichletBcTop[1]);
+  broadcast(set, system.v.boundary.bottom, -Iy, system.v, system.settings.dirichletBcBottom[1]);
 };
 
 void compute_dt(PDESystem& system)
@@ -92,7 +92,7 @@ void compute_dt(PDESystem& system)
   double vmax = 0;
   umax = std::max(system.u.max(), (-system.u.min()));
   vmax = std::max(system.v.max(), (-system.v.min()));
-  double dt1 = (system.Re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
+  double dt1 = (system.settings.re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
   double dt2 = system.h.x / umax;
   double dt3 = system.h.y / vmax;
   system.dt = std::min(dt1, std::min(dt2, dt3)) * Settings::get().tau;

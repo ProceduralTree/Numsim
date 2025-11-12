@@ -29,7 +29,7 @@ vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
 
   // set number of points in each dimension, 1 cell in z direction
   dataSet->SetDimensions(
-    system.size_x, system.size_y, 1); // we want to have points at each corner of each cell
+    system.end.x - system.begin.x + 1, system.end.y - system.begin.y + 1, 1); // we want to have points at each corner of each cell
 
   return dataSet;
 };
