@@ -9,7 +9,7 @@
 #include <iostream>
 #include <sstream>
 
-static Settings globalSettings;
+static Settings globalSettings {};
 const Settings& Settings::get() { return globalSettings; }
 
 static std::string testString = ""
@@ -61,6 +61,14 @@ bool compareToSecond(const char* a, const char* b)
   }
   return *b == '\0';
 }
+bool stringContains(const char* str, const char c)
+{
+  while (*str != '\0' && *str != c)
+  {
+    str++;
+  }
+  return *str == c;
+}
 void parseSettings(const std::string& input, Settings* settings)
 {
   std::stringstream stream(input);
@@ -71,7 +79,8 @@ void parseSettings(const std::string& input, Settings* settings)
     {
       continue;
     }
-    bool validLine = line.contains('=');
+    bool validLine = stringContains(line.c_str(), '=');
+    // line.contains('=');
     if (!validLine)
     {
       DebugF("invalid Line found at : {}", lineNumber);
