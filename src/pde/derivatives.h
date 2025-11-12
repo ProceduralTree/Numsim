@@ -19,11 +19,10 @@ constexpr double dd(Offset Direction, const Grid2D& field, Index I, double h_squ
   assert(Direction.y <= I.y);
   return 1 / h_squared * (field[I + Direction] + field[I - Direction] - 2 * field[I]);
 };
-constexpr double duv(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h)
+constexpr double duv(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h, double alpha)
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);
-  double alpha = 0.4;
   if (Direction == Ix)
   {
     double donor_cell_correction = alpha * (1 / h) * ((std::abs(field1[I + Iy] + field1[I]) * (field2[I] - field2[I + Ix])) / 4 - (std::abs(field1[I - Ix] + field1[I - Ix + Iy]) * (field2[I - Ix] - field2[I])) / 4);
@@ -39,11 +38,10 @@ constexpr double duv(Offset Direction, const Grid2D& field1, const Grid2D& field
   }
 };
 
-constexpr double dxx(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h)
+constexpr double dxx(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h, double alpha)
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);
-  double alpha = 0.4;
   double donor_cell_correction = alpha * (1 / h) * ((std::abs(field1[I + Direction] + field1[I]) * (field2[I] - field2[I + Direction])) / 4 - (std::abs(field1[I - Direction] + field1[I]) * (field2[I - Direction] - field2[I])) / 4);
   return (1 / h) * (((field1[I + Direction] + field1[I]) * (field2[I + Direction] + field2[I])) / 4 - ((field1[I - Direction] + field1[I]) * (field2[I] + field2[I - Direction])) / 4) + donor_cell_correction;
 };

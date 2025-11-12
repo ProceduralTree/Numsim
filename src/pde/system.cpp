@@ -20,7 +20,8 @@ void calculate_F(PDESystem& system, Index I)
   auto& u = system.u;
   auto& v = system.v;
   auto& h = system.h;
-  system.F[I] = u[I] + system.dt * (1 / system.Re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x) - duv(Iy, u, v, I, h.y));
+  auto& alpha = system.settings.alpha;
+  system.F[I] = u[I] + system.dt * (1 / system.Re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha));
 };
 
 void calculate_G(PDESystem& system, Index I)
@@ -28,7 +29,8 @@ void calculate_G(PDESystem& system, Index I)
   auto& u = system.u;
   auto& v = system.v;
   auto& h = system.h;
-  system.G[I] = v[I] + system.dt * (1 / system.Re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y) - duv(Ix, u, v, I, h.x));
+  auto& alpha = system.settings.alpha;
+  system.G[I] = v[I] + system.dt * (1 / system.Re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha));
 };
 
 void update_u(PDESystem& system, Index index)
