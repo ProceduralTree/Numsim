@@ -46,7 +46,6 @@ public:
   Range range;
   Boundaries boundary;
 
-  Grid2D(uint16_t x, uint16_t y);
   Grid2D(Index beg, Index end);
 
   Grid2D(const Grid2D&) = delete;
@@ -82,7 +81,6 @@ public:
   constexpr double min() { return *std::min_element(_data.begin(), _data.end()); }
 };
 
-void laplace(const Grid2D& in, Grid2D& out);
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj);
 
 #endif // GRID_H_

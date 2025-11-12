@@ -17,18 +17,27 @@ struct CGSolver
 
 struct GaussSeidelSolver
 {
-  double residual = 0;
+  Grid2D residual;
+  GaussSeidelSolver(PDESystem& system)
+    : residual(system.begin, system.end) { };
 };
 
 struct SORSolver
 {
-  double residual = 0;
+  Grid2D residual;
+  SORSolver(PDESystem& system)
+    : residual(system.begin, system.end) { };
 };
-void gauss_seidel_step(PDESystem& system, Index I);
+// struct BlackRedSolver
+//{
+//   Grid2D residual;
+//   BlackRedSolver(PDESystem& system)
+//     : residual(system.begin, system.end) { };
+// };
 
 void cg_iteration(PDESystem& system, CGSolver& cg);
 
-void solve(GaussSeidelSolver gs, PDESystem& system);
-void solve(SORSolver gs, PDESystem& system);
-void solve(CGSolver& gs, PDESystem& system);
+void solve(GaussSeidelSolver& S, PDESystem& system);
+void solve(SORSolver& S, PDESystem& system);
+void solve(CGSolver& S, PDESystem& system);
 #endif // PRESSURESOLVERS_H_

@@ -15,7 +15,7 @@ inline void broadcast(
   Index End)
 {
 
-  // #pragma omp parallel for simd collapse(2)
+#pragma omp parallel for simd collapse(2)
   for (uint16_t j = Begin.y; j <= End.y; j++)
   {
     for (uint16_t i = Begin.x; i <= End.x; i++)
@@ -59,27 +59,26 @@ constexpr void broadcast(
     broadcast(Operator, system, r.begin, r.end);
 };
 
-template <typename Operator, typename... Args>
-void broadcast_blackred(Operator&& O, Range r, Args&&... args)
-{
-
-#pragma omp parallel for simd collapse(2)
-  for (uint16_t j = r.begin.y; j <= r.end.y; j += 2)
-  {
-    for (uint16_t i = r.begin.x; i <= r.end.x; i++)
-    {
-      std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
-    }
-  }
-#pragma omp parallel for simd collapse(2)
-  for (uint16_t j = r.begin.y + 1; j <= r.end.y; j += 2)
-  {
-    for (uint16_t i = r.begin.x; i <= r.end.x; i++)
-    {
-      std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
-    }
-  }
-};
+// template <typename Operator, typename... Args>
+//  void broadcast_blackred(Operator&& O, Range r, Args&&... args)
+//{
+//  #pragma omp parallel for simd collapse(2)
+//    for (uint16_t j = r.begin.y; j <= r.end.y; j++)
+//    {
+//      for (uint16_t i = r.begin.x; i <= r.end.x; i = i + 2)
+//      {
+//        std::forward<Operator>(O)(Index { static_cast<uint16_t>(i + j % 2), j }, std::forward<Args>(args)...);
+//      }
+//    }
+//  #pragma omp parallel for simd collapse(2)
+//    for (uint16_t j = r.begin.y; j <= r.end.y; j++)
+//    {
+//      for (uint16_t i = r.begin.x; i <= r.end.x; i = i + 2)
+//      {
+//        std::forward<Operator>(O)(Index { static_cast<uint16_t>(i + !(j % 2)), j }, std::forward<Args>(args)...);
+//      }
+//    }
+//  };
 
 template <typename Operator, typename... Args>
 void broadcast(Operator&& O, Range r, Args&&... args)

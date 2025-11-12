@@ -1,31 +1,13 @@
 #include "grid.h"
-#include "indexing.h"
-#include "utils/broadcast.h"
 #include "utils/index.h"
 #include <algorithm>
-#include <bit>
 #include <cassert>
-#include <cmath>
-#include <cstddef>
 #include <cstdint>
-#include <cstdio>
 #include <iomanip>
 #include <iostream>
 
 #define NDEBUG
 
-Grid2D::Grid2D(uint16_t x, uint16_t y)
-  : _data(x * y, 0.)
-  , size_x(x)
-  , size_y(y)
-  , begin(0, 0)
-  , end(size_x, size_y)
-  , range(begin, end)
-  , boundary(begin, end) {
-    // uint32_t size = std::bit_width(x) + std::bit_width(y);
-    // this->_data.resize(1 << size, 0.);
-    // this->_data.resize(x * y, init);
-  };
 Grid2D::Grid2D(Index beg, Index end)
   : _data((end.x + 2) * (end.y + 2), 0.)
   , size_x(end.x - beg.x + 3)
@@ -48,9 +30,9 @@ double& Grid2D::operator[](uint16_t x, uint16_t y)
   uint32_t index = z_order(x, y);
 #endif
 #ifdef NDEBUG
-  return this->_data.at(index);
+  return this->_data[index];
 #else
-  return this->_data.[index];
+  return this->_data.at(index);
 #endif
 }
 
@@ -62,9 +44,9 @@ const double& Grid2D::operator[](uint16_t x, uint16_t y) const
   uint32_t index = z_order(x, y);
 #endif
 #ifdef NDEBUG
-  return this->_data.at(index);
+  return this->_data[index];
 #else
-  return this->_data.[index];
+  return this->_data.at(index);
 #endif
 }
 
@@ -73,24 +55,14 @@ double& Grid2D::operator[](uint32_t index) { return this->_data[index]; };
 const double& Grid2D::operator[](uint32_t index) const
 {
 #ifdef NDEBUG
-  return this->_data.at(index);
+  return this->_data[index];
 #else
-  return this->_data.[index];
+  return this->_data.at(index);
 #endif
 };
 
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
 {
-  // std::cout << "\n";
-  // for (int j = obj.begin.y - 1; j < obj.end.y + 2; j++)
-  //{
-  //   for (int i = obj.begin.x - 1; i < obj.end.x + 2; i++)
-  //   {
-  //     std::cout << obj[i, j] << "\t";
-  //   }
-  //   std::cout << "\n";
-  // }
-  //
   os << std::scientific << std::setprecision(3) << std::endl;
   os << (obj.end.x - obj.begin.x) << "x" << (obj.end.y - obj.begin.y) << " Grid2D" << std::endl;
 
