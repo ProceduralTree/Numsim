@@ -38,9 +38,9 @@ void update_v(PDESystem& system, Index index)
 
 void solve_pressure(PDESystem& system)
 {
-  // CGSolver solver = CGSolver(system);
-  SORSolver solver = SORSolver(system);
-  //       GaussSeidelSolver solver = GaussSeidelSolver(system);
+  CGSolver solver = CGSolver(system);
+  // SORSolver solver = SORSolver();
+  //        GaussSeidelSolver solver = GaussSeidelSolver();
   solve(solver, system);
 };
 

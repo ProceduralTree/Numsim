@@ -17,16 +17,16 @@ struct CGSolver
 
 struct GaussSeidelSolver
 {
-  Grid2D residual;
-  GaussSeidelSolver(PDESystem& system)
-    : residual(system.begin, system.end) { };
+  // Grid2D residual;
+  // GaussSeidelSolver(PDESystem& system)
+  //   : residual(system.begin, system.end) { };
 };
 
 struct SORSolver
 {
-  Grid2D residual;
-  SORSolver(PDESystem& system)
-    : residual(system.begin, system.end) { };
+  // Grid2D residual;
+  // SORSolver(PDESystem& system)
+  //   : residual(system.begin, system.end) { };
 };
 // struct BlackRedSolver
 //{

@@ -21,7 +21,7 @@ void gauss_seidel_step(Index I, PDESystem& system, Solver& S)
   auto& h = system.h;
   double sum_of_neighbours = ((p[I - Ix] + p[I + Ix]) / h.x_squared) + ((p[I - Iy] + p[I + Iy]) / h.y_squared);
   double a_ij = -2 * (1 / h.y_squared) - 2 * (1 / h.x_squared);
-  S.residual[I] = std::abs(sum_of_neighbours + a_ij * p[I] - system.rhs[I]);
+  system.residual = std::max(std::abs(sum_of_neighbours + a_ij * p[I] - system.rhs[I]), system.residual);
   p[I] = (system.rhs[I] - sum_of_neighbours) / a_ij;
 };
 
@@ -127,7 +127,7 @@ void solve(SORSolver& S, PDESystem& system)
     system.residual = 0;
     broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
     broadcast(sor_step, system.p.range, system, S);
-    if (iter % 10 && S.residual.max() < system.settings.epsilon)
+    if (iter % 10 && system.residual < system.settings.epsilon)
     {
 
       std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
