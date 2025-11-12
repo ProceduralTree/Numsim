@@ -6,8 +6,6 @@
 #include <iomanip>
 #include <iostream>
 
-#define NDEBUG
-
 Grid2D::Grid2D(Index beg, Index end)
   : _data((end.x + 2) * (end.y + 2), 0.)
   , size_x(end.x - beg.x + 3)

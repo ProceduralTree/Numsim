@@ -13,7 +13,6 @@
 #include "utils/index.h"
 
 #define CARTESIAN
-
 struct Boundaries
 {
   const Range top;
@@ -69,31 +68,31 @@ public:
 
   // double& operator[](Index index) { return (*this)[index.x + begin.x, index.y + begin.y]; };
   // const double& operator[](Index index) const { return (*this)[index.x + begin.x, index.y + begin.y]; };
-  constexpr double& operator[](Index I)
+  inline double& operator[](Index I)
   {
 #ifdef CARTESIAN
     uint32_t index = I.x + size_x * I.y;
 #else
     uint32_t index = z_order(x, y);
 #endif
-#ifdef NDEBUG
-    return this->_data[index];
-#else
+#ifdef DEBUG
     return this->_data.at(index);
+#else
+    return this->_data.data()[index];
 #endif
   };
 
-  constexpr const double& operator[](Index I) const
+  inline const double& operator[](Index I) const
   {
 #ifdef CARTESIAN
     uint32_t index = I.x + size_x * I.y;
 #else
     uint32_t index = z_order(x, y);
 #endif
-#ifdef NDEBUG
-    return this->_data[index];
-#else
+#ifdef DEBUG
     return this->_data.at(index);
+#else
+    return this->_data.data()[index];
 #endif
   };
 
