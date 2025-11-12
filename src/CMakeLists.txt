@@ -21,8 +21,8 @@ target_link_libraries(numsim PRIVATE  ${VTK_LIBRARIES})
 target_link_libraries(numsim_profiling PUBLIC MPI::MPI_CXX ${VTK_LIBRARIES})
 target_link_libraries(numsim_profiling PRIVATE  ${VTK_LIBRARIES})
 
-target_compile_definitions(simnum PRIVATE $<$<CONFIG:Debug>:DEBUG>)
-target_compile_definitions(simnum_profiling PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+target_compile_definitions(numsim PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+target_compile_definitions(numsim_profiling PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 # MPI
 
 # Profiling executable
