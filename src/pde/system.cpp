@@ -75,15 +75,15 @@ void set_with_neighbour(Index I, Offset O, Grid2D& array, double value)
 
 void set_uv_boundary(PDESystem& system)
 {
-  broadcast(set, system.u.boundary.left, -Ix, system.u, system.settings.dirichletBcLeft[0]);
-  broadcast(set, system.u.boundary.right, Ix, system.u, system.settings.dirichletBcRight[0]);
   broadcast(set_with_neighbour, system.u.boundary.top, Iy, system.u, system.settings.dirichletBcTop[0]);
   broadcast(set_with_neighbour, system.u.boundary.bottom, -Iy, system.u, system.settings.dirichletBcBottom[0]);
+  broadcast(set, system.u.boundary.left, -Ix, system.u, system.settings.dirichletBcLeft[0]);
+  broadcast(set, system.u.boundary.right, Ix, system.u, system.settings.dirichletBcRight[0]);
 
-  broadcast(set_with_neighbour, system.v.boundary.left, -Ix, system.v, system.settings.dirichletBcLeft[1]);
-  broadcast(set_with_neighbour, system.v.boundary.right, Ix, system.v, system.settings.dirichletBcRight[1]);
   broadcast(set, system.v.boundary.top, Iy, system.v, system.settings.dirichletBcTop[1]);
   broadcast(set, system.v.boundary.bottom, -Iy, system.v, system.settings.dirichletBcBottom[1]);
+  broadcast(set_with_neighbour, system.v.boundary.left, -Ix, system.v, system.settings.dirichletBcLeft[1]);
+  broadcast(set_with_neighbour, system.v.boundary.right, Ix, system.v, system.settings.dirichletBcRight[1]);
 };
 
 void compute_dt(PDESystem& system)
