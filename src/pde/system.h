@@ -54,7 +54,7 @@ struct PDESystem
   PDESystem& operator=(const PDESystem&) = delete;
 };
 
-void step(PDESystem& system, uint16_t i);
+void step(PDESystem& system, double time);
 void print_pde_system(const PDESystem& sys);
 
 double interpolate_u(const PDESystem& sys, const Grid2D& field, Index I);

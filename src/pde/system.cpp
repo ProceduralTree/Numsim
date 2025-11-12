@@ -21,7 +21,7 @@ void calculate_F(Index I, PDESystem& system)
   auto& v = system.v;
   auto& h = system.h;
   auto& alpha = Settings::get().alpha;
-  system.F[I] = u[I] + system.dt * (1 / system.settings.re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha));
+  system.F[I] = u[I] + system.dt * (1 / system.settings.re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha)) + system.settings.g[0];
 };
 
 void calculate_G(Index I, PDESystem& system)
@@ -30,7 +30,7 @@ void calculate_G(Index I, PDESystem& system)
   auto& v = system.v;
   auto& h = system.h;
   auto& alpha = Settings::get().alpha;
-  system.G[I] = v[I] + system.dt * (1 / system.settings.re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha));
+  system.G[I] = v[I] + system.dt * (1 / system.settings.re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha)) + +system.settings.g[1];
 };
 
 void update_u(Index I, PDESystem& system)
@@ -95,10 +95,11 @@ void compute_dt(PDESystem& system)
   double dt1 = (system.settings.re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
   double dt2 = system.h.x / umax;
   double dt3 = system.h.y / vmax;
-  system.dt = std::min(dt1, std::min(dt2, dt3)) * Settings::get().tau;
+  system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
+  system.dt = std::min(system.settings.maximumDt, system.dt);
 };
 
-void step(PDESystem& system, uint16_t i)
+void step(PDESystem& system, double time)
 {
 
   set_uv_boundary(system);

@@ -85,16 +85,13 @@ auto main(int argc, char* argv[]) -> int
   print_pde_system(test_system);
 
   // test_boundary(test_system);
-
-  for (int i = 0; i < 1000; i++)
+  double time = 0;
+  while (time < test_system.settings.endTime)
   {
-    std::cout << "\r[Iteration]: " << i << "\t"
-              << std::flush;
-    step(test_system, i);
-    if (i % 10 == 0)
-    {
-      write_vtk(test_system, static_cast<double>(i));
-    }
+    step(test_system, time);
+    time += test_system.dt;
+    std::cout << "Time: t=" << time << "\t dt=" << test_system.dt << std::endl;
+    write_vtk(test_system, time);
   }
 
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
