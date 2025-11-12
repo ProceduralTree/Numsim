@@ -14,26 +14,45 @@
 
 #define CARTESIAN
 
+struct Boundaries
+{
+  const Range top;
+  const Range bottom;
+  const Range left;
+  const Range right;
+  const std::array<std::tuple<Range, Offset>, 4> all;
+  Boundaries(Index begin, Index end)
+    : top(Index { begin.x, end.y } + Iy, end + Iy)
+    , bottom(begin - Iy, Index { end.x, begin.y } - Iy)
+    , left(begin - Ix, Index { begin.x, end.y } - Ix)
+    , right(Index { end.x, begin.y } + Ix, end + Ix)
+    , all({ { top, Iy }, { bottom, -Iy }, { left, -Ix }, { right, Ix } })
+
+  { };
+  auto begin() const { return all.begin(); };
+  auto end() const { return all.end(); };
+};
+
 class Grid2D
 {
 private:
   std::vector<double> _data;
-
-public:
   uint16_t size_x;
   uint16_t size_y;
+
+public:
   Index begin;
   Index end;
-  Offset len_x;
-  Offset len_y;
   Range range;
-  Grid2D(uint16_t x, uint16_t y);
+  Boundaries boundary;
+
   Grid2D(Index beg, Index end);
 
   Grid2D(const Grid2D&) = delete;
   Grid2D& operator=(const Grid2D&) = delete;
 
   Grid2D(Grid2D&& other) noexcept
+    : boundary(other.boundary)
   {
     std::swap(size_x, other.size_x);
     std::swap(size_y, other.size_y);
@@ -62,7 +81,6 @@ public:
   constexpr double min() { return *std::min_element(_data.begin(), _data.end()); }
 };
 
-void laplace(const Grid2D& in, Grid2D& out);
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj);
 
 #endif // GRID_H_

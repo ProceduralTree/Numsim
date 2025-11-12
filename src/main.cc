@@ -19,21 +19,29 @@
     }                                                            \
   } while (0)
 
-void test_boundary(PDESystem& system)
+void set_one(Index I, Offset O, Grid2D& array)
 {
 
-  broadcast_x_boundary(
-    [&](PDESystem& s, Index I, Offset o) {
-      s.v[I + o] = o.y;
-    },
-    system, system.v);
-  std::cout << system.v;
-  std::cout << "\n";
-  broadcast_boundary(
-    [&](PDESystem& s, Index I, Offset o) {
-      s.p[I + o] = o.x + o.y;
-    },
-    system, system.p);
+  array[I] += O.x;
+  array[I] += O.y;
+};
+
+void test_boundary(PDESystem& system)
+{
+  broadcast_boundary(set_one, system.p.boundary, system.p);
+
+  // broadcast_x_boundary(
+  //   [&](PDESystem& s, Index I, Offset o) {
+  //     s.v[I + o] = o.y;
+  //   },
+  //   system, system.v);
+  // std::cout << system.v;
+  // std::cout << "\n";
+  // broadcast_boundary(
+  //   [&](PDESystem& s, Index I, Offset o) {
+  //     s.p[I + o] = o.x + o.y;
+  //   },
+  //   system, system.p);
   std::cout << system.p;
   std::cout << "\n";
 }
@@ -49,35 +57,6 @@ void test_index()
   ASSERT((-Ix).x == -1 && (-Ix).y == 0, "Invert Failed I.x=" << (-Ix).x << " I.y=" << (-Ix).y);
 }
 
-void fill_inorder(Grid2D& grid)
-{
-  for (uint64_t i = 0; i < grid.size_x * grid.size_y; i++)
-  {
-    grid[i] = static_cast<double>(i);
-  }
-};
-void benchmark_laplace(
-  int N, std::function<void(const Grid2D&, Grid2D&)> algorithm)
-{
-  auto grid = std::make_unique<Grid2D>(N, N);
-  auto out = std::make_unique<Grid2D>(N, N);
-  fill_inorder(*grid);
-  std::cout << "\tBegin Timing with a " << N << "x" << N << " Grid"
-            << std::endl;
-  auto start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < 1000; i++)
-  {
-    algorithm(*grid, *out);
-    std::swap(grid, out);
-  }
-  // std::cout << *out;
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::cout << "\tDuration: "
-            << std::chrono::duration<double, std::milli>(end - start).count()
-            << " ms\n";
-}
-
 auto main(int argc, char* argv[]) -> int
 {
   test_index();
@@ -85,20 +64,22 @@ auto main(int argc, char* argv[]) -> int
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  // std::cout << "With Z-Order Interleaving" << std::endl;
-  // benchmark_laplace(N, laplace_cartesian);
-  //
-  PDESystem test_system = PDESystem(400., 1e-3, 50, 50, 0.01, 0.01, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
+  PDESystem test_system = PDESystem(500., 1e-3, 1000, 1000, 0.001, 0.001, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
   test_system.settings.loadFromFile("");
+
   print_pde_system(test_system);
 
   // test_boundary(test_system);
 
-  for (int i = 0; i < 400; i++)
+  for (int i = 0; i < 1000; i++)
   {
-    std::cout << "[Iteration]: " << i << "\t\n"
+    std::cout << "\r[Iteration]: " << i << "\t"
               << std::flush;
     step(test_system, i);
+    if (i % 10 == 0)
+    {
+      write_vtk(test_system, static_cast<double>(i));
+    }
   }
 
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
