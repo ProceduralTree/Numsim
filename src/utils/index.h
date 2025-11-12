@@ -11,30 +11,30 @@ struct Offset
   int y;
 };
 
-constexpr bool operator==(Offset lhs, Offset rhs)
+inline bool operator==(Offset lhs, Offset rhs)
 {
   return lhs.x == rhs.x && lhs.y == rhs.y;
 }
-constexpr const Offset operator*(int n, const Offset& O) { return Offset { static_cast<int>(n * O.x), static_cast<int>(n * O.y) }; };
-constexpr const Offset operator-(const Offset& O) { return -1 * O; };
+inline const Offset operator*(int n, const Offset& O) { return Offset { static_cast<int>(n * O.x), static_cast<int>(n * O.y) }; };
+inline const Offset operator-(const Offset& O) { return -1 * O; };
 
 struct Index
 {
   uint16_t x;
   uint16_t y;
 
-  constexpr Index operator+(const Offset& other)
+  inline Index operator+(const Offset& other)
   {
     return { static_cast<uint16_t>(this->x + other.x), static_cast<uint16_t>(this->y + other.y) };
   };
-  constexpr const Index operator+(const Offset& other) const { return { static_cast<uint16_t>(this->x + other.x), static_cast<uint16_t>(this->y + other.y) }; };
-  constexpr Index operator-(const Offset& other)
+  inline const Index operator+(const Offset& other) const { return { static_cast<uint16_t>(this->x + other.x), static_cast<uint16_t>(this->y + other.y) }; };
+  inline Index operator-(const Offset& other)
   {
     assert(this->x >= other.x);
     assert(this->y >= other.y);
     return { static_cast<uint16_t>(this->x - other.x), static_cast<uint16_t>(this->y - other.y) };
   };
-  constexpr const Index operator-(const Offset& other) const
+  inline const Index operator-(const Offset& other) const
   {
     assert(this->x >= other.x);
     assert(this->y >= other.y);
@@ -46,16 +46,16 @@ struct Range
 {
   Index begin;
   Index end;
-  constexpr Range operator+(const Offset& other)
+  inline Range operator+(const Offset& other)
   {
     return { begin + other, end + other };
   };
 };
 
-constexpr Offset Ix = { 1, 0 };
-constexpr Offset Iy = { 0, 1 };
+inline Offset Ix = { 1, 0 };
+inline Offset Iy = { 0, 1 };
 
-constexpr bool operator==(Index lhs, Index rhs)
+inline bool operator==(Index lhs, Index rhs)
 {
   return lhs.x == rhs.x && lhs.y == rhs.y;
 }

@@ -22,12 +22,12 @@ inline double reduce(Operator&& O, const Grid2D& g, Args&&... args)
   return result;
 }
 
-constexpr double times(Index I, const Grid2D& a, const Grid2D& b)
+inline double times(Index I, const Grid2D& a, const Grid2D& b)
 {
   return a[I] * b[I];
 };
 
-constexpr double dot(Grid2D& a, Grid2D& b)
+inline double dot(Grid2D& a, Grid2D& b)
 {
   return reduce(times, a, b);
 };

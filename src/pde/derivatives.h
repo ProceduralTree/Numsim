@@ -17,19 +17,19 @@
     }                                                            \
   } while (0)
 
-constexpr double d(Offset Direction, const Grid2D& field, Index I, double h)
+inline double d(Offset Direction, const Grid2D& field, Index I, double h)
 {
   assert(Direction.x <= I.x + 1);
   assert(Direction.y <= I.y + 1);
   return 1 / h * (field[I + Direction] - field[I]);
 };
-constexpr double dd(Offset Direction, const Grid2D& field, Index I, double h_squared)
+inline double dd(Offset Direction, const Grid2D& field, Index I, double h_squared)
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);
   return 1 / h_squared * (field[I + Direction] + field[I - Direction] - 2 * field[I]);
 };
-constexpr double duv(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h, double alpha)
+inline double duv(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h, double alpha)
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);
@@ -48,7 +48,7 @@ constexpr double duv(Offset Direction, const Grid2D& field1, const Grid2D& field
   }
 };
 
-constexpr double dxx(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h, double alpha)
+inline double dxx(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h, double alpha)
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);

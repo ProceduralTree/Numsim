@@ -41,7 +41,7 @@ inline void parallel_broadcast(
   }
 };
 template <typename OPERATOR>
-constexpr void broadcast(
+inline void broadcast(
   OPERATOR Operator,
   PDESystem& system,
   Range r)
@@ -50,7 +50,7 @@ constexpr void broadcast(
 };
 
 template <typename OPERATOR>
-constexpr void broadcast(
+inline void broadcast(
   OPERATOR Operator,
   PDESystem& system,
   std::vector<Range> ranges)
@@ -103,5 +103,5 @@ void broadcast_boundary(Operator&& O, Boundaries boundaries, Args&&... args)
   };
 };
 
-constexpr void copy(Index I, Offset O, const Grid2D& from, Grid2D& to) { to[I] = from[I]; };
+inline void copy(Index I, Offset O, const Grid2D& from, Grid2D& to) { to[I] = from[I]; };
 #endif // BROADCAST_H_

@@ -28,7 +28,7 @@ struct LaplaceMatrixOperator
     , a_ij(-2.0 * (1.0 / (grid.x_squared) + 1.0 / (grid.y_squared))) {
     };
 
-  constexpr double operator()(const Grid2D& vec, Index I) const
+  inline double operator()(const Grid2D& vec, Index I) const
   {
     double res = ((vec[I - Ix] + vec[I + Ix]) * h_x_squared_inv) + ((vec[I - Iy] + vec[I + Iy]) * h_y_squared_inv);
     res += a_ij * vec[I];

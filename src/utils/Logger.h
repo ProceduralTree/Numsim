@@ -22,11 +22,11 @@ void Error(const std::string& string);
 #define WarningF(str, ...) LOG::Warning(std::format(str, __VA_ARGS__))
 #define ErrorF(str, ...) LOG::Error(std::format(str, __VA_ARGS__))
 #else
-constexpr void Init(LoggerType type) { }
-constexpr void Close() { }
-constexpr void Debug(const std::string& string) { }
-constexpr void Warning(const std::string& string) { }
-constexpr void Error(const std::string& string) { }
+inline void Init(LoggerType type) { }
+inline void Close() { }
+inline void Debug(const std::string& string) { }
+inline void Warning(const std::string& string) { }
+inline void Error(const std::string& string) { }
 #define DebugF(str, ...) 0
 #define WarningF(str, ...) 0
 #define ErrorF(str, ...) 0

@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <tuple>
 
-constexpr uint32_t masky = 0xAAAA;
-constexpr uint32_t maskx = 0x5555;
+inline uint32_t masky = 0xAAAA;
+inline uint32_t maskx = 0x5555;
 
 enum class Indexing
 {
@@ -22,7 +22,7 @@ struct Indices
 };
 
 // Spread 16 bits apart by inserting zeros between bits (bitwise magic)
-constexpr uint32_t part1by1(uint16_t n)
+inline uint32_t part1by1(uint16_t n)
 {
   uint32_t x = n;
   x = (x | (x << 8)) & 0x00FF00FF;
@@ -33,13 +33,13 @@ constexpr uint32_t part1by1(uint16_t n)
 }
 
 // Morton encode: interleave bits of x and y
-constexpr uint32_t z_order(uint16_t x, uint16_t y)
+inline uint32_t z_order(uint16_t x, uint16_t y)
 {
   return (part1by1(y) << 1) | part1by1(x);
 }
 
 // Compact every other bit into a single 16-bit number
-constexpr uint16_t compact1by1(uint32_t n)
+inline uint16_t compact1by1(uint32_t n)
 {
   n &= 0x55555555;
   n = (n | (n >> 1)) & 0x33333333;
@@ -50,14 +50,14 @@ constexpr uint16_t compact1by1(uint32_t n)
 };
 
 // Morton decode
-constexpr std::pair<uint16_t, uint16_t> decode_z_order(uint32_t z)
+inline std::pair<uint16_t, uint16_t> decode_z_order(uint32_t z)
 {
   uint16_t x = compact1by1(z);
   uint16_t y = compact1by1(z >> 1);
   return { x, y };
 };
 
-constexpr Indices indices(uint32_t z)
+inline Indices indices(uint32_t z)
 {
   uint32_t x_bits_masked = z & maskx;
   uint32_t y_bits_masked = z & masky;
