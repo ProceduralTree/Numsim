@@ -64,7 +64,7 @@ auto main(int argc, char* argv[]) -> int
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  PDESystem test_system = PDESystem(500., 1e-3, 100, 100, 0.01, 0.01, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
+  PDESystem test_system = PDESystem(500., 1e-3, 20, 20, 0.2, 0.2, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
   test_system.settings.loadFromFile("");
 
   print_pde_system(test_system);
