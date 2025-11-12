@@ -1,6 +1,8 @@
 #include "grid/grid.h"
 #include "output/vtk.h"
+#include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <pde/derivatives.h>
 #include <pde/pressuresolvers.h>
@@ -119,14 +121,8 @@ void compute_dt(PDESystem& system)
 {
   double umax = 0;
   double vmax = 0;
-  for (uint16_t j = system.begin.y; j < system.end.y; j++)
-  {
-    for (uint16_t i = system.begin.x; i < system.end.x; i++)
-    {
-      umax = std::max(std::abs(system.u[i, j]), umax);
-      vmax = std::max(std::abs(system.v[i, j]), vmax);
-    }
-  }
+  umax = std::max(system.u.max(), (-system.u.min()));
+  vmax = std::max(system.v.max(), (-system.v.min()));
   double dt1 = (system.Re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
   double dt2 = system.h.x / umax;
   double dt3 = system.h.y / vmax;
@@ -168,17 +164,7 @@ void print_pde_system(const PDESystem& sys)
   printf("╚═══════════════════════════════════════════════╝\n");
   sys.settings.printSettings();
 }
-double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y)
+double interpolate_at(const PDESystem& sys, const Grid2D& field, Index I, Offset o)
 {
-  assert(x >= 0);
-  assert(y >= 0);
-  uint16_t ix = std::floor(x);
-  uint16_t iy = std::floor(y);
-  double dx = x - ix;
-  double dy = y - iy;
-  auto w11 = (1 - dx) * (1 - dy);
-  auto w12 = (1 - dx) * dy;
-  auto w21 = dx * (1 - dy);
-  auto w22 = dx * dy;
-  return w11 * field[ix, iy] + w12 * field[ix + 1, iy] + w21 * field[ix, iy + 1] + w22 * field[ix + 1, iy + 1];
+  return (field[I] + field[I - o]) / 2;
 };
