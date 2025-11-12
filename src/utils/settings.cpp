@@ -1,4 +1,5 @@
 #include "settings.h"
+#include <filesystem>
 #include <utils/Logger.h>
 
 #include <cassert>
@@ -7,6 +8,9 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+
+static Settings globalSettings;
+const Settings& Settings::get() { return globalSettings; }
 
 static std::string testString = ""
                                 "# Settings file for numsim program\n"
@@ -161,6 +165,11 @@ void parseSettings(const std::string& input, Settings* settings)
 }
 
 bool Settings::loadFromFile(std::filesystem::path filename)
+{
+  return globalSettings.loadFromFileInternal(filename);
+}
+
+bool Settings::loadFromFileInternal(std::filesystem::path filename)
 {
   std::ifstream file(filename);
   if (!file.is_open())

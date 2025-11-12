@@ -20,7 +20,7 @@ void calculate_F(PDESystem& system, Index I)
   auto& u = system.u;
   auto& v = system.v;
   auto& h = system.h;
-  auto& alpha = system.settings.alpha;
+  auto& alpha = Settings::get().alpha;
   system.F[I] = u[I] + system.dt * (1 / system.Re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha));
 };
 
@@ -29,7 +29,7 @@ void calculate_G(PDESystem& system, Index I)
   auto& u = system.u;
   auto& v = system.v;
   auto& h = system.h;
-  auto& alpha = system.settings.alpha;
+  auto& alpha = Settings::get().alpha;
   system.G[I] = v[I] + system.dt * (1 / system.Re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha));
 };
 
@@ -44,7 +44,7 @@ void update_v(PDESystem& system, Index index)
 
 void solve_pressure(PDESystem& system)
 {
-  if (system.settings.pressureSolver == Settings::SOR)
+  if (Settings::get().pressureSolver == Settings::SOR)
   {
     auto solver = SORSolver();
     solve(solver, system);
@@ -95,7 +95,7 @@ void compute_dt(PDESystem& system)
   double dt1 = (system.Re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
   double dt2 = system.h.x / umax;
   double dt3 = system.h.y / vmax;
-  system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
+  system.dt = std::min(dt1, std::min(dt2, dt3)) * Settings::get().tau;
 };
 
 void step(PDESystem& system, uint16_t i)
@@ -126,7 +126,7 @@ void print_pde_system(const PDESystem& sys)
   printf("╔═══════════════════════════════════════════════╗\n");
   printf("║              PDE System Summary               ║\n");
   printf("╚═══════════════════════════════════════════════╝\n");
-  sys.settings.printSettings();
+  Settings::get().printSettings();
 }
 double interpolate_at(const PDESystem& sys, const Grid2D& field, Index I, Offset o)
 {
