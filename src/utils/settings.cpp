@@ -1,4 +1,6 @@
 #include "settings.h"
+#include <filesystem>
+#include <utils/Logger.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -7,7 +9,8 @@
 #include <iostream>
 #include <sstream>
 
-#define LOG(...) 0
+static Settings globalSettings;
+const Settings& Settings::get() { return globalSettings; }
 
 static std::string testString = ""
                                 "# Settings file for numsim program\n"
@@ -56,7 +59,7 @@ bool compareToSecond(const char* a, const char* b)
     a++;
     b++;
   }
-  return false;
+  return *b == '\0';
 }
 void parseSettings(const std::string& input, Settings* settings)
 {
@@ -64,15 +67,14 @@ void parseSettings(const std::string& input, Settings* settings)
   uint32_t lineNumber = 0;
   for (std::string line; std::getline(stream, line); lineNumber++)
   {
-    if (line.starts_with('#'))
+    if (line.starts_with('#') || line.starts_with('\n') || line.empty())
     {
       continue;
     }
     bool validLine = line.contains('=');
     if (!validLine)
     {
-      // TODO: use logger or discard error
-      LOG("invalid Line found at : %d", lineNumber);
+      DebugF("invalid Line found at : {}", lineNumber);
       continue;
     }
     size_t eqPos = line.find_first_of("=") + 1;
@@ -120,7 +122,7 @@ void parseSettings(const std::string& input, Settings* settings)
       settings->useDonorCell = value.starts_with("true");
     else if (compareToSecond(key, "alpha"))
       settings->alpha = atof(value.c_str());
-    else if (compareToSecond(key, "dirichletBc"))
+    else if (compareToSecond(key, "dirichlet"))
     {
       if (compareToSecond(key + sizeof("dirichlet") - 1, "BottomX"))
         settings->dirichletBcBottom[0] = atof(value.c_str());
@@ -158,15 +160,17 @@ void parseSettings(const std::string& input, Settings* settings)
       validLine = false;
     // once again check for invalid line
     if (!validLine)
-      LOG("invalid line found at : %d", invalidLine);
+      DebugF("invalid line found at : {}", lineNumber);
   }
 }
 
 bool Settings::loadFromFile(std::filesystem::path filename)
 {
-  parseSettings(testString, this);
-  // TODO Debug
-  return true;
+  return globalSettings.loadFromFileInternal(filename);
+}
+
+bool Settings::loadFromFileInternal(std::filesystem::path filename)
+{
   std::ifstream file(filename);
   if (!file.is_open())
   {

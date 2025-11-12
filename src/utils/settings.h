@@ -35,8 +35,12 @@ struct Settings
   int maximumNumberOfIterations = 1e5; //< maximum number of iterations in the solver
 
   //! parse a text file with settings, each line contains "<parameterName> = <value>"
-  bool loadFromFile(std::filesystem::path filename);
+  static bool loadFromFile(std::filesystem::path filename);
 
   //! output all settings to console
   void printSettings() const;
+  static const Settings& get();
+
+private:
+  bool loadFromFileInternal(std::filesystem::path filename);
 };

@@ -39,7 +39,7 @@ void writeTextVelocity(const PDESystem& system, double currentTime)
   file << "t: " << currentTime << std::endl;
 
   // write mesh width
-  file << "nCells: " << system.settings.nCells[0] << "x" << system.settings.nCells[1]
+  file << "nCells: " << Settings::get().nCells[0] << "x" << Settings::get().nCells[1]
        << ", dx: " << system.h.y << ", dy: " << system.h.y << std::endl
        << std::endl;
 
@@ -122,7 +122,7 @@ void writeTextPressure(const PDESystem& system)
   }
 
   // write mesh width
-  file << "nCells: " << system.settings.nCells[0] << "x" << system.settings.nCells[1]
+  file << "nCells: " << Settings::get().nCells[0] << "x" << Settings::get().nCells[1]
        << ", dx: " << system.h.x << ", dy: " << system.h.y << std::endl
        << std::endl;
 
