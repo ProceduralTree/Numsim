@@ -15,7 +15,7 @@ inline void broadcast(
   Index End)
 {
 
-#pragma omp parallel for simd collapse(2)
+  // #pragma omp parallel for simd collapse(2)
   for (uint16_t j = Begin.y; j <= End.y; j++)
   {
     for (uint16_t i = Begin.x; i <= End.x; i++)
@@ -84,7 +84,7 @@ template <typename Operator, typename... Args>
 void broadcast(Operator&& O, Range r, Args&&... args)
 {
 
-#pragma omp parallel for simd collapse(2)
+  // #pragma omp parallel for simd collapse(2)
   for (uint16_t j = r.begin.y; j <= r.end.y; j++)
   {
     for (uint16_t i = r.begin.x; i <= r.end.x; i++)

@@ -46,34 +46,12 @@ void solve_pressure(PDESystem& system)
 {
   if (system.settings.pressureSolver == Settings::SOR)
   {
-    int i;
-    for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
-    {
-      system.residual = 0;
-      broadcast_boundary(
-        [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
-        system, system.p);
-      broadcast(sor_step, system, system.p.range);
-      i = iter;
-      if (system.residual < system.settings.epsilon)
-        break;
-    }
-    cout << "SOR Steps: " << i << endl;
+    auto solver = SORSolver();
+    solve(solver, system);
   } else
   {
-    int i;
-    for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
-    {
-      system.residual = 0;
-      broadcast_boundary(
-        [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
-        system, system.p);
-      broadcast(gauss_seidel_step, system, system.p.range);
-      i = iter;
-      if (system.residual < system.settings.epsilon)
-        break;
-    }
-    cout << "Gauss-Seidel Steps: " << i << endl;
+    auto solver = GaussSeidelSolver();
+    solve(solver, system);
   }
 };
 
@@ -107,7 +85,6 @@ void set_uv_boundary(PDESystem& system)
   broadcast(set, system.v.boundary.top, Iy, system.v, system.boundaryTop[1]);
   broadcast(set, system.v.boundary.bottom, -Iy, system.v, system.boundaryBottom[1]);
 };
-
 
 void compute_dt(PDESystem& system)
 {

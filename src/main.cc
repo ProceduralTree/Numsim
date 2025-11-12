@@ -64,14 +64,14 @@ auto main(int argc, char* argv[]) -> int
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  PDESystem test_system = PDESystem(100., 1e-3, 50, 50, 0.02, 0.02, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
+  PDESystem test_system = PDESystem(500., 1e-3, 1000, 1000, 0.001, 0.001, { 0, 0 }, { 1., 0. }, { 0, 0 }, { 0, 0 });
   test_system.settings.loadFromFile("");
 
   print_pde_system(test_system);
 
   // test_boundary(test_system);
 
-  for (int i = 0; i < 10000; i++)
+  for (int i = 0; i < 1000; i++)
   {
     std::cout << "\r[Iteration]: " << i << "\t"
               << std::flush;

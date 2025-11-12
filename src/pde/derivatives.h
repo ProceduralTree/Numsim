@@ -21,7 +21,6 @@ constexpr double dd(Offset Direction, const Grid2D& field, Index I, double h_squ
 };
 constexpr double duv(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h, double alpha)
 {
-  double alpha = 0.4;
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);
   if (Direction == Ix)
