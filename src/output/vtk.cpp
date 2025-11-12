@@ -1,4 +1,5 @@
 #include "vtk.h"
+#include "utils/index.h"
 #include <stdio.h>
 #include <vtkImageData.h>
 
@@ -40,12 +41,9 @@ double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESy
                     // in the inner loop
   for (int j = system.begin.y; j < system.end.y; j++)
   {
-    // const double y = static_cast<double>(j) * system.h.y;
     for (int i = system.begin.x; i < system.end.x; i++, index++)
     {
-      // const double x = static_cast<double>(i) * system.h.x;
-
-      arrayPressure->SetValue(index, interpolate_at(system, system.p, i, j));
+      arrayPressure->SetValue(index, system.p[i, j]);
     }
   }
   return index;
@@ -101,21 +99,19 @@ void write_vtk(const PDESystem& system, double time)
   // loop over the mesh where p is defined and assign the values in the
   // vtk data structure
   index = 0; // index for the vtk data structure
-             //
+  Index I = { 0, 0 };
+  Offset o = { 0, 0 };
   for (int j = system.begin.y; j < system.end.y; j++)
   {
-    // const double y = static_cast<double>(j) * system.h.y;
-
     for (int i = system.begin.x; i < system.end.x; i++, index++)
     {
-      // const double x = static_cast<double>(i) * system.h.x;
-
+      I = { static_cast<uint16_t>(i), static_cast<uint16_t>(j) };
+      o = { 1, 0 };
       std::array<double, 3> velocityVector;
-      // velocityVector[0] = interpolate_at(system, system.u, i, j);
-      // velocityVector[1] = interpolate_at(system, system.v, i, j);
-      velocityVector[0] = system.u[i, j];
-      velocityVector[1] = system.v[i, j];
-      velocityVector[2] = 0.0; // z-direction is 0
+      velocityVector[0] = interpolate_at(system, system.u, I, o);
+      o = { 0, 1 };
+      velocityVector[1] = interpolate_at(system, system.v, I, o);
+      velocityVector[2] = 0.0;
 
       arrayVelocity->SetTuple(index, velocityVector.data());
     }
