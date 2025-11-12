@@ -65,6 +65,7 @@ auto main(int argc, char* argv[]) -> int
   if (argc < 2)
   {
     LOG::Warning("missing file name");
+    LOG::Close();
     return -1;
   }
   test_index();
@@ -76,6 +77,7 @@ auto main(int argc, char* argv[]) -> int
   if (!Settings::loadFromFile(argv[1]))
   {
     LOG::Warning("couldn't parse settings file");
+    LOG::Close();
     return -1;
   }
   Settings::get().printSettings();
