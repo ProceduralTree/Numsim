@@ -1,6 +1,9 @@
 #include "grid/grid.h"
 #include "output/vtk.h"
+#include <algorithm>
 #include <cstdint>
+#include <cstdlib>
+#include <iostream>
 #include <pde/derivatives.h>
 #include <pde/pressuresolvers.h>
 #include <pde/system.h>
@@ -17,14 +20,17 @@ void calculate_F(PDESystem& system, Index I)
   auto& u = system.u;
   auto& v = system.v;
   auto& h = system.h;
-  system.F[I] = u[I] + system.dt * (1 / system.Re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - duv(Ix, u, u, I, h.x) - duv(Iy, u, v, I, h.y));
+  auto& alpha = system.settings.alpha;
+  system.F[I] = u[I] + system.dt * (1 / system.Re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha));
 };
+
 void calculate_G(PDESystem& system, Index I)
 {
   auto& u = system.u;
   auto& v = system.v;
   auto& h = system.h;
-  system.G[I] = v[I] + system.dt * (1 / system.Re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - duv(Iy, v, v, I, h.y) - duv(Ix, u, v, I, h.x));
+  auto& alpha = system.settings.alpha;
+  system.G[I] = v[I] + system.dt * (1 / system.Re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha));
 };
 
 void update_u(PDESystem& system, Index index)
@@ -38,10 +44,37 @@ void update_v(PDESystem& system, Index index)
 
 void solve_pressure(PDESystem& system)
 {
-  CGSolver solver = CGSolver(system);
-  // SORSolver solver = SORSolver();
-  //        GaussSeidelSolver solver = GaussSeidelSolver();
-  solve(solver, system);
+  if (system.settings.pressureSolver == Settings::SOR)
+  {
+    int i;
+    for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
+    {
+      system.residual = 0;
+      broadcast_boundary(
+        [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
+        system, system.p);
+      broadcast(sor_step, system, system.p.range);
+      i = iter;
+      if (system.residual < system.settings.epsilon)
+        break;
+    }
+    cout << "SOR Steps: " << i << endl;
+  } else
+  {
+    int i;
+    for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
+    {
+      system.residual = 0;
+      broadcast_boundary(
+        [&](PDESystem& s, Index I, Offset o) { s.p[I + o] = s.p[I]; },
+        system, system.p);
+      broadcast(gauss_seidel_step, system, system.p.range);
+      i = iter;
+      if (system.residual < system.settings.epsilon)
+        break;
+    }
+    cout << "Gauss-Seidel Steps: " << i << endl;
+  }
 };
 
 void calculate_pressure_rhs(PDESystem& system, Index I)
@@ -75,10 +108,25 @@ void set_uv_boundary(PDESystem& system)
   broadcast(set, system.v.boundary.bottom, -Iy, system.v, system.boundaryBottom[1]);
 };
 
+
+void compute_dt(PDESystem& system)
+{
+  double umax = 0;
+  double vmax = 0;
+  umax = std::max(system.u.max(), (-system.u.min()));
+  vmax = std::max(system.v.max(), (-system.v.min()));
+  double dt1 = (system.Re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
+  double dt2 = system.h.x / umax;
+  double dt3 = system.h.y / vmax;
+  system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
+};
+
 void step(PDESystem& system, uint16_t i)
 {
 
   set_uv_boundary(system);
+
+  compute_dt(system);
 
   broadcast_boundary(copy, system.F.boundary, system.u, system.F);
   broadcast_boundary(copy, system.G.boundary, system.v, system.G);
@@ -103,17 +151,7 @@ void print_pde_system(const PDESystem& sys)
   printf("╚═══════════════════════════════════════════════╝\n");
   sys.settings.printSettings();
 }
-double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y)
+double interpolate_at(const PDESystem& sys, const Grid2D& field, Index I, Offset o)
 {
-  assert(x >= 0);
-  assert(y >= 0);
-  uint16_t ix = std::floor(x);
-  uint16_t iy = std::floor(y);
-  double dx = x - ix;
-  double dy = y - iy;
-  auto w11 = (1 - dx) * (1 - dy);
-  auto w12 = (1 - dx) * dy;
-  auto w21 = dx * (1 - dy);
-  auto w22 = dx * dy;
-  return w11 * field[ix, iy] + w12 * field[ix + 1, iy] + w21 * field[ix, iy + 1] + w22 * field[ix + 1, iy + 1];
+  return (field[I] + field[I - o]) / 2;
 };

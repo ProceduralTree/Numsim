@@ -72,11 +72,10 @@ struct PDESystem
   PDESystem& operator=(const PDESystem&) = delete;
 };
 
-void timestep(PDESystem& system);
 void step(PDESystem& system, uint16_t i);
 void print_pde_system(const PDESystem& sys);
 
-double interpolate_at(const PDESystem& sys, const Grid2D& field, double x, double y);
+double interpolate_at(const PDESystem& sys, const Grid2D& field, Index I, Offset o);
 
 constexpr std::array<double, 2> boundary(PDESystem& system, Offset offset)
 {
