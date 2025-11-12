@@ -57,6 +57,8 @@ struct PDESystem
 void step(PDESystem& system, uint16_t i);
 void print_pde_system(const PDESystem& sys);
 
-double interpolate_at(const PDESystem& sys, const Grid2D& field, Index I, Offset o);
+double interpolate_u(const PDESystem& sys, const Grid2D& field, Index I);
+double interpolate_v(const PDESystem& sys, const Grid2D& field, Index I);
+double interpolate_p(const PDESystem& sys, const Grid2D& field, Index I);
 
 #endif // SYSTEM_H_

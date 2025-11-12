@@ -128,7 +128,17 @@ void print_pde_system(const PDESystem& sys)
   printf("╚═══════════════════════════════════════════════╝\n");
   Settings::get().printSettings();
 }
-double interpolate_at(const PDESystem& sys, const Grid2D& field, Index I, Offset o)
+double interpolate_u(const PDESystem& sys, const Grid2D& field, Index I)
 {
-  return (field[I] + field[I - o]) / 2;
+  return (field[I] + field[I + Iy]) / 2;
+};
+
+double interpolate_v(const PDESystem& sys, const Grid2D& field, Index I)
+{
+  return (field[I] + field[I + Ix]) / 2;
+};
+
+double interpolate_p(const PDESystem& sys, const Grid2D& field, Index I)
+{
+  return (field[I] + field[I + Ix] + field[I + Iy] + field[I + Iy + Ix]) / 4;
 };

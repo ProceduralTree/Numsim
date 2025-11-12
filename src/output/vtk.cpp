@@ -1,4 +1,5 @@
 #include "vtk.h"
+#include "pde/system.h"
 #include "utils/index.h"
 #include <stdio.h>
 #include <vtkImageData.h>
@@ -29,7 +30,7 @@ vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
 
   // set number of points in each dimension, 1 cell in z direction
   dataSet->SetDimensions(
-    system.end.x - system.begin.x + 1, system.end.y - system.begin.y + 1, 1); // we want to have points at each corner of each cell
+    system.settings.nCells[0] + 1, system.settings.nCells[1] + 1, 1); // we want to have points at each corner of each cell
 
   return dataSet;
 };
@@ -39,11 +40,13 @@ double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESy
 
   double index = 0; // index for the vtk data structure, will be incremented
                     // in the inner loop
-  for (int j = system.begin.y; j <= system.end.y; j++)
+  Index I;
+  for (int j = system.begin.y - 1; j <= system.end.y; j++)
   {
-    for (int i = system.begin.x; i <= system.end.x; i++, index++)
+    for (int i = system.begin.x - 1; i <= system.end.x; i++, index++)
     {
-      arrayPressure->SetValue(index, system.p[i, j]);
+      I = { static_cast<uint16_t>(i), static_cast<uint16_t>(j) };
+      arrayPressure->SetValue(index, interpolate_p(system, system.p, I));
     }
   }
   return index;
@@ -99,18 +102,15 @@ void write_vtk(const PDESystem& system, double time)
   // loop over the mesh where p is defined and assign the values in the
   // vtk data structure
   index = 0; // index for the vtk data structure
-  Index I = { 0, 0 };
-  Offset o = { 0, 0 };
-  for (int j = system.begin.y; j <= system.end.y; j++)
+  Index I;
+  for (int j = system.begin.y - 1; j <= system.end.y; j++)
   {
-    for (int i = system.begin.x; i <= system.end.x; i++, index++)
+    for (int i = system.begin.x - 1; i <= system.end.x; i++, index++)
     {
       I = { static_cast<uint16_t>(i), static_cast<uint16_t>(j) };
-      o = { 1, 0 };
       std::array<double, 3> velocityVector;
-      velocityVector[0] = interpolate_at(system, system.u, I, o);
-      o = { 0, 1 };
-      velocityVector[1] = interpolate_at(system, system.v, I, o);
+      velocityVector[0] = interpolate_u(system, system.u, I);
+      velocityVector[1] = interpolate_v(system, system.v, I);
       velocityVector[2] = 0.0;
 
       arrayVelocity->SetTuple(index, velocityVector.data());
