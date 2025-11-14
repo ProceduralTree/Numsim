@@ -26,7 +26,7 @@ void set_one(Index I, Offset O, Grid2D& array)
 
   array[I] += O.x;
   array[I] += O.y;
-};
+}
 
 void test_boundary(PDESystem& system)
 {

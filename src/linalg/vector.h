@@ -25,12 +25,12 @@ inline double reduce(Operator&& O, const Grid2D& g, Args&&... args)
 inline double times(Index I, const Grid2D& a, const Grid2D& b)
 {
   return a[I] * b[I];
-};
+}
 
 inline double dot(Grid2D& a, Grid2D& b)
 {
   return reduce(times, a, b);
-};
+}
 
 double Adot(LaplaceMatrixOperator A, Grid2D& a, Grid2D& b)
 {
@@ -45,6 +45,6 @@ double Adot(LaplaceMatrixOperator A, Grid2D& a, Grid2D& b)
 void saxpy(Index I, Grid2D& result, Grid2D& y, Grid2D& x, LaplaceMatrixOperator A)
 {
   result[I] = A(x, I) + y[I];
-};
+}
 
 #endif // VECTOR_H_

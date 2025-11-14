@@ -23,7 +23,7 @@ inline void broadcast(
       Operator(system, { i, j });
     }
   }
-};
+}
 inline void parallel_broadcast(
   std::function<void(PDESystem&, Index)> Operator,
   PDESystem& system,
@@ -39,7 +39,7 @@ inline void parallel_broadcast(
       Operator(system, { i, j });
     }
   }
-};
+}
 template <typename OPERATOR>
 inline void broadcast(
   OPERATOR Operator,
@@ -47,7 +47,7 @@ inline void broadcast(
   Range r)
 {
   broadcast(Operator, system, r.begin, r.end);
-};
+}
 
 template <typename OPERATOR>
 inline void broadcast(
@@ -57,7 +57,7 @@ inline void broadcast(
 {
   for (auto r : ranges)
     broadcast(Operator, system, r.begin, r.end);
-};
+}
 
 // template <typename Operator, typename... Args>
 //  void broadcast_blackred(Operator&& O, Range r, Args&&... args)
@@ -92,7 +92,7 @@ void broadcast(Operator&& O, Range r, Args&&... args)
       std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
     }
   }
-};
+}
 
 template <typename Operator, typename... Args>
 void broadcast_boundary(Operator&& O, Boundaries boundaries, Args&&... args)
@@ -101,7 +101,7 @@ void broadcast_boundary(Operator&& O, Boundaries boundaries, Args&&... args)
   {
     broadcast(std::forward<Operator>(O), b, o, std::forward<Args>(args)...);
   };
-};
+}
 
-inline void copy(Index I, Offset O, const Grid2D& from, Grid2D& to) { to[I] = from[I]; };
+inline void copy(Index I, Offset O, const Grid2D& from, Grid2D& to) { to[I] = from[I]; }
 #endif // BROADCAST_H_

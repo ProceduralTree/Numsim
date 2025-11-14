@@ -22,7 +22,7 @@ void calculate_F(Index I, PDESystem& system)
   auto& h = system.h;
   auto& alpha = Settings::get().alpha;
   system.F[I] = u[I] + system.dt * (1 / system.settings.re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha)) + system.settings.g[0];
-};
+}
 
 void calculate_G(Index I, PDESystem& system)
 {
@@ -31,16 +31,16 @@ void calculate_G(Index I, PDESystem& system)
   auto& h = system.h;
   auto& alpha = Settings::get().alpha;
   system.G[I] = v[I] + system.dt * (1 / system.settings.re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha)) + +system.settings.g[1];
-};
+}
 
 void update_u(Index I, PDESystem& system)
 {
   system.u[I] = system.F[I] - system.dt * d(Ix, system.p, I, system.h.x);
-};
+}
 void update_v(Index I, PDESystem& system)
 {
   system.v[I] = system.G[I] - system.dt * d(Iy, system.p, I, system.h.y);
-};
+}
 
 void solve_pressure(PDESystem& system)
 {
@@ -53,7 +53,7 @@ void solve_pressure(PDESystem& system)
     auto solver = GaussSeidelSolver();
     solve(solver, system);
   }
-};
+}
 
 void calculate_pressure_rhs(Index I, PDESystem& system)
 {
@@ -61,12 +61,12 @@ void calculate_pressure_rhs(Index I, PDESystem& system)
   auto& G = system.G;
   auto& h = system.h;
   system.rhs[I] = (1 / system.dt) * (d(Ix, F, I - Ix, h.x) + d(Iy, G, I - Iy, h.y));
-};
+}
 
 void set(Index I, Offset O, Grid2D& array, double value)
 {
   array[I] = value;
-};
+}
 
 void set_with_neighbour(Index I, Offset O, Grid2D& array, double value)
 {
@@ -84,7 +84,7 @@ void set_uv_boundary(PDESystem& system)
   broadcast(set, system.v.boundary.bottom, -Iy, system.v, system.settings.dirichletBcBottom[1]);
   broadcast(set_with_neighbour, system.v.boundary.left, -Ix, system.v, system.settings.dirichletBcLeft[1]);
   broadcast(set_with_neighbour, system.v.boundary.right, Ix, system.v, system.settings.dirichletBcRight[1]);
-};
+}
 
 void compute_dt(PDESystem& system)
 {
@@ -97,7 +97,7 @@ void compute_dt(PDESystem& system)
   double dt3 = system.h.y / vmax;
   system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
   system.dt = std::min(system.settings.maximumDt, system.dt);
-};
+}
 
 void step(PDESystem& system, double time)
 {
@@ -120,7 +120,7 @@ void step(PDESystem& system, double time)
   broadcast(update_v, system.v.range, system);
 
   set_uv_boundary(system);
-};
+}
 
 void print_pde_system(const PDESystem& sys)
 {
@@ -132,14 +132,14 @@ void print_pde_system(const PDESystem& sys)
 double interpolate_u(const PDESystem& sys, const Grid2D& field, Index I)
 {
   return (field[I] + field[I + Iy]) / 2;
-};
+}
 
 double interpolate_v(const PDESystem& sys, const Grid2D& field, Index I)
 {
   return (field[I] + field[I + Ix]) / 2;
-};
+}
 
 double interpolate_p(const PDESystem& sys, const Grid2D& field, Index I)
 {
   return (field[I] + field[I + Ix] + field[I + Iy] + field[I + Iy + Ix]) / 4;
-};
+}

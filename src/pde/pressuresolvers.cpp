@@ -12,7 +12,7 @@
 #include <pde/system.h>
 #include <set>
 
-void copy_with_offset(Index I, Offset O, Grid2D& array) { array[I] = array[I - O]; };
+void copy_with_offset(Index I, Offset O, Grid2D& array) { array[I] = array[I - O]; }
 
 void gauss_seidel_step(Index I, PDESystem& system, GaussSeidelSolver& S)
 {
@@ -22,7 +22,7 @@ void gauss_seidel_step(Index I, PDESystem& system, GaussSeidelSolver& S)
   double a_ij = -2 * (1 / h.y_squared) - 2 * (1 / h.x_squared);
   system.residual = std::max(std::abs(sum_of_neighbours + a_ij * p[I] - system.rhs[I]), system.residual);
   p[I] = (system.rhs[I] - sum_of_neighbours) / a_ij;
-};
+}
 
 void sor_step(Index I, PDESystem& system)
 {
@@ -33,7 +33,7 @@ void sor_step(Index I, PDESystem& system)
   double residual = std::abs(sum_of_neighbours + a_ij * p[I] - system.rhs[I]);
   system.residual = std::max(residual, system.residual);
   p[I] = (1 - Settings::get().omega) * p[I] + Settings::get().omega * (system.rhs[I] - sum_of_neighbours) / a_ij;
-};
+}
 
 void cg_iteration(PDESystem& system, CGSolver& cg)
 {

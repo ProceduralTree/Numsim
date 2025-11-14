@@ -22,7 +22,7 @@ void set_filename(const vtkSmartPointer<vtkXMLImageDataWriter> writer, int& file
   // assign the new file name to the output vtkWriter_
   writer->SetFileName(fileName.str().c_str());
   fileNumber++;
-};
+}
 
 vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
 {
@@ -40,7 +40,7 @@ vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
     system.settings.nCells[0] + 1, system.settings.nCells[1] + 1, 1); // we want to have points at each corner of each cell
 
   return dataSet;
-};
+}
 
 double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESystem& system)
 {
@@ -57,7 +57,7 @@ double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESy
     }
   }
   return index;
-};
+}
 
 void write_vtk(const PDESystem& system, double time)
 {

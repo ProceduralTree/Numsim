@@ -47,7 +47,7 @@ inline uint16_t compact1by1(uint32_t n)
   n = (n | (n >> 4)) & 0x00FF00FF;
   n = (n | (n >> 8)) & 0x0000FFFF;
   return static_cast<uint16_t>(n);
-};
+}
 
 // Morton decode
 inline std::pair<uint16_t, uint16_t> decode_z_order(uint32_t z)
@@ -55,7 +55,7 @@ inline std::pair<uint16_t, uint16_t> decode_z_order(uint32_t z)
   uint16_t x = compact1by1(z);
   uint16_t y = compact1by1(z >> 1);
   return { x, y };
-};
+}
 
 inline Indices indices(uint32_t z)
 {
@@ -70,7 +70,7 @@ inline Indices indices(uint32_t z)
   left |= x_bits_masked;
   right |= x_bits_masked;
   return { top, bottom, left, right };
-};
+}
 
 uint32_t interleave(uint16_t x, uint16_t y);
 std::tuple<uint32_t, uint32_t> detangle(uint32_t z);

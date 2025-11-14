@@ -13,13 +13,14 @@ Grid2D::Grid2D(Index beg, Index end)
   , begin(beg)
   , end(end)
   , range(beg, end)
-  , boundary(beg, end) {
-    // uint32_t size = std::bit_width(x) + std::bit_width(y);
-    // this->_data.resize(1 << size, 0.);
-    // this->_data.resize(x * y, init);
-  };
+  , boundary(beg, end)
+{
+  // uint32_t size = std::bit_width(x) + std::bit_width(y);
+  // this->_data.resize(1 << size, 0.);
+  // this->_data.resize(x * y, init);
+}
 
-double& Grid2D::operator[](uint32_t index) { return this->_data[index]; };
+double& Grid2D::operator[](uint32_t index) { return this->_data[index]; }
 
 const double& Grid2D::operator[](uint32_t index) const
 {
@@ -28,7 +29,7 @@ const double& Grid2D::operator[](uint32_t index) const
 #else
   return this->_data.at(index);
 #endif
-};
+}
 
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
 {
