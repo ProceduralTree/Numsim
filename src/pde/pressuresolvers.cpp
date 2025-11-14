@@ -130,8 +130,8 @@ void solve(SORSolver& S, PDESystem& system)
     if (iter % 10 && system.residual < Settings::get().epsilon)
     {
 
-      std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
-      std::cout << "\nSOR converged after n=" << iter << " Iterations" << std::endl;
+      // std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
+      // std::cout << "\nSOR converged after n=" << iter << " Iterations" << std::endl;
       break;
     }
   }
