@@ -122,30 +122,6 @@ void solve(Jacoby& S, PDESystem& system)
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
     broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
-    auto r = system.p.range;
-    auto& h = system.h;
-    auto& p = system.p;
-    auto hx2inv = 1 / h.x_squared;
-    auto hy2inv = 1 / h.y_squared;
-    double a_ij = -2. * (1. / h.y_squared) - 2. * (1. / h.x_squared);
-    double a_ijinv = 1 / a_ij;
-    // #pragma omp parallel for collapse(2)
-    //     for (uint16_t j = 1; j <= 100; j++)
-    //     {
-    //       for (uint16_t i = 1; i <= 100; i++)
-    //       {
-    //         uint32_t I = i + p.size_x * j;
-    //         uint32_t Ixp1 = (i + 1) + p.size_x * j;
-    //         uint32_t Ixm1 = (i - 1) + p.size_x * j;
-    //         uint32_t Iyp1 = i + p.size_x * (j + 1);
-    //         uint32_t Iym1 = i + p.size_x * (j - 1);
-    //         double sum_of_neighbours = ((p[Ixm1] + p[Ixp1]) * hx2inv) + ((p[Iym1] + p[Iyp1]) * hy2inv);
-    //         double residual = std::abs(sum_of_neighbours + a_ij * p[I] - system.rhs[I]);
-    //         double update = (system.rhs[I] - sum_of_neighbours) * a_ijinv;
-    //         S.residual[I] = residual;
-    //         S.tmp[I] = update;
-    //       }
-    //     }
     parallel_broadcast(jacoby_step, system.p.range, system, S);
     std::swap(system.p, S.tmp);
     if (iter % 100 && S.residual.max() < Settings::get().epsilon)
