@@ -25,6 +25,7 @@ void set_one(Index I, Offset O, Grid2D& array)
 
 void test_boundary(PDESystem& system)
 {
+  // TODO add proper boundary tests
   broadcast_boundary(set_one, system.p.boundary, system.p);
   ASSERT(system.p[system.p.end + Ix] == 1, "system boundary was " << system.p[system.p.end + Ix])
 
