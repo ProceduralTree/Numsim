@@ -157,6 +157,12 @@ void parseSettings(const std::string& input, Settings* settings)
         settings->pressureSolver = Settings::PressureSolver::SOR;
       else if (value.starts_with("GaussSeidel"))
         settings->pressureSolver = Settings::PressureSolver::GaussSeidel;
+      else if (value.starts_with("CG"))
+        settings->pressureSolver = Settings::PressureSolver::CG;
+      else if (value.starts_with("BlackRed"))
+        settings->pressureSolver = Settings::PressureSolver::BlackRed;
+      else if (value.starts_with("Jacoby"))
+        settings->pressureSolver = Settings::PressureSolver::Jacoby;
       else
         validLine = false;
     } else if (compareToSecond(key, "omega"))
@@ -209,8 +215,23 @@ void Settings::printSettings() const
     "dirichletBcLeft: " << dirichletBcLeft[0] << "," << dirichletBcLeft[1] << "\n"
     "dirichletBcRight: " << dirichletBcRight[0] << "," << dirichletBcRight[1] << "\n"
     "pressureSolver: " ;
-  if(pressureSolver == SOR) std::cout << "SOR\n";
-  else std::cout << "GaussSeidel\n";
+  switch (pressureSolver) {
+    case SOR:
+   std::cout << "SOR\n";
+    break;
+    case CG:
+   std::cout << "CG\n";
+    break;
+    case GaussSeidel:
+   std::cout << "GaussSeidel\n";
+    break;
+  case BlackRed:
+   std::cout << "BlackRed\n";
+    break;
+  case Jacoby:
+   std::cout << "Jacoby\n";
+    break;
+  }
   std::cout <<
     "omega: " << omega << "\n"
     "epsilon: " << epsilon << "\n"

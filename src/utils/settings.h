@@ -26,7 +26,10 @@ struct Settings
 
   enum PressureSolver
   {
+    BlackRed,
+    CG,
     SOR,
+    Jacoby,
     GaussSeidel
   };
   PressureSolver pressureSolver = SOR; //< which pressure solver to use, "GaussSeidel" or "SOR"

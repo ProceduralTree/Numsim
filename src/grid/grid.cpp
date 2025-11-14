@@ -19,15 +19,11 @@ Grid2D::Grid2D(Index beg, Index end)
     // this->_data.resize(x * y, init);
   };
 
-double& Grid2D::operator[](uint32_t index) { return this->_data[index]; };
+double& Grid2D::operator[](uint32_t index) { return this->_data.data()[index]; };
 
 const double& Grid2D::operator[](uint32_t index) const
 {
-#ifdef NDEBUG
-  return this->_data[index];
-#else
-  return this->_data.at(index);
-#endif
+  return this->_data.data()[index];
 };
 
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
