@@ -15,7 +15,6 @@ struct LaplaceMatrixOperator
   const double h_x_squared_inv;
   const double h_y_squared_inv;
   const double a_ij;
-  const double factor = 1.;
 
   LaplaceMatrixOperator(const LaplaceMatrixOperator&) = default;
   LaplaceMatrixOperator(LaplaceMatrixOperator&&) = default;
@@ -32,7 +31,7 @@ struct LaplaceMatrixOperator
   {
     double res = ((vec[I - Ix] + vec[I + Ix]) * h_x_squared_inv) + ((vec[I - Iy] + vec[I + Iy]) * h_y_squared_inv);
     res += a_ij * vec[I];
-    return factor * res;
+    return res;
   }
 };
 
