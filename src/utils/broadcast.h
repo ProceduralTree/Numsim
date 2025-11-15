@@ -1,6 +1,7 @@
 #ifndef BROADCAST_H_
 #define BROADCAST_H_
 
+#include "utils/profiler.h"
 #include <cstdint>
 #include <grid/grid.h>
 #include <pde/system.h>
@@ -45,40 +46,46 @@ inline void broadcast(
 template <typename Operator, typename... Args>
 void broadcast_blackred(Operator&& O, Range r, Args&&... args)
 {
+#pragma omp parallel
+  {
+#pragma omp for collapse(2) nowait schedule(static, 16)
+    for (uint16_t j = r.begin.y; j <= r.end.y; j = j + 2)
+    {
+      for (uint16_t i = r.begin.x; i <= r.end.x; i = i + 2)
+      {
+        std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
+      }
+    }
+#pragma omp for collapse(2) nowait schedule(static, 16)
+    for (uint16_t j = r.begin.y + 1; j <= r.end.y; j = j + 2)
+    {
+      for (uint16_t i = r.begin.x + 1; i <= r.end.x; i = i + 2)
+      {
+        std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
+      }
+    }
 
-#pragma omp parallel for simd collapse(2)
-  for (uint16_t j = r.begin.y; j <= r.end.y; j = j + 2)
-  {
-    for (uint16_t i = r.begin.x; i <= r.end.x; i = i + 2)
+#pragma omp barrier
+
+#pragma omp for collapse(2) nowait schedule(static, 16)
+    for (uint16_t j = r.begin.y; j <= r.end.y; j = j + 2)
     {
-      std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
+      for (uint16_t i = r.begin.x + 1; i <= r.end.x; i = i + 2)
+      {
+        std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
+      }
     }
-  }
-#pragma omp parallel for simd collapse(2)
-  for (uint16_t j = r.begin.y; j <= r.end.y; j = j + 2)
-  {
-    for (uint16_t i = r.begin.x + 1; i <= r.end.x; i = i + 2)
+#pragma omp for collapse(2) nowait schedule(static, 16)
+    for (uint16_t j = r.begin.y + 1; j <= r.end.y; j = j + 2)
     {
-      std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
+      for (uint16_t i = r.begin.x; i <= r.end.x; i = i + 2)
+      {
+        std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
+      }
     }
+#pragma omp barrier
   }
-#pragma omp parallel for simd collapse(2)
-  for (uint16_t j = r.begin.y + 1; j <= r.end.y; j = j + 2)
-  {
-    for (uint16_t i = r.begin.x; i <= r.end.x; i = i + 2)
-    {
-      std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
-    }
-  }
-#pragma omp parallel for simd collapse(2)
-  for (uint16_t j = r.begin.y + 1; j <= r.end.y; j = j + 2)
-  {
-    for (uint16_t i = r.begin.x + 1; i <= r.end.x; i = i + 2)
-    {
-      std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
-    }
-  }
-};
+}
 
 template <typename Operator, typename... Args>
 void broadcast(Operator&& O, Range r, Args&&... args)
@@ -96,13 +103,25 @@ void broadcast(Operator&& O, Range r, Args&&... args)
 template <typename Operator, typename... Args>
 void parallel_broadcast(Operator&& O, Range r, Args&&... args)
 {
+  Scope scope("Parallel Broadcast");
+  constexpr uint16_t BLOCK_SIZE_X = 16;
+  constexpr uint16_t BLOCK_SIZE_Y = 16;
 
-#pragma omp parallel for schedule(dynamic)
-  for (uint16_t j = r.begin.y; j <= r.end.y; j++)
+#pragma omp parallel for collapse(2)
+  for (uint16_t by = r.begin.y; by <= r.end.y; by += BLOCK_SIZE_Y)
   {
-    for (uint16_t i = r.begin.x; i <= r.end.x; i++)
+    for (uint16_t bx = r.begin.x; bx <= r.end.x; bx += BLOCK_SIZE_X)
     {
-      std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
+      uint16_t y_max = std::min<uint16_t>(by + BLOCK_SIZE_Y - 1, r.end.y);
+      uint16_t x_max = std::min<uint16_t>(bx + BLOCK_SIZE_X - 1, r.end.x);
+      for (uint16_t j = by; j <= y_max; j++)
+      {
+#pragma omp simd
+        for (uint16_t i = bx; i <= x_max; i++)
+        {
+          std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
+        }
+      }
     }
   }
 };
@@ -110,6 +129,7 @@ void parallel_broadcast(Operator&& O, Range r, Args&&... args)
 template <typename Operator, typename... Args>
 void broadcast_boundary(Operator&& O, Boundaries b, Args&&... args)
 {
+  Scope scope("Boundary");
   parallel_broadcast(std::forward<Operator>(O), b.top, -Iy, std::forward<Args>(args)...);
   parallel_broadcast(std::forward<Operator>(O), b.bottom, Iy, std::forward<Args>(args)...);
   parallel_broadcast(std::forward<Operator>(O), b.left, Ix, std::forward<Args>(args)...);
