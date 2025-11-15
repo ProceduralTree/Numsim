@@ -1,5 +1,6 @@
 #include "grid/grid.h"
 #include "output/vtk.h"
+#include "utils/profiler.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -44,6 +45,7 @@ inline void update_v(Index I, PDESystem& system)
 
 void solve_pressure(PDESystem& system)
 {
+  Scope scope("Pressure Solver");
   switch (Settings::get().pressureSolver)
   {
   case Settings::SOR:

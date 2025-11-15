@@ -4,6 +4,7 @@
 #include "utils/Logger.h"
 #include "utils/broadcast.h"
 #include "utils/index.h"
+#include "utils/profiler.h"
 #include "utils/settings.h"
 #include <algorithm>
 #include <cmath>
@@ -25,16 +26,16 @@ void solve(CGSolver& cg, PDESystem& system)
   broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
   broadcast_boundary(copy, system.p.boundary, system.p, cg.search_direction);
   // cg.residual[I] = s.rhs[I] - A(s.p, I);
-  broadcast(aAxpy, system.p.range, cg.residual, -1., A, system.p, system.rhs);
+  parallel_broadcast(aAxpy, system.p.range, cg.residual, -1., A, system.p, system.rhs);
 
   residual_norm = dot(cg.residual, cg.residual);
 
   // cg.search_direction = cg.residual;
-  broadcast(copy, system.p.range, Offset { 0, 0 }, cg.residual, cg.search_direction);
+  parallel_broadcast(copy, system.p.range, Offset { 0, 0 }, cg.residual, cg.search_direction);
 
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
-
+    Scope scope("CG Iteration");
     old_residual_norm = residual_norm;
 
     broadcast_boundary(copy_with_offset, cg.search_direction.boundary, cg.search_direction);
@@ -42,10 +43,10 @@ void solve(CGSolver& cg, PDESystem& system)
     double alpha = residual_norm / Adot(A, cg.search_direction, cg.search_direction);
 
     // system.p = system.p + a * cg.search_direction;
-    broadcast(axpy, system.p.range, system.p, alpha, cg.search_direction, system.p);
+    parallel_broadcast(axpy, system.p.range, system.p, alpha, cg.search_direction, system.p);
 
     // cg.residual = cg.residual - a * A * cg.search_direction;
-    broadcast(aAxpy, system.p.range, cg.residual, -alpha, A, cg.search_direction, cg.residual);
+    parallel_broadcast(aAxpy, system.p.range, cg.residual, -alpha, A, cg.search_direction, cg.residual);
 
     // std::cout << "\rResidual:\t" << residual_norm << " Iterations:\t" << iter << std::flush;
     if (cg.residual.max() < Settings::get().epsilon)
@@ -58,7 +59,7 @@ void solve(CGSolver& cg, PDESystem& system)
     double beta = residual_norm / old_residual_norm;
 
     // cg.search_direction[I] = cg.residual[I] + beta * cg.search_direction[I];
-    broadcast(axpy, system.p.range, cg.search_direction, beta, cg.search_direction, cg.residual);
+    parallel_broadcast(axpy, system.p.range, cg.search_direction, beta, cg.search_direction, cg.residual);
   }
   broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
 }
@@ -85,6 +86,7 @@ void solve(SORSolver& S, PDESystem& system)
 {
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
+    Scope scope("SOR");
     system.residual = 0;
     broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
     broadcast(sor_step, system.p.range, system);
@@ -100,15 +102,15 @@ void solve(SORSolver& S, PDESystem& system)
 void solve(BlackRedSolver& S, PDESystem& system)
 {
   system.residual = 0;
+  parallel_broadcast(set, system.p.range, Offset { 0, 0 }, S.residual, INFINITY);
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
-    parallel_broadcast(set, system.p.range, Offset { 0, 0 }, S.residual, INFINITY);
     broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
     broadcast_blackred(black_red_step, system.p.range, system, S);
     if (iter % 100 && S.residual.max() < Settings::get().epsilon)
     {
 
-      std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
+      std::cout << std::scientific << std::setprecision(14) << "Residual: " << S.residual.max() << std::endl;
       std::cout << "Black Red converged after n=" << iter << " Iterations" << std::endl;
       break;
     }

@@ -1,16 +1,14 @@
 #include "utils/Logger.h"
 #include "utils/broadcast.h"
 #include "utils/settings.h"
-#include <chrono>
-#include <cstdint>
-#include <functional>
+#include <csignal>
 #include <grid/grid.h>
 #include <iostream>
-#include <memory>
 #include <mpi.h>
 #include <output/vtk.h>
 #include <pde/system.h>
-#include <vector>
+#include <utils/profiler.h>
+
 #define ASSERT(condition, message)                               \
   do                                                             \
   {                                                              \
@@ -20,6 +18,13 @@
       assert(condition);                                         \
     }                                                            \
   } while (0)
+
+void handle_sigint(int)
+{
+  std::cout << "\n[Profiler] Ctrl+C detected, printing results...\n";
+  Profiler::instance().print();
+  std::_Exit(0); // exit immediately
+}
 
 void set_one(Index I, Offset O, Grid2D& array)
 {
@@ -61,6 +66,7 @@ void test_index()
 
 auto main(int argc, char* argv[]) -> int
 {
+  std::signal(SIGINT, handle_sigint);
   LOG::Init(LOG::LoggerType::STDOUT);
   if (argc < 2)
   {
@@ -88,6 +94,7 @@ auto main(int argc, char* argv[]) -> int
   double time = 0;
   while (time < test_system.settings.endTime)
   {
+    Scope scope("Time Stepping");
     step(test_system, time);
     time += test_system.dt;
     std::cout << "Time: t=" << time << "\t dt=" << test_system.dt << std::endl;
@@ -98,5 +105,6 @@ auto main(int argc, char* argv[]) -> int
 
   MPI_Finalize();
   LOG::Close();
+  Profiler::instance().print();
   return 0;
 }
