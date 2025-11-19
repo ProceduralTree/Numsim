@@ -46,24 +46,24 @@ auto main(int argc, char* argv[]) -> int
     time += system.dt;
     std::cout << "\rTime: t=" << time << "\t dt=" << system.dt << "\t maxp=" << system.p.max() << std::flush;
     write_vtk(system, time);
-    timeSeries.push_back({ time, system.p.max() });
+    // timeSeries.push_back({ time, system.p.max() });
   }
   std::cout << std::endl;
   std::cout << "Final pressure field:" << std::endl;
   std::cout << system.p << std::endl;
-  std::ofstream file(filename);
-  if (!file)
-  {
-    std::cerr << "Fehler beim Öffnen der Datei!" << std::endl;
-    return 1;
-  }
-  file << "Time,MaxPressure" << std::endl;
-  for (auto v : timeSeries)
-  {
-    file << v[0] << "," << v[1] << "\n";
-  }
-  file << std::flush;
-  file.close();
+  // std::ofstream file(filename);
+  // if (!file)
+  // {
+  //   std::cerr << "Fehler beim Öffnen der Datei!" << std::endl;
+  //   return 1;
+  // }
+  // file << "Time,MaxPressure" << std::endl;
+  // for (auto v : timeSeries)
+  // {
+  //   file << v[0] << "," << v[1] << "\n";
+  // }
+  // file << std::flush;
+  // file.close();
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 
   MPI_Finalize();

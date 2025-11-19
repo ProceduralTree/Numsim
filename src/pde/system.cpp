@@ -88,16 +88,15 @@ void set_uv_boundary(PDESystem& system)
 
 void compute_dt(PDESystem& system)
 {
-  // double umax = 0;
-  // double vmax = 0;
-  // umax = std::max(system.u.max(), (-system.u.min()));
-  // vmax = std::max(system.v.max(), (-system.v.min()));
-  // double dt1 = (system.settings.re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
-  // double dt2 = system.h.x / umax;
-  // double dt3 = system.h.y / vmax;
-  // system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
-  // system.dt = std::min(system.settings.maximumDt, system.dt);
-  system.dt = system.settings.maximumDt;
+  double umax = 0;
+  double vmax = 0;
+  umax = std::max(system.u.max(), (-system.u.min()));
+  vmax = std::max(system.v.max(), (-system.v.min()));
+  double dt1 = (system.settings.re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
+  double dt2 = system.h.x / umax;
+  double dt3 = system.h.y / vmax;
+  system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
+  system.dt = std::min(system.settings.maximumDt, system.dt);
 }
 
 void step(PDESystem& system, double time)
