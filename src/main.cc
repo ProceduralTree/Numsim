@@ -1,6 +1,7 @@
 #include "utils/Logger.h"
 #include "utils/profiler.h"
 #include "utils/settings.h"
+#include <csignal>
 #include <grid/grid.h>
 #include <iostream>
 #include <mpi.h>
@@ -8,8 +9,17 @@
 #include <pde/system.h>
 #include <vector>
 
+void signalInt(int sig)
+{
+  DebugF("Interrupt from: {}", sig);
+  Profiler::PrintStack();
+  exit(sig);
+}
+
 auto main(int argc, char* argv[]) -> int
 {
+  signal(SIGINT, signalInt);
+
   MPI_Init(&argc, &argv);
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);

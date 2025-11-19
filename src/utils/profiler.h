@@ -12,6 +12,27 @@ struct TimeStamp
 
   TimeStamp(const std::string& name);
   ~TimeStamp();
+
+  TimeStamp(const TimeStamp&) = delete;
+  TimeStamp& operator=(const TimeStamp&) = delete;
+  TimeStamp(TimeStamp&& other) noexcept
+  {
+    name = std::move(other.name);
+    start = std::move(other.start);
+    end = std::move(other.end);
+    counter = other.counter;
+  }
+  TimeStamp& operator=(TimeStamp&& other) noexcept
+  {
+    name = std::move(other.name);
+    start = std::move(other.start);
+    end = std::move(other.end);
+    counter = other.counter;
+    return *this;
+  }
+
+  void Begin();
+  void End();
 };
 struct StackHelper
 {
@@ -27,11 +48,13 @@ void Push(const std::string& name);
 void Count();
 void Pop();
 void Close();
+void PrintStack();
 #else
 void Init() { }
 void Push(const std::string& name) { }
 void Pop() { }
 void Close() { }
+void PrintStack() { }
 #endif
 
 #ifdef DEBUG
