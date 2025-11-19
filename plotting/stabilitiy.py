@@ -10,19 +10,19 @@ max_pressure2 = []
 time3 = []
 max_pressure3 = []
 
-with open("//home/gdrpg/NumSim/Numsim/build/data_0.074.csv", newline='') as csvfile:
+with open("../build/data_0.074.csv", newline='') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
         time1.append(float(row["Time"]))
         max_pressure1.append(float(row["MaxPressure"]))
 
-with open("/home/gdrpg/NumSim/Numsim/build/data_0.076.csv", newline='') as csvfile:
+with open("../build/data_0.076.csv", newline='') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
         time2.append(float(row["Time"]))
         max_pressure2.append(float(row["MaxPressure"]))
 
-with open("/home/gdrpg/NumSim/Numsim/build/data_0.1.csv", newline='') as csvfile:
+with open("../build/data_0.1.csv", newline='') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
         time3.append(float(row["Time"]))
