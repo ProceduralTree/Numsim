@@ -26,7 +26,7 @@ auto main(int argc, char* argv[]) -> int
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   LOG::Init(LOG::LoggerType::FILE);
-  Profiler::Init();
+  Profiler::Init(Profiler::Type::ACCUMULATE);
   if (argc < 2)
   {
     LOG::Warning("missing file name");

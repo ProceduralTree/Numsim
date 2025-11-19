@@ -3,17 +3,35 @@
 #include <chrono>
 #include <fstream>
 #include <stack>
+#include <unordered_map>
 
 #ifdef DEBUG
 static std::ofstream file;
+static Profiler::Type profType;
+
+struct Accumulated
+{
+  size_t count;
+  std::chrono::high_resolution_clock::duration duration;
+};
+static std::unordered_map<std::string, Accumulated> map;
 
 namespace Profiler {
 
 std::stack<TimeStamp> stack;
 
-void Init()
+void Init(Type type)
 {
-  file = std::ofstream("Profiler.csv");
+  profType = type;
+  switch (profType)
+  {
+  case FILE:
+  default:
+    file = std::ofstream("Profiler.csv");
+    break;
+  case ACCUMULATE:
+    break;
+  }
 }
 void Push(const std::string& name)
 {
@@ -31,8 +49,28 @@ void Pop()
 }
 void Close()
 {
-  file.flush();
-  file.close();
+  switch (profType)
+  {
+  case FILE:
+  default:
+    file.flush();
+    file.close();
+    break;
+  case ACCUMULATE:
+    file = std::ofstream("Profiler.csv");
+
+    for (const auto& m : map)
+    {
+      const auto& s = m.first;
+      const auto& v = m.second;
+
+      file << s << ',' << v.count << ',' << v.duration << ',' << v.duration / v.count << '\n';
+    }
+
+    file.flush();
+    file.close();
+    break;
+  }
 }
 void PrintStack()
 {
@@ -68,7 +106,24 @@ void TimeStamp::Begin()
 void TimeStamp::End()
 {
   this->end = std::chrono::high_resolution_clock::now();
-  file << name << ',' << start << ',' << end << ',' << end - start << ',' << counter << '\n';
+  switch (profType)
+  {
+  case FILE:
+  default:
+    file << name << ',' << start << ',' << end << ',' << end - start << ',' << counter << '\n';
+    break;
+  case ACCUMULATE:
+    auto v = map.find(name);
+    if (v == map.end())
+    {
+      map.insert({ name, { 1, end - start } });
+    } else
+    {
+      v->second.count++;
+      v->second.duration += end - start;
+    }
+    break;
+  }
 }
 
 StackHelper::StackHelper(const std::string& name)
