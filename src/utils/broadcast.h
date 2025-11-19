@@ -1,6 +1,7 @@
 #ifndef BROADCAST_H_
 #define BROADCAST_H_
 
+#include "utils/profiler.h"
 #include <cstdint>
 #include <functional>
 #include <grid/grid.h>
@@ -83,6 +84,7 @@ inline void broadcast(
 template <typename Operator, typename... Args>
 void broadcast(Operator&& O, Range r, Args&&... args)
 {
+  ProfileScope("Broadcast");
 
   // #pragma omp parallel for simd collapse(2)
   for (uint16_t j = r.begin.y; j <= r.end.y; j++)

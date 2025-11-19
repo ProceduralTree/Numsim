@@ -1,5 +1,6 @@
 #include "grid/grid.h"
 #include "output/vtk.h"
+#include "utils/profiler.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -44,6 +45,7 @@ void update_v(Index I, PDESystem& system)
 
 void solve_pressure(PDESystem& system)
 {
+  ProfileScope("Pressure Solver");
   if (Settings::get().pressureSolver == Settings::SOR)
   {
     auto solver = SORSolver();
@@ -101,6 +103,7 @@ void compute_dt(PDESystem& system)
 
 void step(PDESystem& system, double time)
 {
+  ProfileScope("Time Step");
 
   set_uv_boundary(system);
 

@@ -65,10 +65,10 @@ void PrintStack() { }
 #define ProfilePush(name) Profiler::Push(name);
 #define ProfilePop() Profiler::Pop();
 #else
-#define ProfileScope(name) (void)
-#define ProfileCount() (void)
-#define ProfilePush(name) (void)
-#define ProfilePop() (void)
+#define ProfileScope(name)
+#define ProfileCount()
+#define ProfilePush(name)
+#define ProfilePop()
 #endif
 
 }

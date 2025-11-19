@@ -73,11 +73,11 @@ void TimeStamp::End()
 
 StackHelper::StackHelper(const std::string& name)
 {
-  stack.emplace(name);
+  Push(name);
 }
 StackHelper::~StackHelper()
 {
-  stack.pop();
+  Pop();
 }
 }
 #endif
