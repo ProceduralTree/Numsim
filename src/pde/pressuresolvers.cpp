@@ -3,6 +3,7 @@
 #include "linalg/vector.h"
 #include "output/vtk.h"
 #include "utils/broadcast.h"
+#include "utils/profiler.h"
 #include "utils/settings.h"
 #include <algorithm>
 #include <cmath>
@@ -124,6 +125,7 @@ void solve(SORSolver& S, PDESystem& system)
 {
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
+    ProfileScope("SOR Iteration");
     system.residual = 0;
     broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
     broadcast(sor_step, system.p.range, system);

@@ -1,3 +1,7 @@
+import pandas as pd
+import sys
+
+setting_template = """
 # Settings file for numsim program
 # Run ./numsim lid_driven_cavity.txt
 
@@ -5,7 +9,7 @@
 physicalSizeX = 2.0   # physical size of the domain
 physicalSizeY = 2.0
 endTime = 10.0        # duration of the simulation
-re = 1000             # Reynolds number
+re = 100             # Reynolds number
 gX = 0.0              # external forces, set to (gX,gY) = (0,-9.81) to account for gravity
 gY = 0.0
 
@@ -20,8 +24,8 @@ dirichletRightX  = 0
 dirichletRightY  = 0
 
 # Discretization parameters
-nCellsX = 100          # number of cells in x and y direction
-nCellsY = 100
+nCellsX = {}          # number of cells in x and y direction
+nCellsY = {} 
 useDonorCell = true   # if donor cell discretization should be used, possible values: true false
 alpha = 0.5           # factor for donor-cell scheme, 0 is equivalent to central differences
 tau = 0.5             # safety factor for time step width
@@ -33,3 +37,17 @@ omega = 1.6           # overrelaxation factor, only for SOR solver
 epsilon = 1e-5        # tolerance for 2-norm of residual
 maximumNumberOfIterations = 1e4    # maximum number of iterations in the solver
 
+"""
+
+
+
+
+if __name__ == "__main__":
+
+    df = pd.read_csv("../build/Profiler.csv")
+    df.columns = ["name" , "t-begin" , "t-end" , "calltime[ms]" , "#calls"]
+    df["calltime[ms]"] = (df["calltime[ms]"].str.replace("ns", "", regex=False).astype(float) * 1e-6)
+
+    df["#calls"] = df["#calls"] + 1
+    group = df.groupby(by="name").agg({"calltime[ms]" : 'mean' , "#calls" : 'sum'})
+    print(group)
