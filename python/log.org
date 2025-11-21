@@ -1,0 +1,60 @@
+#+title: Log
+
+#+begin_src 
+Gridsize: 16x16
+
+                 calltime[ms]  #calls
+name
+Broadcast            0.000561  113341
+Pressure Solver      0.480298     293
+SOR Iteration        0.006080   20969
+Time Step            0.512335     293
+main               254.239442     294
+
+#+end_src
+
+
+#+begin_src 
+Gridsize: 32x32
+
+                 calltime[ms]  #calls
+name
+Broadcast            0.002182  632824
+Pressure Solver      3.137219     575
+SOR Iteration        0.014028  123230
+Time Step            3.196298     575
+main              2226.274201     576
+
+#+end_src
+
+
+
+#+begin_src 
+Gridsize: 64x64
+
+                 calltime[ms]   #calls
+name
+Broadcast            0.008917  4259992
+Pressure Solver     36.346185     1132
+SOR Iteration        0.048026   845433
+Time Step           36.521146     1132
+main             43981.268950     1133
+
+#+end_src
+
+
+#+begin_src 
+Gridsize: 128x128
+
+                 calltime[ms]    #calls
+name
+Broadcast        3.574125e-02  36291802
+Pressure Solver  4.041188e+02      3277
+SOR Iteration    1.822683e-01   7239354
+Time Step        4.047106e+02      3277
+main             1.350460e+06      3278
+
+#+end_src
+
+
+

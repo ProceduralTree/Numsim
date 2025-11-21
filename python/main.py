@@ -1,5 +1,7 @@
 import pandas as pd
 import sys
+import os
+import subprocess
 
 setting_template = """
 # Settings file for numsim program
@@ -41,13 +43,22 @@ maximumNumberOfIterations = 1e4    # maximum number of iterations in the solver
 
 
 
-
 if __name__ == "__main__":
+    for n in [2**i for i in range(4,8)]:
 
-    df = pd.read_csv("../build/Profiler.csv")
-    df.columns = ["name" , "t-begin" , "t-end" , "calltime[ms]" , "#calls"]
-    df["calltime[ms]"] = (df["calltime[ms]"].str.replace("ns", "", regex=False).astype(float) * 1e-6)
+        with open("/tmp/settings.txt" , "w") as file:
+            file.write(setting_template.format(n,n))
 
-    df["#calls"] = df["#calls"] + 1
-    group = df.groupby(by="name").agg({"calltime[ms]" : 'mean' , "#calls" : 'sum'})
-    print(group)
+        subprocess.run(["../build/numsim" , "/tmp/settings.txt"] , capture_output=True)
+
+
+        df = pd.read_csv("Profiler.csv")
+        df.columns = ["name" , "t-begin" , "t-end" , "calltime[ms]" , "#calls"]
+        df["calltime[ms]"] = (df["calltime[ms]"].str.replace("ns", "", regex=False).astype(float) * 1e-6)
+
+        df["#calls"] = df["#calls"] + 1
+        group = df.groupby(by="name").agg({"calltime[ms]" : 'mean' , "#calls" : 'sum'})
+
+        print(f"\nGridsize: {n}x{n}\n")
+        print(group)
+        print("\n\n")
