@@ -12,7 +12,9 @@ static Profiler::Type profType;
 struct Accumulated
 {
   size_t count;
+  std::chrono::high_resolution_clock::duration min;
   std::chrono::high_resolution_clock::duration duration;
+  std::chrono::high_resolution_clock::duration max;
 };
 static std::unordered_map<std::string, Accumulated> map;
 
@@ -64,7 +66,7 @@ void Close()
       const auto& s = m.first;
       const auto& v = m.second;
 
-      file << s << ',' << v.count << ',' << v.duration << ',' << v.duration / v.count << '\n';
+      file << s << ',' << v.count << ',' << v.duration << ',' << v.duration / v.count << ',' << v.min << ',' << v.max << '\n';
     }
 
     file.flush();
@@ -116,11 +118,15 @@ void TimeStamp::End()
     auto v = map.find(name);
     if (v == map.end())
     {
-      map.insert({ name, { 1, end - start } });
+      auto currentDuration = end - start;
+      map.insert({ name, { 1, currentDuration, currentDuration, currentDuration } });
     } else
     {
       v->second.count++;
-      v->second.duration += end - start;
+      auto currentDuration = end - start;
+      v->second.duration += currentDuration;
+      v->second.min = std::min(v->second.min, currentDuration);
+      v->second.max = std::max(v->second.max, currentDuration);
     }
     break;
   }
