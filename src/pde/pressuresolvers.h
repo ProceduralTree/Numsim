@@ -93,12 +93,11 @@ inline void black_red_step(Index I, PDESystem& system, BlackRedSolver& solver)
     = res;
   system.p[I] = up;
 };
-constexpr void jacoby_step(Index I, PDESystem& system, Jacoby& solver)
+constexpr void jacoby_step(Index I, const PDESystem& system, Jacoby& solver)
 {
   auto [up, res] = jacoby_update(I, system);
   // DebugF("Update {} , residual {}", up, res);
-  solver.residual[I]
-    = res;
+  solver.residual[I] = res;
   solver.tmp[I] = up;
 };
 

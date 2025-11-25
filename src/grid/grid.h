@@ -36,8 +36,6 @@ struct Boundaries
 
 class Grid2D
 {
-private:
-  std::vector<double> _data;
 
 public:
   uint16_t size_x;
@@ -134,6 +132,9 @@ public:
     // }
     // return result;
   };
+
+private:
+  std::vector<double> _data;
 };
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj);
 
