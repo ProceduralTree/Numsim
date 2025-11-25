@@ -124,7 +124,7 @@ void solve(Jacoby& S, PDESystem& system)
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
     broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
-    parallel_broadcast(jacoby_step, system.p.range, system, S);
+    test_broadcast(jacoby_step, system.p.range, system, S);
     std::swap(system.p, S.tmp);
     if (iter % 100 && S.residual.max() < Settings::get().epsilon)
     {
