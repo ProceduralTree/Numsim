@@ -7,13 +7,13 @@
 #include <iostream>
 
 Grid2D::Grid2D(Index beg, Index end)
-  : _data((end.x + 2) * (end.y + 2), 0.)
-  , size_x(end.x - beg.x + 3)
-  , size_y(end.y - beg.y + 3)
+  : size_x((end.x + 2 + 7) / 8 * 8)
+  , size_y(end.y + 2)
   , begin(beg)
   , end(end)
   , range(beg, end)
-  , boundary(beg, end) {
+  , boundary(beg, end)
+  , _data(size_x * size_y, 0.) {
     // uint32_t size = std::bit_width(x) + std::bit_width(y);
     // this->_data.resize(1 << size, 0.);
     // this->_data.resize(x * y, init);
