@@ -3,17 +3,37 @@
 #include <chrono>
 #include <fstream>
 #include <stack>
+#include <unordered_map>
 
 #ifdef DEBUG
 static std::ofstream file;
+static Profiler::Type profType;
+
+struct Accumulated
+{
+  size_t count;
+  std::chrono::high_resolution_clock::duration min;
+  std::chrono::high_resolution_clock::duration duration;
+  std::chrono::high_resolution_clock::duration max;
+};
+static std::unordered_map<std::string, Accumulated> map;
 
 namespace Profiler {
 
 std::stack<TimeStamp> stack;
 
-void Init()
+void Init(Type type)
 {
-  file = std::ofstream("Profiler.csv");
+  profType = type;
+  switch (profType)
+  {
+  case FILE:
+  default:
+    file = std::ofstream("Profiler.csv");
+    break;
+  case ACCUMULATE:
+    break;
+  }
 }
 void Push(const std::string& name)
 {
@@ -31,8 +51,28 @@ void Pop()
 }
 void Close()
 {
-  file.flush();
-  file.close();
+  switch (profType)
+  {
+  case FILE:
+  default:
+    file.flush();
+    file.close();
+    break;
+  case ACCUMULATE:
+    file = std::ofstream("Profiler.csv");
+
+    for (const auto& m : map)
+    {
+      const auto& s = m.first;
+      const auto& v = m.second;
+
+      file << s << ',' << v.count << ',' << v.duration << ',' << v.duration / v.count << ',' << v.min << ',' << v.max << '\n';
+    }
+
+    file.flush();
+    file.close();
+    break;
+  }
 }
 void PrintStack()
 {
@@ -68,7 +108,28 @@ void TimeStamp::Begin()
 void TimeStamp::End()
 {
   this->end = std::chrono::high_resolution_clock::now();
-  file << name << ',' << start << ',' << end << ',' << end - start << ',' << counter << '\n';
+  switch (profType)
+  {
+  case FILE:
+  default:
+    file << name << ',' << start << ',' << end << ',' << end - start << ',' << counter << '\n';
+    break;
+  case ACCUMULATE:
+    auto v = map.find(name);
+    if (v == map.end())
+    {
+      auto currentDuration = end - start;
+      map.insert({ name, { 1, currentDuration, currentDuration, currentDuration } });
+    } else
+    {
+      v->second.count++;
+      auto currentDuration = end - start;
+      v->second.duration += currentDuration;
+      v->second.min = std::min(v->second.min, currentDuration);
+      v->second.max = std::max(v->second.max, currentDuration);
+    }
+    break;
+  }
 }
 
 StackHelper::StackHelper(const std::string& name)

@@ -3,6 +3,11 @@
 #include <chrono>
 namespace Profiler {
 #ifdef DEBUG
+enum Type
+{
+  FILE,
+  ACCUMULATE
+};
 struct TimeStamp
 {
   std::string name;
@@ -43,14 +48,14 @@ struct StackHelper
 #endif
 
 #ifdef DEBUG
-void Init();
+void Init(Type type);
 void Push(const std::string& name);
 void Count();
 void Pop();
 void Close();
 void PrintStack();
 #else
-void Init() { }
+void Init(Type type) { }
 void Push(const std::string& name) { }
 void Pop() { }
 void Close() { }
