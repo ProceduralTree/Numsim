@@ -11,7 +11,7 @@ template <typename Operator, typename... Args>
 inline double sum(Operator&& O, Range r, Args&&... args)
 {
   double result = 0;
-  Scope scope("Reduce");
+  ProfileScope("Reduction");
 #pragma omp parallel for simd collapse(2) reduction(+ : result)
   for (uint16_t j = r.begin.y; j <= r.end.y; j++)
   {

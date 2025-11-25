@@ -47,7 +47,7 @@ void solve_pressure(PDESystem& system)
 {
   ProfileScope("Pressure Solver");
   switch (Settings::get().pressureSolver)
-    {
+  {
   case Settings::SOR:
   {
     auto solver = SORSolver();

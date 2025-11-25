@@ -12,7 +12,7 @@
 void signalInt(int sig)
 {
   DebugF("Interrupt from: {}", sig);
-  Profiler::PrintStack();
+  Profiler::Close();
   exit(sig);
 }
 

@@ -35,7 +35,7 @@ void solve(CGSolver& cg, PDESystem& system)
 
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
-    Scope scope("CG Iteration");
+    ProfileScope("CG Iteration");
     old_residual_norm = residual_norm;
 
     broadcast_boundary(copy_with_offset, cg.search_direction.boundary, cg.search_direction);

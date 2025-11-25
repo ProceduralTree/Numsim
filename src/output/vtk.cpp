@@ -63,7 +63,7 @@ double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESy
 
 void write_vtk(const PDESystem& system, double time)
 {
-  Scope scope("Output VTK");
+  ProfileScope("VTK Writer");
   static int fileNumber = 0;
   set_filename(vtkWriter_, fileNumber);
   auto dataSet = initialize_dataset(system);
