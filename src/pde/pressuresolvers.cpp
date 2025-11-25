@@ -86,15 +86,15 @@ void solve(SORSolver& S, PDESystem& system)
 {
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
-    Scope scope("SOR");
+    ProfileScope("SOR Iteration");
     system.residual = 0;
     broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
     broadcast(sor_step, system.p.range, system);
     if (iter % 10 && system.residual < Settings::get().epsilon)
     {
 
-      std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
-      std::cout << "\nSOR converged after n=" << iter << " Iterations" << std::endl;
+      // std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
+      // std::cout << "\nSOR converged after n=" << iter << " Iterations" << std::endl;
       break;
     }
   }

@@ -23,7 +23,7 @@ inline void calculate_F(Index I, PDESystem& system)
   auto& h = system.h;
   auto& alpha = Settings::get().alpha;
   system.F[I] = u[I] + system.dt * (1 / system.settings.re * (dd(Ix, u, I, h.x_squared) + dd(Iy, u, I, h.y_squared)) - dxx(Ix, u, u, I, h.x, alpha) - duv(Iy, u, v, I, h.y, alpha)) + system.settings.g[0];
-};
+}
 
 inline void calculate_G(Index I, PDESystem& system)
 {
@@ -32,22 +32,22 @@ inline void calculate_G(Index I, PDESystem& system)
   auto& h = system.h;
   auto& alpha = Settings::get().alpha;
   system.G[I] = v[I] + system.dt * (1 / system.settings.re * (dd(Ix, v, I, h.x_squared) + dd(Iy, v, I, h.y_squared)) - dxx(Iy, v, v, I, h.y, alpha) - duv(Ix, u, v, I, h.x, alpha)) + +system.settings.g[1];
-};
+}
 
 inline void update_u(Index I, PDESystem& system)
 {
   system.u[I] = system.F[I] - system.dt * d(Ix, system.p, I, system.h.x);
-};
-inline void update_v(Index I, PDESystem& system)
+}
+void update_v(Index I, PDESystem& system)
 {
   system.v[I] = system.G[I] - system.dt * d(Iy, system.p, I, system.h.y);
-};
+}
 
 void solve_pressure(PDESystem& system)
 {
-  Scope scope("Pressure Solver");
+  ProfileScope("Pressure Solver");
   switch (Settings::get().pressureSolver)
-  {
+    {
   case Settings::SOR:
   {
     auto solver = SORSolver();
@@ -85,7 +85,7 @@ void solve_pressure(PDESystem& system)
     break;
   }
   }
-};
+}
 
 inline void calculate_pressure_rhs(Index I, PDESystem& system)
 {
@@ -93,7 +93,7 @@ inline void calculate_pressure_rhs(Index I, PDESystem& system)
   auto& G = system.G;
   auto& h = system.h;
   system.rhs[I] = (1 / system.dt) * (d(Ix, F, I - Ix, h.x) + d(Iy, G, I - Iy, h.y));
-};
+}
 
 inline void set_with_neighbour(Index I, Offset O, Grid2D& array, double value)
 {
@@ -124,10 +124,11 @@ void compute_dt(PDESystem& system)
   double dt3 = system.h.y / vmax;
   system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
   system.dt = std::min(system.settings.maximumDt, system.dt);
-};
+}
 
 void step(PDESystem& system, double time)
 {
+  ProfileScope("Time Step");
 
   set_uv_boundary(system);
 
@@ -147,7 +148,7 @@ void step(PDESystem& system, double time)
   parallel_broadcast(update_v, system.v.range, system);
 
   set_uv_boundary(system);
-};
+}
 
 void print_pde_system(const PDESystem& sys)
 {
@@ -159,14 +160,14 @@ void print_pde_system(const PDESystem& sys)
 double interpolate_u(const PDESystem& sys, const Grid2D& field, Index I)
 {
   return (field[I] + field[I + Iy]) / 2;
-};
+}
 
 double interpolate_v(const PDESystem& sys, const Grid2D& field, Index I)
 {
   return (field[I] + field[I + Ix]) / 2;
-};
+}
 
 double interpolate_p(const PDESystem& sys, const Grid2D& field, Index I)
 {
   return (field[I] + field[I + Ix] + field[I + Iy] + field[I + Iy + Ix]) / 4;
-};
+}

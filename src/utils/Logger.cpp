@@ -29,6 +29,7 @@ void Init(LoggerType type)
 }
 void Close()
 {
+  outstream->flush();
   switch (loggerType)
   {
   case LoggerType::STDOUT:

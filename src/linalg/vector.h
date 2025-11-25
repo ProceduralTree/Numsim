@@ -26,7 +26,7 @@ inline double sum(Operator&& O, Range r, Args&&... args)
 inline double times(Index I, const Grid2D& a, const Grid2D& b)
 {
   return a[I] * b[I];
-};
+}
 
 inline double dot(Grid2D& a, Grid2D& b)
 {

@@ -31,7 +31,7 @@ inline void broadcast(
   Range r)
 {
   broadcast(Operator, system, r.begin, r.end);
-};
+}
 
 template <typename OPERATOR>
 inline void broadcast(
@@ -41,7 +41,7 @@ inline void broadcast(
 {
   for (auto r : ranges)
     broadcast(Operator, system, r.begin, r.end);
-};
+}
 
 template <typename Operator, typename... Args>
 void broadcast_blackred(Operator&& O, Range r, Args&&... args)
@@ -103,6 +103,7 @@ void broadcast_blackred(Operator&& O, Range r, Args&&... args)
 template <typename Operator, typename... Args>
 void broadcast(Operator&& O, Range r, Args&&... args)
 {
+  ProfileScope("Broadcast");
 
   Scope scope("Sequential Broadcast");
   // #pragma omp parallel for simd collapse(2)
