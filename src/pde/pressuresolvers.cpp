@@ -51,8 +51,7 @@ void solve(CGSolver& cg, PDESystem& system)
     // std::cout << "\rResidual:\t" << residual_norm << " Iterations:\t" << iter << std::flush;
     if (cg.residual.max() < Settings::get().epsilon)
     {
-      std::cout << std::scientific << std::setprecision(14) << "Residual: " << cg.residual.max() << std::endl;
-      std::cout << "converged after n=" << iter << " Iterations" << std::endl;
+      DebugF("Residual {:.14e} \nconverged after n={}", cg.residual.max(), iter);
       break;
     }
     residual_norm = dot(cg.residual, cg.residual);
@@ -74,9 +73,7 @@ void solve(GaussSeidelSolver& S, PDESystem& system)
     broadcast(gauss_seidel_step, system.p.range, system, S);
     if (system.residual < Settings::get().epsilon)
     {
-
-      std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
-      std::cout << "converged after n=" << iter << " Iterations" << std::endl;
+      DebugF("Residual {:.14e} \nconverged after n={}", system.residual, iter);
       break;
     }
   }
@@ -110,8 +107,7 @@ void solve(BlackRedSolver& S, PDESystem& system)
     if (iter % 100 && S.residual.max() < Settings::get().epsilon)
     {
 
-      std::cout << std::scientific << std::setprecision(14) << "Residual: " << S.residual.max() << std::endl;
-      std::cout << "Black Red converged after n=" << iter << " Iterations" << std::endl;
+      DebugF("Residual {:.14e} \nBlack Red converged after n={}", S.residual.max(), iter);
       break;
     }
   }
@@ -128,9 +124,7 @@ void solve(Jacoby& S, PDESystem& system)
     std::swap(system.p, S.tmp);
     if (iter % 100 && S.residual.max() < Settings::get().epsilon)
     {
-
-      std::cout << std::scientific << std::setprecision(14) << "Residual: " << S.residual.max() << std::endl;
-      std::cout << "Jacoby converged after n=" << iter << " Iterations" << std::endl;
+      DebugF("Residual {:.14e} \nJacobi converged after n={}", S.residual.max(), iter);
       break;
     }
   }
