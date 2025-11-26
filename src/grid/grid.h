@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <execution>
 #include <iostream>
 #include <ostream>
 #include <type_traits>
@@ -13,6 +14,7 @@
 #include "utils/index.h"
 
 #define CARTESIAN
+
 struct Boundaries
 {
   const Range top;
@@ -34,12 +36,10 @@ struct Boundaries
 
 class Grid2D
 {
-private:
-  std::vector<double> _data;
-  uint16_t size_x;
-  uint16_t size_y;
 
 public:
+  uint16_t size_x;
+  uint16_t size_y;
   Index begin;
   Index end;
   Range range;
@@ -102,7 +102,7 @@ public:
   const uint32_t elements() const { return this->_data.size(); }
   inline double max()
   {
-    return *std::max_element(_data.begin(), _data.end());
+    return *std::max_element(std::execution::par_unseq, _data.begin(), _data.end());
     // double result = 0;
 
     // #pragma omp parallel for collapse(2) reduction(max : result)
@@ -118,7 +118,7 @@ public:
   };
   inline double min()
   {
-    return *std::min_element(_data.begin(), _data.end());
+    return *std::min_element(std::execution ::par_unseq, _data.begin(), _data.end());
     // double result = 0;
 
     // #pragma omp parallel for collapse(2) reduction(min : result)
@@ -132,6 +132,9 @@ public:
     // }
     // return result;
   };
+
+private:
+  std::vector<double> _data;
 };
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj);
 

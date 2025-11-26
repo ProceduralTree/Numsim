@@ -1,9 +1,11 @@
 #include "vtk.h"
 #include "pde/system.h"
 #include "utils/index.h"
+#include "utils/profiler.h"
 #include <stdio.h>
 #include <vtkImageData.h>
 
+static auto vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 void checkForDir(const std::string& name)
 {
   if (std::filesystem::is_directory(name))
@@ -61,8 +63,8 @@ double write_pressure(vtkSmartPointer<vtkDoubleArray> arrayPressure, const PDESy
 
 void write_vtk(const PDESystem& system, double time)
 {
+  ProfileScope("VTK Writer");
   static int fileNumber = 0;
-  static auto vtkWriter_ = vtkSmartPointer<vtkXMLImageDataWriter>::New();
   set_filename(vtkWriter_, fileNumber);
   auto dataSet = initialize_dataset(system);
 

@@ -7,29 +7,24 @@
 #include <iostream>
 
 Grid2D::Grid2D(Index beg, Index end)
-  : _data((end.x + 2) * (end.y + 2), 0.)
-  , size_x(end.x - beg.x + 3)
-  , size_y(end.y - beg.y + 3)
+  : size_x((end.x + 2 + 7) / 8 * 8)
+  , size_y(end.y + 2)
   , begin(beg)
   , end(end)
   , range(beg, end)
   , boundary(beg, end)
-{
-  // uint32_t size = std::bit_width(x) + std::bit_width(y);
-  // this->_data.resize(1 << size, 0.);
-  // this->_data.resize(x * y, init);
-}
+  , _data(size_x * size_y, 0.) {
+    // uint32_t size = std::bit_width(x) + std::bit_width(y);
+    // this->_data.resize(1 << size, 0.);
+    // this->_data.resize(x * y, init);
+  };
 
-double& Grid2D::operator[](uint32_t index) { return this->_data[index]; }
+double& Grid2D::operator[](uint32_t index) { return this->_data.data()[index]; };
 
 const double& Grid2D::operator[](uint32_t index) const
 {
-#ifdef NDEBUG
-  return this->_data[index];
-#else
-  return this->_data.at(index);
-#endif
-}
+  return this->_data.data()[index];
+};
 
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
 {

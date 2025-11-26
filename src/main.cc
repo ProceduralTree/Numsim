@@ -7,12 +7,12 @@
 #include <mpi.h>
 #include <output/vtk.h>
 #include <pde/system.h>
-#include <vector>
+#include <utils/profiler.h>
 
 void signalInt(int sig)
 {
   DebugF("Interrupt from: {}", sig);
-  Profiler::PrintStack();
+  Profiler::Close();
   exit(sig);
 }
 

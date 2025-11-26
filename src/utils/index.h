@@ -15,8 +15,8 @@ inline bool operator==(Offset lhs, Offset rhs)
 {
   return lhs.x == rhs.x && lhs.y == rhs.y;
 }
-inline const Offset operator*(int n, const Offset& O) { return Offset { static_cast<int>(n * O.x), static_cast<int>(n * O.y) }; }
-inline const Offset operator-(const Offset& O) { return -1 * O; }
+inline const Offset operator*(int n, const Offset& O) { return Offset { static_cast<int>(n * O.x), static_cast<int>(n * O.y) }; };
+inline const Offset operator-(const Offset& O) { return { -O.x, -O.y }; };
 
 struct Index
 {
