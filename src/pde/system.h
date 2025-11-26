@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <grid/grid.h>
 #include <utils/index.h>
+#include <utils/partitioning.h>
 #include <utils/settings.h>
 
 struct Gridsize
@@ -38,15 +39,15 @@ struct PDESystem
   Grid2D rhs;
   const Gridsize h;
 
-  PDESystem(const Settings& settings)
+  PDESystem(const Settings& settings, const MPIInfo& mpiInfo)
     : settings(settings)
     , begin({ 1, 1 })
-    , end(Index(settings.nCells[0], settings.nCells[1]))
+    , end(Index(mpiInfo.nCells[0], mpiInfo.nCells[1]))
     , p(Grid2D(begin, end))
-    , u(Grid2D(begin, end - Ix))
-    , v(Grid2D(begin, end - Iy))
-    , F(Grid2D(begin, end - Ix))
-    , G(Grid2D(begin, end - Iy))
+    , u(Grid2D(begin, end))
+    , v(Grid2D(begin, end))
+    , F(Grid2D(begin, end))
+    , G(Grid2D(begin, end))
     , rhs(Grid2D(begin, end))
     , h(Gridsize(settings)) {
     };
