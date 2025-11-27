@@ -11,10 +11,10 @@ void setMPIInfo(MPIInfo& mpiInfo, const Settings& settings, int rank, int size)
   int nCellsX = settings.nCells[0];
   int nCellsY = settings.nCells[1];
 
-  int px;
-  int py;
+  int px = 0;
+  int py = 0;
   double diff = INFINITY;
-  for (int i = 0; i <= size; i++)
+  for (int i = 1; i <= size; i++)
   {
     double new_diff = std::abs((i / (size / i)) - (nCellsX / nCellsY));
     if (new_diff < diff && size % i == 0)
