@@ -7,6 +7,7 @@
 #include <mpi.h>
 #include <output/vtk.h>
 #include <pde/system.h>
+#include <utils/partitioning.h>
 #include <utils/profiler.h>
 
 void signalInt(int sig)
@@ -43,8 +44,9 @@ auto main(int argc, char* argv[]) -> int
     return -1;
   }
   Settings::get().printSettings();
-
-  PDESystem system = PDESystem(Settings::get());
+  MPIInfo mpiInfo = MPIInfo();
+  setMPIInfo(mpiInfo, Settings::get(), rank, size);
+  PDESystem system = PDESystem(Settings::get(), mpiInfo);
 
   double time = 0;
   ProfilePush("main");
