@@ -26,7 +26,7 @@ auto main(int argc, char* argv[]) -> int
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  LOG::Init(LOG::LoggerType::FILE);
+  LOG::Init(LOG::LoggerType::STDOUT);
   Profiler::Init(Profiler::Type::ACCUMULATE);
   if (argc < 2)
   {
@@ -56,7 +56,7 @@ auto main(int argc, char* argv[]) -> int
     step(system, time);
     time += system.dt;
     std::cout << "\rTime: t=" << time << "\t dt=" << system.dt << std::flush;
-    write_vtk(system, time);
+    // write_vtk(system, time);
   }
   std::cout << std::endl;
   ProfilePop();

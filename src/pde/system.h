@@ -38,18 +38,20 @@ struct PDESystem
   Grid2D G;
   Grid2D rhs;
   const Gridsize h;
+  MPIInfo partitioning;
 
   PDESystem(const Settings& settings, const MPIInfo& mpiInfo)
     : settings(settings)
     , begin({ 1, 1 })
     , end(Index(mpiInfo.nCells[0], mpiInfo.nCells[1]))
     , p(Grid2D(begin, end))
-    , u(Grid2D(begin, end))
-    , v(Grid2D(begin, end))
-    , F(Grid2D(begin, end))
-    , G(Grid2D(begin, end))
+    , u(Grid2D(begin, end - Ix))
+    , v(Grid2D(begin, end - Iy))
+    , F(Grid2D(begin, end - Ix))
+    , G(Grid2D(begin, end - Iy))
     , rhs(Grid2D(begin, end))
-    , h(Gridsize(settings)) {
+    , h(Gridsize(settings))
+    , partitioning(mpiInfo) {
     };
   PDESystem(const PDESystem&) = delete;
   PDESystem& operator=(const PDESystem&) = delete;

@@ -6,6 +6,8 @@
 #include "utils/profiler.h"
 #include <cstdint>
 #include <grid/grid.h>
+#include <mpi.h>
+#include <utility>
 
 template <typename Operator, typename... Args>
 inline double sum(Operator&& O, Range r, Args&&... args)
@@ -22,6 +24,14 @@ inline double sum(Operator&& O, Range r, Args&&... args)
   }
   return result;
 }
+template <typename Operator, typename... Args>
+inline double distributed_sum(Operator&& O, Range r, Args&&... args)
+{
+  double local_sum = sum(std::forward<Operator>(O), r, std::forward<Args>(args)...);
+  double global_sum = 0.;
+  MPI_Allreduce(&local_sum, &global_sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  return global_sum;
+}
 
 inline double times(Index I, const Grid2D& a, const Grid2D& b)
 {
@@ -30,7 +40,7 @@ inline double times(Index I, const Grid2D& a, const Grid2D& b)
 
 inline double dot(Grid2D& a, Grid2D& b)
 {
-  return sum(times, a.range, a, b);
+  return distributed_sum(times, a.range, a, b);
 };
 
 inline double Axy(Index I, LaplaceMatrixOperator A, const Grid2D& x, const Grid2D& y)
@@ -41,7 +51,7 @@ inline double Axy(Index I, LaplaceMatrixOperator A, const Grid2D& x, const Grid2
 inline double Adot(LaplaceMatrixOperator A, Grid2D& a, Grid2D& b)
 {
 
-  return sum(Axy, a.range, A, a, b);
+  return distributed_sum(Axy, a.range, A, a, b);
 }
 
 inline void axpy(Index I, Grid2D& result, double a, const Grid2D& x, const Grid2D& y)
