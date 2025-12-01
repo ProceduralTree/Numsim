@@ -131,8 +131,8 @@ public:
     assert(r.begin.x >= begin.x - 1);
     assert(r.begin.y >= begin.y - 1);
     assert(r.end.x <= end.x + 1);
+    // DebugF("end {{x={},y={}}}  , r {{x={},y={}}}", end.x, end.y, r.end.x, r.end.y);
     assert(r.end.y <= end.y + 1);
-    DebugF("end {{x={},y={}}}  , r {{x={},y={}}}", end.x, end.y, r.end.x, r.end.y);
 
     uint32_t index = 0;
     for (uint16_t j = r.begin.y; j <= r.end.y; j++)
@@ -168,7 +168,7 @@ public:
   {
     double local_min = *std::max_element(std::execution::par_unseq, _data.begin(), _data.end());
     double global_min = 0.;
-    MPI_Allreduce(&local_min, &global_min, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(&local_min, &global_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     return global_min;
     // double result = 0;
 

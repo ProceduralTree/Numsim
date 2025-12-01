@@ -138,12 +138,12 @@ void update_velocity(PDESystem& system)
   Range v_inner = Range { system.v.begin + II, system.v.end - II };
   Boundaries u_border = Boundaries(u_inner.begin, u_inner.end);
   Boundaries v_border = Boundaries(v_inner.begin, v_inner.end);
-  broadcast(update_u, u_border.all, system);
-  broadcast(update_v, v_border.all, system);
+  // broadcast(update_u, u_border.all, system);
+  // broadcast(update_v, v_border.all, system);
+  broadcast(update_u, system.u.range, system);
+  broadcast(update_v, system.v.range, system);
   MPI_COMM_BUFFER* u_comm_buffer = new MPI_COMM_BUFFER(system.u, system.u.boundary.u_ghosts(), MPI_COMM_WORLD, system.partitioning);
-  MPI_COMM_BUFFER* v_comm_buffer = new MPI_COMM_BUFFER(system.v, system.u.boundary.u_ghosts(), MPI_COMM_WORLD, system.partitioning);
-  broadcast(update_u, u_inner, system);
-  broadcast(update_v, v_inner, system);
+  MPI_COMM_BUFFER* v_comm_buffer = new MPI_COMM_BUFFER(system.v, system.v.boundary.v_ghosts(), MPI_COMM_WORLD, system.partitioning);
   delete u_comm_buffer;
   delete v_comm_buffer;
 }

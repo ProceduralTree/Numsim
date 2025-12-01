@@ -43,17 +43,19 @@ void solve(CGSolver& cg, PDESystem& system)
     broadcast_boundary(copy_with_offset, system.partitioning, cg.search_direction.boundary, cg.search_direction);
     // broadcast_boundary(copy, system.p.boundary, system.p, cg.search_direction);
     double alpha = residual_norm / Adot(A, cg.search_direction, cg.search_direction);
-    DebugF("Alpha: {}", alpha);
+    // DebugF("Alpha: {}", alpha);
 
     // system.p = system.p + a * cg.search_direction;
     broadcast(axpy, system.p.range, system.p, alpha, cg.search_direction, system.p);
+    broadcast(axpy, system.p.boundary.all, system.p, alpha, cg.search_direction, system.p);
 
     // cg.residual = cg.residual - a * A * cg.search_direction;
     broadcast(aAxpy, system.p.range, cg.residual, -alpha, A, cg.search_direction, cg.residual);
 
-    // std::cout << "\rResidual:\t" << residual_norm << " Iterations:\t" << iter << std::flush;
+    std::cout << "\rResidual:\t" << residual_norm << " Iterations:\t" << iter << std::endl;
     if (cg.residual.max() < Settings::get().epsilon)
     {
+      DebugF("Finished Pressure solver in inter {}", iter);
       // update Pressure ghosts
       auto comm_buffer = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
       delete comm_buffer;
@@ -61,13 +63,16 @@ void solve(CGSolver& cg, PDESystem& system)
       break;
     }
     residual_norm = dot(cg.residual, cg.residual);
+    // DebugF("Residual Norm : {}", residual_norm);
     double beta = residual_norm / old_residual_norm;
+    // DebugF("Beta: {}", beta);
 
     // TODO Update Ghosts
     // cg.search_direction[I] = cg.residual[I] + beta * cg.search_direction[I];
     distributed_broadcast(axpy, system.partitioning, system.p.range, cg.search_direction, cg.search_direction, beta, cg.search_direction, cg.residual);
     // broadcast(axpy, system.p.range, cg.search_direction, beta, cg.search_direction, cg.residual);
   }
+  MPI_Barrier(MPI_COMM_WORLD);
   broadcast_boundary(copy_with_offset, system.partitioning, system.p.boundary, system.p);
 }
 
@@ -94,7 +99,7 @@ void solve(SORSolver& S, PDESystem& system)
     ProfileScope("SOR Iteration");
     system.residual = 0;
     broadcast_boundary(copy_with_offset, system.partitioning, system.p.boundary, system.p);
-    broadcast(sor_step, system.p.range, system);
+    broadcast_black(sor_step, system.p.range, system);
     if (iter % 10 && system.residual < Settings::get().epsilon)
     {
 

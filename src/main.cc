@@ -13,6 +13,7 @@
 void signalInt(int sig)
 {
   DebugF("Interrupt from: {}", sig);
+  Profiler::PrintStack();
   Profiler::Close();
   exit(sig);
 }
@@ -55,13 +56,24 @@ auto main(int argc, char* argv[]) -> int
     ProfileCount();
     step(system, time);
     time += system.dt;
-    std::cout << "\rTime: t=" << time << "\t dt=" << system.dt << std::flush;
-    // write_vtk(system, time);
+    step(system, time);
+    time += system.dt;
+    for (int i = 0; i < mpiInfo.size; i++)
+    {
+      MPI_Barrier(MPI_COMM_WORLD);
+      if (mpiInfo.rank == i)
+      {
+        std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
+        std::cout << "\rTime: t=" << time << "\t dt=" << system.dt << std::endl;
+        std::cout << "\rPressure: t=" << system.p << std::endl;
+        std::cout << "\r V: " << system.v << "\t U:" << system.u << std::endl;
+      }
+    }
+    break;
+    //   write_vtk(system, time);
   }
   std::cout << std::endl;
   ProfilePop();
-
-  std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
 
   MPI_Finalize();
   LOG::Close();

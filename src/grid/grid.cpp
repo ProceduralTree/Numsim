@@ -7,7 +7,7 @@
 #include <iostream>
 
 Grid2D::Grid2D(Index beg, Index end)
-  : size_x((end.x + 2 + 7) / 8 * 8)
+  : size_x(end.x + 2)
   , size_y(end.y + 2)
   , begin(beg)
   , end(end)
@@ -29,7 +29,7 @@ const double& Grid2D::operator[](uint32_t index) const
 std::ostream& operator<<(std::ostream& os, const Grid2D& obj)
 {
   os << std::scientific << std::setprecision(3) << std::endl;
-  os << (obj.end.x - obj.begin.x) << "x" << (obj.end.y - obj.begin.y) << " Grid2D" << std::endl;
+  os << (obj.end.x - obj.begin.x + 1) << "x" << (obj.end.y - obj.begin.y + 1) << " Grid2D" << std::endl;
 
   const int width = 5;
   const int len = 10;

@@ -11,11 +11,11 @@
 template <typename Operator, typename... Args>
 void broadcast_black(Operator&& O, Range r, Args&&... args)
 {
-  ProfileScope("Black Red Iteration");
+  ProfileScope("Black Iteration");
   constexpr uint16_t BLOCK_SIZE_X = 32;
   constexpr uint16_t BLOCK_SIZE_Y = 32;
 
-#pragma omp loop bind(parallel) collapse(2)
+  // #pragma omp loop bind(parallel) collapse(2)
   for (uint16_t by = r.begin.y; by <= r.end.y; by += BLOCK_SIZE_Y)
   {
     for (uint16_t bx = r.begin.x; bx <= r.end.x; bx += BLOCK_SIZE_X)
@@ -44,10 +44,10 @@ void broadcast_black(Operator&& O, Range r, Args&&... args)
 template <typename Operator, typename... Args>
 void broadcast_red(Operator&& O, Range r, Args&&... args)
 {
-  ProfileScope("Black Red Iteration");
+  ProfileScope("Red Iteration");
   constexpr uint16_t BLOCK_SIZE_X = 32;
   constexpr uint16_t BLOCK_SIZE_Y = 32;
-#pragma omp loop bind(parallel) collapse(2)
+  // #pragma omp loop bind(parallel) collapse(2)
   for (uint16_t by = r.begin.y; by <= r.end.y; by += BLOCK_SIZE_Y)
   {
     for (uint16_t bx = r.begin.x; bx <= r.end.x; bx += BLOCK_SIZE_X)
