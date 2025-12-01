@@ -60,7 +60,7 @@ void solve(CGSolver& cg, PDESystem& system)
     broadcast(aAxpy, system.p.range, cg.residual, -alpha, A, cg.search_direction, cg.residual);
 
     double residual = cg.residual.max();
-    if (residual > 1e5)
+    if (residual > 1e5 || residual == -NAN || residual == NAN)
     {
       ErrorF("residual exploded {}", residual);
 
@@ -83,11 +83,10 @@ void solve(CGSolver& cg, PDESystem& system)
 
     if (residual < Settings::get().epsilon)
     {
-      DebugF("Finished Pressure solver in inter {}", iter);
       // update Pressure ghosts
       auto comm_buffer = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
       delete comm_buffer;
-      DebugF("Residual {:.14e} \nconverged after n={}", cg.residual.max(), iter);
+      DebugF("COnverged after {} Iterations", iter);
       break;
     }
     residual_norm = dot(cg.residual, cg.residual);
