@@ -43,14 +43,18 @@ auto main(int argc, char* argv[]) -> int
     Profiler::Close();
     return -1;
   }
-  Settings::get().printSettings();
-  MPIInfo mpiInfo = MPIInfo();
+  // Settings::get().printSettings();
+  Partitioning::MPIInfo mpiInfo = Partitioning::MPIInfo();
   setMPIInfo(mpiInfo, Settings::get(), rank, size);
+  Settings::change().mpi = mpiInfo;
   PDESystem system = PDESystem(Settings::get(), mpiInfo);
+
+  std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
+  std::cout << "nX " << mpiInfo.nCells[0] << " nY " << mpiInfo.nCells[1] << std::endl;
 
   double time = 0;
   ProfilePush("main");
-  while (time < system.settings.endTime)
+  while (false) //(time < system.settings.endTime)
   {
     ProfileCount();
     step(system, time);
