@@ -96,6 +96,14 @@ void broadcast(Operator&& O, std::array<std::tuple<Range, Offset>, S> ranges, Ar
     broadcast(std::forward<Operator>(O), r, std::forward<Args>(args)...);
   }
 }
+template <typename Operator, size_t S, typename... Args>
+void broadcast(Operator&& O, Boundaries ranges, Args&&... args)
+{
+  for (auto [r, o] : ranges)
+  {
+    broadcast(std::forward<Operator>(O), r - o, std::forward<Args>(args)...);
+  }
+}
 
 template <typename Operator, typename... Args>
 void parallel_broadcast(Operator&& O, Range r, Args&&... args)

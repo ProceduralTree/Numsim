@@ -108,10 +108,12 @@ void distributed_broadcast(Operator&& O, MPIInfo p, Range r, Grid2D& comm_array,
   Boundaries border = Boundaries(inner.begin, inner.end);
   Boundaries ghosts = Boundaries(r.begin, r.end);
 
-  // broadcast(std::forward<Operator>(O), border.all, std::forward<Args>(args)...);
   //  copy boundary sendbuff
-  broadcast(std::forward<Operator>(O), r, std::forward<Args>(args)...);
+  // broadcast(std::forward<Operator>(O), r, std::forward<Args>(args)...);
+  // broadcast(std::forward<Operator>(O), inner, std::forward<Args>(args)...);
+  broadcast(std::forward<Operator>(O), ghosts, std::forward<Args>(args)...);
   MPI_COMM_BUFFER* comm_buffer = new MPI_COMM_BUFFER(comm_array, ghosts.all, MPI_COMM_WORLD, p);
+  broadcast(std::forward<Operator>(O), r, std::forward<Args>(args)...);
   delete comm_buffer;
 };
 
