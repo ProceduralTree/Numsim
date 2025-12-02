@@ -65,8 +65,8 @@ auto main(int argc, char* argv[]) -> int
       {
         std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
         std::cout << "\rTime: t=" << time << "\t dt=" << system.dt << std::endl;
-        std::cout << "\rPressure: t=" << system.p << std::endl;
-        std::cout << "\r V: " << system.v << "\t U:" << system.u << std::endl;
+        // std::cout << "\rPressure: t=" << system.p << std::endl;
+        // std::cout << "\r V: " << system.v << "\t U:" << system.u << std::endl;
       }
     }
     //  break;
