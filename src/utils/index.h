@@ -40,6 +40,10 @@ struct Index
     assert(this->y >= other.y);
     return { static_cast<uint16_t>(this->x - other.x), static_cast<uint16_t>(this->y - other.y) };
   };
+  inline bool operator<=(const Index& other) const
+  {
+    return x <= other.x && y <= other.y;
+  }
 };
 
 struct Range
@@ -50,6 +54,10 @@ struct Range
   {
     return { begin + other, end + other };
   };
+  inline size_t count() const
+  {
+    return (end.x - begin.x + 1) * (end.y - begin.y + 1);
+  }
 };
 
 inline Offset Ix = { 1, 0 };
