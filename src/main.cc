@@ -46,7 +46,7 @@ auto main(int argc, char* argv[]) -> int
   // Settings::get().printSettings();
   Partitioning::MPIInfo mpiInfo = Partitioning::MPIInfo();
   setMPIInfo(mpiInfo, Settings::get(), rank, size);
-  Settings::change().mpi = mpiInfo;
+  Settings::set().mpi = mpiInfo;
   PDESystem system = PDESystem(Settings::get(), mpiInfo);
 
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
