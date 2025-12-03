@@ -200,7 +200,7 @@ const std::vector<MPIInfo>& getInfos()
 const MPIInfo& getInfo(size_t x, size_t y)
 {
   const auto& infos = getInfos();
-  size_t index = y * infos[0].Cells[0] + x;
+  size_t index = y * infos[0].Partitions[0] + x;
   return infos[index];
 }
 } // namespace Partitioning
