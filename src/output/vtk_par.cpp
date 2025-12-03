@@ -113,7 +113,7 @@ void reduceAll(const PDESystem& system, const Partitioning::MPIInfo& mpi)
   {
     dstR.begin.x += Partitioning::getInfo(rankX, 0).nCells[0];
   }
-  for (size_t rankY = 0; rankY < mpi.getGridPos().y; rankY++)
+  for (size_t rankY = mpi.Partitions[1]; rankY > mpi.getGridPos().y; rankY--)
   {
     dstR.begin.y += Partitioning::getInfo(0, rankY).nCells[1];
   }
