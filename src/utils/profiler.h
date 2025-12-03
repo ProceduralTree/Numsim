@@ -2,13 +2,13 @@
 
 #include <chrono>
 namespace Profiler {
-#ifdef DEBUG
 enum Type
 {
   FILE,
   ACCUMULATE,
   ACCUMULATEPAR
 };
+#ifdef DEBUG
 struct TimeStamp
 {
   std::string name;
@@ -56,11 +56,11 @@ void Pop();
 void Close();
 void PrintStack();
 #else
-void Init(Type type) { }
-void Push(const std::string& name) { }
-void Pop() { }
-void Close() { }
-void PrintStack() { }
+inline void Init(Type type) { }
+inline void Push(const std::string& name) { }
+inline void Pop() { }
+inline void Close() { }
+inline void PrintStack() { }
 #endif
 
 #ifdef DEBUG
