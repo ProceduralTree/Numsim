@@ -109,11 +109,11 @@ void reduceAll(const PDESystem& system, const Partitioning::MPIInfo& mpi)
 
   Range dstR = {};
   // TODO: check where 0,0 starts if bottom left like grid coords this should do otherwise switch Y direction
-  for (size_t rankX = 0; rankX < mpi.getIndex().x; rankX++)
+  for (size_t rankX = 0; rankX < mpi.getGridPos().x; rankX++)
   {
     dstR.begin.x += Partitioning::getInfo(rankX, 0).nCells[0];
   }
-  for (size_t rankY = 0; rankY < mpi.getIndex().y; rankY++)
+  for (size_t rankY = 0; rankY < mpi.getGridPos().y; rankY++)
   {
     dstR.begin.y += Partitioning::getInfo(0, rankY).nCells[1];
   }
@@ -139,7 +139,7 @@ void reduceAll(const PDESystem& system, const Partitioning::MPIInfo& mpi)
   }
 
   pressureGrid.copyFromTo(system.p, srcR, dstR);
-  // TODO: check if sizes differ from p to u/v?
+  // TODO: check if sizes differ from p to u/v? and if an offset should be applied to end like -1 so we dont add boarders 2 times
   uGrid.copyFromTo(system.u, srcR, dstR);
   vGrid.copyFromTo(system.v, srcR, dstR);
 
