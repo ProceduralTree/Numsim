@@ -47,7 +47,7 @@ struct Settings
   //! output all settings to console
   void printSettings() const;
   static const Settings& get();
-  static Settings& change();
+  static Settings& set();
 
 private:
   bool loadFromFileInternal(std::filesystem::path filename);

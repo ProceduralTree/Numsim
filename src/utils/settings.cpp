@@ -11,7 +11,7 @@
 
 static Settings globalSettings {};
 const Settings& Settings::get() { return globalSettings; }
-Settings& Settings::change() { return globalSettings; }
+Settings& Settings::set() { return globalSettings; }
 
 static std::string testString = ""
                                 "# Settings file for numsim program\n"
