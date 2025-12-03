@@ -58,9 +58,11 @@ public:
   Index begin;
   Index end;
   Range range;
+  Range globalRange;
   Boundaries boundary;
 
   Grid2D(Index beg, Index end);
+  Grid2D(Index beg, Index end, Range globalRange);
 
   Grid2D(const Grid2D&) = delete;
   Grid2D& operator=(const Grid2D&) = delete;

@@ -118,9 +118,9 @@ void init(const PDESystem& system)
   GlobalvGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
 }
 
-std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::MPIInfo& mpi, const Offset o)
+std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::MPIInfo& mpi)
 {
-  Range srcR = grid.range;
+  Range srcR = grid.globalRange;
 
   Range dstR = { { 1, 1 }, {} };
   for (size_t rankX = 0; rankX < mpi.getGridPos().x; rankX++)
@@ -132,39 +132,35 @@ std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::M
     dstR.begin.y += Partitioning::getInfo(0, rankY).nCells[1];
   }
   dstR.end = dstR.begin + srcR.size() - II;
-  if (mpi.left_neighbor < 0)
+  if (mpi.top_neighbor < 0)
   {
-    srcR.begin.x--;
-    dstR.begin.x--;
-  } else
-  {
-    srcR.begin.x = srcR.begin.x + o.x;
-  }
-  if (mpi.right_neighbor < 0)
-  {
-    srcR.end.x = srcR.end.x + o.x;
+    srcR.end.y++;
+    dstR.end.y++;
   }
   if (mpi.bottom_neighbor < 0)
   {
     srcR.begin.y--;
     dstR.begin.y--;
-  } else
-  {
-    srcR.begin.y = srcR.begin.y + o.y;
   }
-  if (mpi.top_neighbor < 0)
+  if (mpi.left_neighbor < 0)
   {
-    srcR.end.y = srcR.end.y + o.y;
+    srcR.begin.x--;
+    dstR.begin.x--;
+  }
+  if (mpi.right_neighbor < 0)
+  {
+    srcR.end.x++;
+    dstR.end.x++;
   }
   return std::make_pair(srcR, dstR);
 }
 void reduceAll(const PDESystem& system, const Partitioning::MPIInfo& mpi)
 {
-  auto [srcRP, dstRP] = calcCopyRanges(system.p, mpi, { 0, 0 });
+  auto [srcRP, dstRP] = calcCopyRanges(system.p, mpi);
   pressureGrid.copyFromTo(system.p, srcRP, dstRP);
-  auto [srcRU, dstRU] = calcCopyRanges(system.u, mpi, Iy);
+  auto [srcRU, dstRU] = calcCopyRanges(system.u, mpi);
   uGrid.copyFromTo(system.u, srcRU, dstRU);
-  auto [srcRV, dstRV] = calcCopyRanges(system.u, mpi, Ix);
+  auto [srcRV, dstRV] = calcCopyRanges(system.v, mpi);
   vGrid.copyFromTo(system.v, srcRV, dstRV);
 
   MPI_Reduce(pressureGrid.data(), GlobalpressureGrid.data(), pressureGrid.size(), MPI_DOUBLE, MPI_SUM, root_rank, MPI_COMM_WORLD);
