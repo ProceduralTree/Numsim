@@ -66,10 +66,19 @@ struct Range
 
 inline Offset Ix = { 1, 0 };
 inline Offset Iy = { 0, 1 };
+inline Offset II { 1, 1 };
 
 inline bool operator==(Index lhs, Index rhs)
 {
   return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+inline Range operator+(Range r, Offset o)
+{
+  return { r.begin + o, r.end + o };
+}
+inline Range operator-(Range r, Offset o)
+{
+  return { r.begin - o, r.end - o };
 }
 
 #endif // INDEX_H_
