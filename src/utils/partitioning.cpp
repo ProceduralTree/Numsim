@@ -163,8 +163,8 @@ void setMPIInfo(MPIInfo& mpiInfo, const Settings& settings, int rank, int size)
   mpiInfo.right_neighbor = rightneighbor;
   mpiInfo.top_neighbor = topneighbor;
   mpiInfo.bottom_neighbor = bottomneighbor;
-  mpiInfo.Cells[0] = px;
-  mpiInfo.Cells[1] = py;
+  mpiInfo.Partitions[0] = px;
+  mpiInfo.Partitions[1] = py;
 }
 const std::vector<MPIInfo>& getInfos()
 {

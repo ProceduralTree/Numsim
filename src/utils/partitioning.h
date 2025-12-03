@@ -16,7 +16,7 @@ struct MPIInfo
   int right_neighbor;
   int nCells[2];
   int nCellsWithGhostcells[2];
-  int Cells[2];
+  int Partitions[2];
 };
 void setMPIInfo(MPIInfo& mpiInfo, const Settings& settings, int rank, int size);
 const std::vector<MPIInfo>& getInfos();
