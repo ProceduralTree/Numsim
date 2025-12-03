@@ -28,21 +28,22 @@ struct grid
     assert(dstR.end <= sizeI);
     assert(srcR.count() == dstR.count());
 // faster with memcpy but doesnt allow different scaled ranges which we dont need anyways
-#if 0
+#if 1
     for (size_t srcY = srcR.begin.y, dstY = dstR.begin.y; srcY <= srcR.end.y; srcY++, dstY++)
     {
       for (size_t srcX = srcR.begin.x, dstX = dstR.begin.x; srcX <= srcR.end.x; srcX++, dstX++)
       {
-        getAt(dstX, dstY) = getAt(srcX, srcY);
+        getAt(dstX, dstY) = src[{ static_cast<uint16_t>(srcX), static_cast<uint16_t>(srcY) }];
       }
     }
-#endif
+#else
     size_t length = srcR.end.x - srcR.begin.x + 1;
     for (size_t srcY = srcR.begin.y, dstY = dstR.begin.y; srcY <= srcR.end.y; srcY++, dstY++)
     {
       // DebugF("copy for rank {} from row: {}", Settings::get().mpi.rank, srcY);
       memcpy(&getAt(dstR.begin.x, dstY), &src[{ srcR.begin.x, static_cast<uint16_t>(srcY) }], length * sizeof(double));
     }
+#endif
   }
   inline double& getAt(size_t x, size_t y)
   {
@@ -161,9 +162,9 @@ void reduceAll(const PDESystem& system, const Partitioning::MPIInfo& mpi)
 {
   auto [srcRP, dstRP] = calcCopyRanges(system.p, mpi, { 0, 0 });
   pressureGrid.copyFromTo(system.p, srcRP, dstRP);
-  auto [srcRU, dstRU] = calcCopyRanges(system.u, mpi, Ix);
+  auto [srcRU, dstRU] = calcCopyRanges(system.u, mpi, Iy);
   uGrid.copyFromTo(system.u, srcRU, dstRU);
-  auto [srcRV, dstRV] = calcCopyRanges(system.u, mpi, Iy);
+  auto [srcRV, dstRV] = calcCopyRanges(system.u, mpi, Ix);
   vGrid.copyFromTo(system.v, srcRV, dstRV);
 
   MPI_Reduce(pressureGrid.data(), GlobalpressureGrid.data(), pressureGrid.size(), MPI_DOUBLE, MPI_SUM, root_rank, MPI_COMM_WORLD);
