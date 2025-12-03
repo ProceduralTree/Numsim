@@ -58,6 +58,10 @@ struct Range
   {
     return (end.x - begin.x + 1) * (end.y - begin.y + 1);
   }
+  inline Index size() const
+  {
+    return { static_cast<uint16_t>(end.x - begin.x + 1), static_cast<uint16_t>(end.y - begin.y + 1) };
+  }
 };
 
 inline Offset Ix = { 1, 0 };

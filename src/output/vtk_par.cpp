@@ -50,11 +50,12 @@ struct grid
   inline size_t size() { return _data.size(); }
   inline double interpolate(Index at, Offset offset)
   {
-    return (getAt(at.x, at.y) + getAt(at.x + offset.x, at.y + offset.y)) / 2;
+    return (getAt(at.x, at.y) + getAt(at.x + offset.x, at.y + offset.y)) / 2.0;
   }
   inline double interpolate4(Index at)
   {
-    return (getAt(at.x, at.y) + getAt(at.x + 1, at.y) + getAt(at.x, at.y + 1) + getAt(at.x + 1, at.y + 1)) / 4.0;
+    return (interpolate(at, Ix) + interpolate(at + Iy, Ix)) / 2.0;
+    // return (getAt(at.x, at.y) + getAt(at.x + 1, at.y) + getAt(at.x, at.y + 1) + getAt(at.x + 1, at.y + 1)) / 4.0;
   }
 };
 static grid pressureGrid;
@@ -99,9 +100,9 @@ vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
 }
 void init(const PDESystem& system)
 {
-  pressureGrid.setSize(system.p.size_x, system.p.size_y);
-  uGrid.setSize(system.u.size_x, system.u.size_y);
-  vGrid.setSize(system.v.size_x, system.v.size_y);
+  pressureGrid.setSize(system.settings.nCells[0] + 1, system.settings.nCells[1] + 1);
+  uGrid.setSize(system.settings.nCells[0] + 1, system.settings.nCells[1] + 1);
+  vGrid.setSize(system.settings.nCells[0] + 1, system.settings.nCells[1] + 1);
 }
 
 constexpr int root_rank = 0;
