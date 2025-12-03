@@ -18,9 +18,9 @@ struct MPIInfo
   int nCells[2];
   int nCellsWithGhostcells[2];
 
-  inline std::array<std::array<int, 2>, 4> neighbours()
+  inline std::array<std::array<int, 2>, 4> neighbours() const
   {
-    return { std::array<int, 2> { Top_neighbor, 1 }, { bottom_neighbor, 0 }, { left_neighbor, 3 }, { right_neighbor, 2 } };
+    return { std::array<int, 2> { top_neighbor, 1 }, { bottom_neighbor, 0 }, { left_neighbor, 3 }, { right_neighbor, 2 } };
   }
   int Partitions[2];
 };

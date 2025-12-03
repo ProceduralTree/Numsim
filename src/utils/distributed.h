@@ -29,7 +29,7 @@ struct MPI_COMM_BUFFER
   std::array<double*, 4> sendbuffer;
   std::array<double*, 4> recivebuffer;
 
-  MPI_COMM_BUFFER(Grid2D& comm_array, std::array<std::tuple<Range, Offset>, 4> ghosts, MPI_Comm comm, MPIInfo& info)
+  MPI_COMM_BUFFER(Grid2D& comm_array, std::array<std::tuple<Range, Offset>, 4> ghosts, MPI_Comm comm, Partitioning::MPIInfo& info)
     : comm(comm)
     , comm_array(comm_array)
     , communication_boundary(ghosts)
@@ -100,7 +100,7 @@ struct MPI_COMM_BUFFER
 };
 
 template <typename Operator, typename... Args>
-void distributed_broadcast(Operator&& O, MPIInfo p, Range r, Grid2D& comm_array, Args&&... args)
+void distributed_broadcast(Operator&& O, Partitioning::MPIInfo p, Range r, Grid2D& comm_array, Args&&... args)
 {
   assert(r.end.x - r.begin.x > 2);
   assert(r.end.y - r.begin.y > 2);
@@ -109,11 +109,9 @@ void distributed_broadcast(Operator&& O, MPIInfo p, Range r, Grid2D& comm_array,
   Boundaries ghosts = Boundaries(r.begin, r.end);
 
   //  copy boundary sendbuff
-  // broadcast(std::forward<Operator>(O), r, std::forward<Args>(args)...);
-  // broadcast(std::forward<Operator>(O), inner, std::forward<Args>(args)...);
-  broadcast(std::forward<Operator>(O), ghosts, std::forward<Args>(args)...);
+  broadcast(std::forward<Operator>(O), border.unique(), std::forward<Args>(args)...);
   MPI_COMM_BUFFER* comm_buffer = new MPI_COMM_BUFFER(comm_array, ghosts.all, MPI_COMM_WORLD, p);
-  broadcast(std::forward<Operator>(O), r, std::forward<Args>(args)...);
+  broadcast(std::forward<Operator>(O), inner, std::forward<Args>(args)...);
   delete comm_buffer;
 };
 

@@ -43,6 +43,10 @@ struct Boundaries
   {
     return { std::tuple<Range, Offset> { top, 2 * Iy }, { bottom, -2 * Iy }, { left, -Ix }, { right, Ix } };
   };
+  inline std::array<std::tuple<Range, Offset>, 4> unique()
+  {
+    return { std::tuple<Range, Offset> { Range { top.begin + Ix, top.end - Ix }, Iy }, { { bottom.begin + Ix, bottom.end - Ix }, Iy }, { left, -Ix }, { right, Ix } };
+  };
 };
 
 class Grid2D

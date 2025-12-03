@@ -55,7 +55,7 @@ auto main(int argc, char* argv[]) -> int
 
   double time = 0;
   ProfilePush("main");
-  while (false) //(time < system.settings.endTime)
+  while (time < system.settings.endTime)
   {
     ProfileCount();
     step(system, time);

@@ -52,7 +52,7 @@ void solve(CGSolver& cg, PDESystem& system)
     // DebugF("Alpha: {}", alpha);
 
     // system.p = system.p + a * cg.search_direction;
-    broadcast(axpy, { system.p.begin, system.p.end }, system.p, alpha, cg.search_direction, system.p);
+    broadcast(axpy, system.p.range, system.p, alpha, cg.search_direction, system.p);
     // broadcast_ghosts(axpy, system.partitioning, system.p.boundary, system.p, alpha, cg.search_direction, system.p);
     //  broadcast(axpy, system.p.boundary.all, system.p, alpha, cg.search_direction, system.p);
 

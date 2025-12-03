@@ -38,7 +38,7 @@ struct PDESystem
   Grid2D G;
   Grid2D rhs;
   const Gridsize h;
-  MPIInfo partitioning;
+  Partitioning::MPIInfo partitioning;
 
   PDESystem(const Settings& settings, const Partitioning::MPIInfo& mpiInfo)
     : settings(settings)
@@ -46,9 +46,9 @@ struct PDESystem
     , end(Index(mpiInfo.nCells[0] + 1, mpiInfo.nCells[1] + 1))
     , p(Grid2D(begin, end))
     , u(Grid2D((mpiInfo.left_neighbor >= 0) ? begin - Ix : begin, (mpiInfo.right_neighbor >= 0) ? end : end - Ix))
-    , v(Grid2D((mpiInfo.bottom_neighbor >= 0) ? begin - Iy : begin, (mpiInfo.Top_neighbor >= 0) ? end : end - Iy))
+    , v(Grid2D((mpiInfo.bottom_neighbor >= 0) ? begin - Iy : begin, (mpiInfo.top_neighbor >= 0) ? end : end - Iy))
     , F(Grid2D((mpiInfo.left_neighbor >= 0) ? begin - Ix : begin, (mpiInfo.right_neighbor >= 0) ? end : end - Ix))
-    , G(Grid2D((mpiInfo.bottom_neighbor >= 0) ? begin - Iy : begin, (mpiInfo.Top_neighbor >= 0) ? end : end - Iy))
+    , G(Grid2D((mpiInfo.bottom_neighbor >= 0) ? begin - Iy : begin, (mpiInfo.top_neighbor >= 0) ? end : end - Iy))
     , rhs(Grid2D(begin, end))
     , h(Gridsize(settings))
     , partitioning(mpiInfo) {

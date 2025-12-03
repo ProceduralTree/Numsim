@@ -3,6 +3,7 @@
 
 #include "utils/partitioning.h"
 #include "utils/profiler.h"
+#include "utils/settings.h"
 #include <cstdint>
 #include <grid/grid.h>
 #include <pde/system.h>
@@ -97,11 +98,13 @@ void broadcast(Operator&& O, std::array<std::tuple<Range, Offset>, S> ranges, Ar
   }
 }
 template <typename Operator, size_t S, typename... Args>
-void broadcast(Operator&& O, Boundaries ranges, Args&&... args)
+inline void broadcast_with_offset(Operator&& O, const std::array<std::tuple<Range, Offset>, S>& ranges, Args&&... args)
 {
-  for (auto [r, o] : ranges)
+  for (int i = 0; i < 4; i++)
   {
-    broadcast(std::forward<Operator>(O), r - o, std::forward<Args>(args)...);
+    auto [r, o] = ranges[i];
+    if (Settings::get().mpi.neighbours()[i][0] >= 0)
+      broadcast(std::forward<Operator>(O), r - o, std::forward<Args>(args)...);
   }
 }
 
@@ -155,10 +158,10 @@ void test_broadcast(Operator&& O, Range r, Args&&... args)
   }
 };
 template <typename Operator, typename... Args>
-void broadcast_boundary(Operator&& O, MPIInfo partitioning, Boundaries b, Args&&... args)
+void broadcast_boundary(Operator&& O, Partitioning::MPIInfo partitioning, Boundaries b, Args&&... args)
 {
   ProfileScope("Boundary");
-  if (partitioning.Top_neighbor < 0)
+  if (partitioning.top_neighbor < 0)
     broadcast(std::forward<Operator>(O), b.top, -Iy, std::forward<Args>(args)...);
   if (partitioning.bottom_neighbor < 0)
     broadcast(std::forward<Operator>(O), b.bottom, Iy, std::forward<Args>(args)...);
@@ -169,10 +172,10 @@ void broadcast_boundary(Operator&& O, MPIInfo partitioning, Boundaries b, Args&&
 };
 
 template <typename Operator, typename... Args>
-void broadcast_ghosts(Operator&& O, MPIInfo partitioning, Boundaries b, Args&&... args)
+void broadcast_ghosts(Operator&& O, Partitioning::MPIInfo partitioning, Boundaries b, Args&&... args)
 {
   ProfileScope("Ghost");
-  if (partitioning.Top_neighbor >= 0)
+  if (partitioning.top_neighbor >= 0)
     broadcast(std::forward<Operator>(O), b.top, std::forward<Args>(args)...);
   if (partitioning.bottom_neighbor >= 0)
     broadcast(std::forward<Operator>(O), b.bottom, std::forward<Args>(args)...);

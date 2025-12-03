@@ -100,7 +100,7 @@ inline void set_with_neighbour(Index I, Offset O, Grid2D& array, double value)
 
 void set_uv_boundary(PDESystem& system)
 {
-  if (system.partitioning.Top_neighbor < 0)
+  if (system.partitioning.top_neighbor < 0)
     parallel_broadcast(set_with_neighbour, system.u.boundary.top, Iy, system.u, system.settings.dirichletBcTop[0]);
   if (system.partitioning.bottom_neighbor < 0)
     parallel_broadcast(set_with_neighbour, system.u.boundary.bottom, -Iy, system.u, system.settings.dirichletBcBottom[0]);
@@ -109,7 +109,7 @@ void set_uv_boundary(PDESystem& system)
   if (system.partitioning.right_neighbor < 0)
     parallel_broadcast(set, system.u.boundary.right, Ix, system.u, system.settings.dirichletBcRight[0]);
 
-  if (system.partitioning.Top_neighbor < 0)
+  if (system.partitioning.top_neighbor < 0)
     parallel_broadcast(set, system.v.boundary.top, Iy, system.v, system.settings.dirichletBcTop[1]);
   if (system.partitioning.bottom_neighbor < 0)
     parallel_broadcast(set, system.v.boundary.bottom, -Iy, system.v, system.settings.dirichletBcBottom[1]);
@@ -134,12 +134,12 @@ void compute_dt(PDESystem& system)
 
 void update_velocity(PDESystem& system)
 {
-  Range u_inner = Range { system.u.begin + II, system.u.end - II };
-  Range v_inner = Range { system.v.begin + II, system.v.end - II };
-  Boundaries u_border = Boundaries(u_inner.begin, u_inner.end);
-  Boundaries v_border = Boundaries(v_inner.begin, v_inner.end);
-  // broadcast(update_u, u_border.all, system);
-  // broadcast(update_v, v_border.all, system);
+  // Range u_inner = Range { system.u.begin + II, system.u.end - II };
+  // Range v_inner = Range { system.v.begin + II, system.v.end - II };
+  // Boundaries u_border = Boundaries(u_inner.begin, u_inner.end);
+  // Boundaries v_border = Boundaries(v_inner.begin, v_inner.end);
+  //  broadcast(update_u, u_border.all, system);
+  //  broadcast(update_v, v_border.all, system);
   broadcast(update_u, system.u.range, system);
   broadcast(update_v, system.v.range, system);
   MPI_COMM_BUFFER* u_comm_buffer = new MPI_COMM_BUFFER(system.u, system.u.boundary.u_ghosts(), MPI_COMM_WORLD, system.partitioning);
