@@ -40,7 +40,7 @@ struct PDESystem
   const Gridsize h;
   MPIInfo partitioning;
 
-  PDESystem(const Settings& settings, const MPIInfo& mpiInfo)
+  PDESystem(const Settings& settings, const Partitioning::MPIInfo& mpiInfo)
     : settings(settings)
     , begin({ 2, 2 })
     , end(Index(mpiInfo.nCells[0] + 1, mpiInfo.nCells[1] + 1))

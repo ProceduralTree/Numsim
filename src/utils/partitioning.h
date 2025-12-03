@@ -2,13 +2,16 @@
 #define PARTITIONING_H_
 #include <array>
 #include <mpi.h>
-#include <utils/settings.h>
+#include <vector>
 
+struct Settings;
+
+namespace Partitioning {
 struct MPIInfo
 {
   int rank;
   int size;
-  int Top_neighbor;
+  int top_neighbor;
   int bottom_neighbor;
   int left_neighbor;
   int right_neighbor;
@@ -19,7 +22,12 @@ struct MPIInfo
   {
     return { std::array<int, 2> { Top_neighbor, 1 }, { bottom_neighbor, 0 }, { left_neighbor, 3 }, { right_neighbor, 2 } };
   }
+  int Partitions[2];
 };
 void setMPIInfo(MPIInfo& mpiInfo, const Settings& settings, int rank, int size);
+const std::vector<MPIInfo>& getInfos();
+const MPIInfo& getInfo(size_t x, size_t y);
+
+}
 
 #endif // PARTITIONING_H_
