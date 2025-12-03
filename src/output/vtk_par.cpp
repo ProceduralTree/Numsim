@@ -120,7 +120,7 @@ void init(const PDESystem& system)
 
 std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::MPIInfo& mpi)
 {
-  Range srcR = grid.globalRange;
+  Range srcR = grid.range;
 
   Range dstR = { { 1, 1 }, {} };
   for (size_t rankX = 0; rankX < mpi.getGridPos().x; rankX++)
@@ -156,11 +156,15 @@ std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::M
 }
 void reduceAll(const PDESystem& system, const Partitioning::MPIInfo& mpi)
 {
+#define debugRanges(name, src, dst) DebugF("rank: {}, grid " #name " for src:({},{})({},{}) and dst:({},{})({},{})", mpi.rank, src.begin.x, src.begin.y, src.end.x, src.end.y, dst.begin.x, dst.begin.y, dst.end.x, dst.end.y)
   auto [srcRP, dstRP] = calcCopyRanges(system.p, mpi);
+  // debugRanges(p, srcRP, dstRP);
   pressureGrid.copyFromTo(system.p, srcRP, dstRP);
   auto [srcRU, dstRU] = calcCopyRanges(system.u, mpi);
+  // debugRanges(u, srcRU, dstRU);
   uGrid.copyFromTo(system.u, srcRU, dstRU);
   auto [srcRV, dstRV] = calcCopyRanges(system.v, mpi);
+  // debugRanges(v, srcRV, dstRV);
   vGrid.copyFromTo(system.v, srcRV, dstRV);
 
   MPI_Reduce(pressureGrid.data(), GlobalpressureGrid.data(), pressureGrid.size(), MPI_DOUBLE, MPI_SUM, root_rank, MPI_COMM_WORLD);

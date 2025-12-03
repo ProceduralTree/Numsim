@@ -56,6 +56,11 @@ auto main(int argc, char* argv[]) -> int
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
   std::cout << "nX " << mpiInfo.nCells[0] << " nY " << mpiInfo.nCells[1] << std::endl;
 
+#define DebugPrintGrid(name, g) DebugF("Rank{}: Grid " #name " with size:{},{}, begin:{},{}, end:{},{}, range:({},{}),({},{}), globalRange:({},{}),({},{})", mpiInfo.rank, g.size_x, g.size_y, g.begin.x, g.begin.y, g.end.x, g.end.y, g.range.begin.x, g.range.begin.y, g.range.end.x, g.range.end.y, g.globalRange.begin.x, g.globalRange.begin.y, g.globalRange.end.x, g.globalRange.end.y);
+
+  DebugPrintGrid(p, system.p);
+  DebugPrintGrid(u, system.u);
+  DebugPrintGrid(v, system.v);
   double time = 0;
   ProfilePush("main");
   while (time < system.settings.endTime)
