@@ -1,4 +1,5 @@
 #include "utils/partitioning.h"
+#include "utils/index.h"
 #include <cmath>
 #include <mpi.h>
 #include <utils/settings.h>
@@ -202,5 +203,15 @@ const MPIInfo& getInfo(size_t x, size_t y)
   const auto& infos = getInfos();
   size_t index = y * infos[0].Partitions[0] + x;
   return infos[index];
+}
+
+const Index MPIInfo::getGridPos() const
+{
+  int px = Partitions[0];
+
+  uint16_t x = rank % px;
+  uint16_t y = rank / px;
+
+  return Index(x, y);
 }
 } // namespace Partitioning

@@ -1,5 +1,6 @@
 #ifndef PARTITIONING_H_
 #define PARTITIONING_H_
+#include "index.h"
 #include <mpi.h>
 #include <vector>
 
@@ -17,6 +18,7 @@ struct MPIInfo
   int nCells[2];
   int nCellsWithGhostcells[2];
   int Partitions[2];
+  const Index getGridPos() const;
 };
 void setMPIInfo(MPIInfo& mpiInfo, const Settings& settings, int rank, int size);
 const std::vector<MPIInfo>& getInfos();
