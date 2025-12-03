@@ -52,6 +52,10 @@ struct grid
   {
     return (getAt(at.x, at.y) + getAt(at.x + offset.x, at.y + offset.y)) / 2;
   }
+  inline double interpolate4(Index at)
+  {
+    return (getAt(at.x, at.y) + getAt(at.x + 1, at.y) + getAt(at.x, at.y + 1) + getAt(at.x + 1, at.y + 1)) / 4.0;
+  }
 };
 static grid pressureGrid;
 static grid uGrid;
@@ -172,7 +176,7 @@ void writeVTK(const PDESystem& system, double dt)
   {
     for (size_t i = 0; i <= system.settings.nCells[0]; i++, index++)
     {
-      arrayPressure->SetValue(index, pressureGrid.getAt(i, j));
+      arrayPressure->SetValue(index, pressureGrid.interpolate4({ static_cast<uint16_t>(i), static_cast<uint16_t>(j) }));
     }
   }
   assert(index == dataSet->GetNumberOfPoints());
