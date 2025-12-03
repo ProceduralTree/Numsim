@@ -6,7 +6,8 @@ namespace Profiler {
 enum Type
 {
   FILE,
-  ACCUMULATE
+  ACCUMULATE,
+  ACCUMULATEPAR
 };
 struct TimeStamp
 {
