@@ -3,6 +3,7 @@
 #include <mpi.h>
 #include <utils/settings.h>
 
+namespace Partitioning {
 void setMPIInfo(MPIInfo& mpiInfo, const Settings& settings, int rank, int size)
 {
   mpiInfo.rank = rank;
@@ -160,6 +161,46 @@ void setMPIInfo(MPIInfo& mpiInfo, const Settings& settings, int rank, int size)
   // boundary conditions for -1 to -4 clockwise: left, top, right, bottom
   mpiInfo.left_neighbor = lefneighbor;
   mpiInfo.right_neighbor = rightneighbor;
-  mpiInfo.Top_neighbor = topneighbor;
+  mpiInfo.top_neighbor = topneighbor;
   mpiInfo.bottom_neighbor = bottomneighbor;
+  mpiInfo.Partitions[0] = px;
+  mpiInfo.Partitions[1] = py;
 }
+const std::vector<MPIInfo>& getInfos()
+{
+  static std::vector<MPIInfo> infos;
+
+  // Determine current MPI world size (fall back to 1 if MPI isn't initialized)
+  int initialized = 0;
+  MPI_Initialized(&initialized);
+  int currentSize = 1;
+  if (initialized)
+  {
+    MPI_Comm_size(MPI_COMM_WORLD, &currentSize);
+  }
+
+  // If the cached vector doesn't match the current number of ranks, rebuild it
+  if ((int)infos.size() != currentSize)
+  {
+    infos.clear();
+    infos.reserve(currentSize);
+
+    const Settings& settings = Settings::get();
+    for (int rank = 0; rank < currentSize; ++rank)
+    {
+      MPIInfo info; // zero-initialized
+      setMPIInfo(info, settings, rank, currentSize);
+      infos.push_back(std::move(info));
+    }
+  }
+
+  return infos;
+}
+// Get MPIInfo for a specific (x,y) partition starting with (0,0) at top-left
+const MPIInfo& getInfo(size_t x, size_t y)
+{
+  const auto& infos = getInfos();
+  size_t index = y * infos[0].Partitions[0] + x;
+  return infos[index];
+}
+} // namespace Partitioning

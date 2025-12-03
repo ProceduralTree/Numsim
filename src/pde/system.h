@@ -39,7 +39,7 @@ struct PDESystem
   Grid2D rhs;
   const Gridsize h;
 
-  PDESystem(const Settings& settings, const MPIInfo& mpiInfo)
+  PDESystem(const Settings& settings, const Partitioning::MPIInfo& mpiInfo)
     : settings(settings)
     , begin({ 1, 1 })
     , end(Index(mpiInfo.nCells[0], mpiInfo.nCells[1]))
