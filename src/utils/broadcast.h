@@ -1,56 +1,22 @@
 #ifndef BROADCAST_H_
 #define BROADCAST_H_
 
+#include "utils/partitioning.h"
 #include "utils/profiler.h"
+#include "utils/settings.h"
 #include <cstdint>
 #include <grid/grid.h>
 #include <pde/system.h>
 #include <utils/index.h>
-#define LOG(x) std::cout << #x << "=" << x << std::endl
-template <typename OPERATOR>
-inline void broadcast(
-  OPERATOR Operator,
-  PDESystem& system,
-  Index Begin,
-  Index End)
-{
-
-  // #pragma omp parallel for simd collapse(2)
-  for (uint16_t j = Begin.y; j <= End.y; j++)
-  {
-    for (uint16_t i = Begin.x; i <= End.x; i++)
-    {
-      Operator(system, { i, j });
-    }
-  }
-};
-template <typename OPERATOR>
-inline void broadcast(
-  OPERATOR Operator,
-  PDESystem& system,
-  Range r)
-{
-  broadcast(Operator, system, r.begin, r.end);
-}
-
-template <typename OPERATOR>
-inline void broadcast(
-  OPERATOR Operator,
-  PDESystem& system,
-  std::vector<Range> ranges)
-{
-  for (auto r : ranges)
-    broadcast(Operator, system, r.begin, r.end);
-}
 
 template <typename Operator, typename... Args>
-void broadcast_blackred(Operator&& O, Range r, Args&&... args)
+void broadcast_black(Operator&& O, Range r, Args&&... args)
 {
-  ProfileScope("Black Red Iteration");
+  ProfileScope("Black Iteration");
   constexpr uint16_t BLOCK_SIZE_X = 32;
   constexpr uint16_t BLOCK_SIZE_Y = 32;
 
-#pragma omp loop bind(parallel) collapse(2)
+  // #pragma omp loop bind(parallel) collapse(2)
   for (uint16_t by = r.begin.y; by <= r.end.y; by += BLOCK_SIZE_Y)
   {
     for (uint16_t bx = r.begin.x; bx <= r.end.x; bx += BLOCK_SIZE_X)
@@ -74,7 +40,15 @@ void broadcast_blackred(Operator&& O, Range r, Args&&... args)
       }
     }
   }
-#pragma omp loop bind(parallel) collapse(2)
+}
+
+template <typename Operator, typename... Args>
+void broadcast_red(Operator&& O, Range r, Args&&... args)
+{
+  ProfileScope("Red Iteration");
+  constexpr uint16_t BLOCK_SIZE_X = 32;
+  constexpr uint16_t BLOCK_SIZE_Y = 32;
+  // #pragma omp loop bind(parallel) collapse(2)
   for (uint16_t by = r.begin.y; by <= r.end.y; by += BLOCK_SIZE_Y)
   {
     for (uint16_t bx = r.begin.x; bx <= r.end.x; bx += BLOCK_SIZE_X)
@@ -114,6 +88,26 @@ void broadcast(Operator&& O, Range r, Args&&... args)
     }
   }
 };
+
+template <typename Operator, size_t S, typename... Args>
+void broadcast(Operator&& O, std::array<std::tuple<Range, Offset>, S> ranges, Args&&... args)
+{
+  for (auto [r, _] : ranges)
+  {
+    broadcast(std::forward<Operator>(O), r, std::forward<Args>(args)...);
+  }
+}
+template <typename Operator, size_t S, typename... Args>
+inline void broadcast_with_offset(Operator&& O, const std::array<std::tuple<Range, Offset>, S>& ranges, Args&&... args)
+{
+  for (int i = 0; i < 4; i++)
+  {
+    auto [r, o] = ranges[i];
+    if (Settings::get().mpi.neighbours()[i][0] >= 0)
+      broadcast(std::forward<Operator>(O), r - o, std::forward<Args>(args)...);
+  }
+}
+
 template <typename Operator, typename... Args>
 void parallel_broadcast(Operator&& O, Range r, Args&&... args)
 {
@@ -164,15 +158,41 @@ void test_broadcast(Operator&& O, Range r, Args&&... args)
   }
 };
 template <typename Operator, typename... Args>
-void broadcast_boundary(Operator&& O, Boundaries b, Args&&... args)
+void broadcast_boundary(Operator&& O, Partitioning::MPIInfo partitioning, Boundaries b, Args&&... args)
 {
   ProfileScope("Boundary");
-  parallel_broadcast(std::forward<Operator>(O), b.top, -Iy, std::forward<Args>(args)...);
-  parallel_broadcast(std::forward<Operator>(O), b.bottom, Iy, std::forward<Args>(args)...);
-  parallel_broadcast(std::forward<Operator>(O), b.left, Ix, std::forward<Args>(args)...);
-  parallel_broadcast(std::forward<Operator>(O), b.right, -Ix, std::forward<Args>(args)...);
+  if (partitioning.top_neighbor < 0)
+    broadcast(std::forward<Operator>(O), b.top, -Iy, std::forward<Args>(args)...);
+  if (partitioning.bottom_neighbor < 0)
+    broadcast(std::forward<Operator>(O), b.bottom, Iy, std::forward<Args>(args)...);
+  if (partitioning.left_neighbor < 0)
+    broadcast(std::forward<Operator>(O), b.left, Ix, std::forward<Args>(args)...);
+  if (partitioning.right_neighbor < 0)
+    broadcast(std::forward<Operator>(O), b.right, -Ix, std::forward<Args>(args)...);
 };
 
+template <typename Operator, typename... Args>
+void broadcast_ghosts(Operator&& O, Partitioning::MPIInfo partitioning, Boundaries b, Args&&... args)
+{
+  ProfileScope("Ghost");
+  if (partitioning.top_neighbor >= 0)
+    broadcast(std::forward<Operator>(O), b.top, std::forward<Args>(args)...);
+  if (partitioning.bottom_neighbor >= 0)
+    broadcast(std::forward<Operator>(O), b.bottom, std::forward<Args>(args)...);
+  if (partitioning.left_neighbor >= 0)
+    broadcast(std::forward<Operator>(O), b.left, std::forward<Args>(args)...);
+  if (partitioning.right_neighbor >= 0)
+    broadcast(std::forward<Operator>(O), b.right, std::forward<Args>(args)...);
+};
+template <typename Operator, typename... Args>
+void broadcast_halo(Operator&& O, Boundaries b, Args&&... args)
+{
+  ProfileScope("Halo");
+  broadcast(std::forward<Operator>(O), b.top, -Iy, std::forward<Args>(args)...);
+  broadcast(std::forward<Operator>(O), b.bottom, Iy, std::forward<Args>(args)...);
+  broadcast(std::forward<Operator>(O), b.left, Ix, std::forward<Args>(args)...);
+  broadcast(std::forward<Operator>(O), b.right, -Ix, std::forward<Args>(args)...);
+};
 inline void copy(Index I, Offset O, const Grid2D& from, Grid2D& to) { to[I] = from[I]; };
 // inline void copy(Index I, const Grid2D& from, Grid2D& to) { to[I] = from[I]; };
 

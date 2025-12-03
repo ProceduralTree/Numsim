@@ -2,15 +2,18 @@
 #define GRID_H_
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <execution>
 #include <iostream>
+#include <mpi.h>
 #include <ostream>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "indexing.h"
+#include "utils/Logger.h"
 #include "utils/index.h"
 
 #define CARTESIAN
@@ -32,6 +35,18 @@ struct Boundaries
   { };
   auto begin() const { return all.begin(); };
   auto end() const { return all.end(); };
+  inline std::array<std::tuple<Range, Offset>, 4> u_ghosts()
+  {
+    return { std::tuple<Range, Offset> { top, Iy }, { bottom, -Iy }, { left, -2 * Ix }, { right, 2 * Ix } };
+  };
+  inline std::array<std::tuple<Range, Offset>, 4> v_ghosts()
+  {
+    return { std::tuple<Range, Offset> { top, 2 * Iy }, { bottom, -2 * Iy }, { left, -Ix }, { right, Ix } };
+  };
+  inline std::array<std::tuple<Range, Offset>, 4> unique()
+  {
+    return { std::tuple<Range, Offset> { Range { top.begin + Ix, top.end - Ix }, Iy }, { { bottom.begin + Ix, bottom.end - Ix }, Iy }, { left, -Ix }, { right, Ix } };
+  };
 };
 
 class Grid2D
@@ -99,10 +114,47 @@ public:
   double& operator[](uint32_t z);
   const double& operator[](uint32_t z) const;
 
+  void get(double* buffer, Range r) const
+  {
+    assert(r.begin.x >= begin.x - 1);
+    assert(r.begin.y >= begin.y - 1);
+    assert(r.end.x <= end.x + 1);
+    assert(r.end.y <= end.y + 1);
+
+    uint32_t index = 0;
+    for (uint16_t j = r.begin.y; j <= r.end.y; j++)
+    {
+      for (uint16_t i = r.begin.x; i <= r.end.x; i++, index++)
+      {
+        buffer[index] = (*this)[{ i, j }];
+      }
+    }
+  };
+  inline void set(double* buffer, Range r)
+  {
+    assert(r.begin.x >= begin.x - 1);
+    assert(r.begin.y >= begin.y - 1);
+    assert(r.end.x <= end.x + 1);
+    // DebugF("end {{x={},y={}}}  , r {{x={},y={}}}", end.x, end.y, r.end.x, r.end.y);
+    assert(r.end.y <= end.y + 1);
+
+    uint32_t index = 0;
+    for (uint16_t j = r.begin.y; j <= r.end.y; j++)
+    {
+      for (uint16_t i = r.begin.x; i <= r.end.x; i++, index++)
+      {
+        (*this)[{ i, j }] = buffer[index];
+      }
+    }
+  };
+
   const uint32_t elements() const { return this->_data.size(); }
   inline double max()
   {
-    return *std::max_element(std::execution::par_unseq, _data.begin(), _data.end());
+    double local_max = *std::max_element(std::execution::par_unseq, _data.begin(), _data.end());
+    double global_max = 0.;
+    MPI_Allreduce(&local_max, &global_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    return global_max;
     // double result = 0;
 
     // #pragma omp parallel for collapse(2) reduction(max : result)
@@ -118,7 +170,10 @@ public:
   };
   inline double min()
   {
-    return *std::min_element(std::execution ::par_unseq, _data.begin(), _data.end());
+    double local_min = *std::max_element(std::execution::par_unseq, _data.begin(), _data.end());
+    double global_min = 0.;
+    MPI_Allreduce(&local_min, &global_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    return global_min;
     // double result = 0;
 
     // #pragma omp parallel for collapse(2) reduction(min : result)
