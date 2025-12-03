@@ -21,6 +21,7 @@ struct grid
   inline void setSize(size_t x, size_t y)
   {
     _data.resize(x * y);
+    sizeI = { static_cast<uint16_t>(x), static_cast<uint16_t>(y) };
   }
   inline void copyFromTo(const Grid2D& src, Range srcR, Range dstR)
   {
@@ -39,7 +40,8 @@ struct grid
     size_t length = srcR.end.x - srcR.begin.x + 1;
     for (size_t srcY = srcR.begin.y, dstY = dstR.begin.y; srcY <= srcR.end.y; srcY++, dstY++)
     {
-      memcpy(&getAt(dstR.begin.x, dstY), &src[{ srcR.begin.x, static_cast<uint16_t>(srcY) }], length);
+      // DebugF("copy for rank {} from row: {}", Settings::get().mpi.rank, srcY);
+      memcpy(&getAt(dstR.begin.x, dstY), &src[{ srcR.begin.x, static_cast<uint16_t>(srcY) }], length * sizeof(double));
     }
   }
   inline double& getAt(size_t x, size_t y)
@@ -58,6 +60,10 @@ struct grid
     // return (getAt(at.x, at.y) + getAt(at.x + 1, at.y) + getAt(at.x, at.y + 1) + getAt(at.x + 1, at.y + 1)) / 4.0;
   }
 };
+constexpr int root_rank = 0;
+static grid GlobalpressureGrid;
+static grid GlobaluGrid;
+static grid GlobalvGrid;
 static grid pressureGrid;
 static grid uGrid;
 static grid vGrid;
@@ -100,57 +106,55 @@ vtkSmartPointer<vtkImageData> initialize_dataset(const PDESystem& system)
 }
 void init(const PDESystem& system)
 {
-  pressureGrid.setSize(system.settings.nCells[0] + 1, system.settings.nCells[1] + 1);
-  uGrid.setSize(system.settings.nCells[0] + 1, system.settings.nCells[1] + 1);
-  vGrid.setSize(system.settings.nCells[0] + 1, system.settings.nCells[1] + 1);
+  const size_t offsetCount = 2;
+  pressureGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
+  uGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
+  vGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
+  if (system.settings.mpi.rank != root_rank)
+    return;
+  GlobalpressureGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
+  GlobaluGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
+  GlobalvGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
 }
 
-constexpr int root_rank = 0;
-
-void reduceAll(const PDESystem& system, const Partitioning::MPIInfo& mpi)
+std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::MPIInfo& mpi)
 {
+  Range srcR = grid.range;
 
-  Range srcR = system.p.range;
-
-  Range dstR = {};
-  // TODO: check where 0,0 starts if bottom left like grid coords this should do otherwise switch Y direction
+  Range dstR = { { 1, 1 }, {} };
   for (size_t rankX = 0; rankX < mpi.getGridPos().x; rankX++)
   {
     dstR.begin.x += Partitioning::getInfo(rankX, 0).nCells[0];
   }
-  for (size_t rankY = mpi.Partitions[1]; rankY > mpi.getGridPos().y; rankY--)
+  for (size_t rankY = mpi.Partitions[1] - 1; rankY > mpi.getGridPos().y; rankY--)
   {
     dstR.begin.y += Partitioning::getInfo(0, rankY).nCells[1];
   }
-  dstR.end.x = dstR.begin.x + mpi.nCells[0];
-  dstR.end.y = dstR.begin.y + mpi.nCells[1];
-  if (mpi.right_neighbor < 0)
-  {
-    srcR.end.x++;
-    dstR.end.x++;
-  } else if (mpi.left_neighbor < 0)
+  dstR.end = dstR.begin + srcR.size() - II;
+  if (mpi.left_neighbor < 0)
   {
     srcR.begin.x--;
     dstR.begin.x--;
   }
-  if (mpi.top_neighbor < 0)
-  {
-    srcR.end.y++;
-    dstR.end.y++;
-  } else if (mpi.bottom_neighbor < 0)
+  if (mpi.bottom_neighbor < 0)
   {
     srcR.begin.y--;
     dstR.begin.y--;
   }
+  return std::make_pair(srcR, dstR);
+}
+void reduceAll(const PDESystem& system, const Partitioning::MPIInfo& mpi)
+{
+  auto [srcRP, dstRP] = calcCopyRanges(system.p, mpi);
+  pressureGrid.copyFromTo(system.p, srcRP, dstRP);
+  auto [srcRU, dstRU] = calcCopyRanges(system.u, mpi);
+  uGrid.copyFromTo(system.u, srcRU, dstRU);
+  auto [srcRV, dstRV] = calcCopyRanges(system.u, mpi);
+  vGrid.copyFromTo(system.v, srcRV, dstRV);
 
-  pressureGrid.copyFromTo(system.p, srcR, dstR);
-  // TODO: check if sizes differ from p to u/v? and if an offset should be applied to end like -1 so we dont add boarders 2 times
-  uGrid.copyFromTo(system.u, srcR, dstR);
-  vGrid.copyFromTo(system.v, srcR, dstR);
-
-  MPI_Reduce(pressureGrid.data(), pressureGrid.data(), pressureGrid.size(), MPI_DOUBLE, MPI_SUM, root_rank, MPI_COMM_WORLD);
-  MPI_Reduce(uGrid.data(), uGrid.data(), uGrid.size(), MPI_DOUBLE, MPI_SUM, root_rank, MPI_COMM_WORLD);
-  MPI_Reduce(vGrid.data(), vGrid.data(), vGrid.size(), MPI_DOUBLE, MPI_SUM, root_rank, MPI_COMM_WORLD);
+  MPI_Reduce(pressureGrid.data(), GlobalpressureGrid.data(), pressureGrid.size(), MPI_DOUBLE, MPI_SUM, root_rank, MPI_COMM_WORLD);
+  MPI_Reduce(uGrid.data(), GlobaluGrid.data(), uGrid.size(), MPI_DOUBLE, MPI_SUM, root_rank, MPI_COMM_WORLD);
+  MPI_Reduce(vGrid.data(), GlobalvGrid.data(), vGrid.size(), MPI_DOUBLE, MPI_SUM, root_rank, MPI_COMM_WORLD);
 }
 void writeVTK(const PDESystem& system, double dt)
 {
@@ -177,7 +181,7 @@ void writeVTK(const PDESystem& system, double dt)
   {
     for (size_t i = 0; i <= system.settings.nCells[0]; i++, index++)
     {
-      arrayPressure->SetValue(index, pressureGrid.interpolate4({ static_cast<uint16_t>(i), static_cast<uint16_t>(j) }));
+      arrayPressure->SetValue(index, GlobalpressureGrid.interpolate4({ static_cast<uint16_t>(i), static_cast<uint16_t>(j) }));
     }
   }
   assert(index == dataSet->GetNumberOfPoints());
@@ -210,14 +214,14 @@ void writeVTK(const PDESystem& system, double dt)
   // vtk data structure
   index = 0; // index for the vtk data structure
   Index I;
-  for (size_t j = system.begin.y - 1; j <= system.end.y; j++)
+  for (size_t j = 0; j <= system.settings.nCells[1]; j++)
   {
-    for (size_t i = system.begin.x - 1; i <= system.end.x; i++, index++)
+    for (size_t i = 0; i <= system.settings.nCells[0]; i++, index++)
     {
       I = { static_cast<uint16_t>(i), static_cast<uint16_t>(j) };
       std::array<double, 3> velocityVector;
-      velocityVector[0] = uGrid.interpolate(I, Iy);
-      velocityVector[1] = vGrid.interpolate(I, Ix);
+      velocityVector[0] = GlobaluGrid.interpolate(I, Iy);
+      velocityVector[1] = GlobalvGrid.interpolate(I, Ix);
       velocityVector[2] = 0.0;
 
       arrayVelocity->SetTuple(index, velocityVector.data());

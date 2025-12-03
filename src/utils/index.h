@@ -23,6 +23,10 @@ struct Index
   uint16_t x;
   uint16_t y;
 
+  inline Index operator+(const Index& other)
+  {
+    return { static_cast<uint16_t>(x + other.x), static_cast<uint16_t>(y + other.y) };
+  };
   inline Index operator+(const Offset& other)
   {
     return { static_cast<uint16_t>(this->x + other.x), static_cast<uint16_t>(this->y + other.y) };
