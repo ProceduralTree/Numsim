@@ -1,5 +1,6 @@
 #include "profiler.h"
 #include "Logger.h"
+#include "settings.h"
 #include <chrono>
 #include <fstream>
 #include <stack>
@@ -32,6 +33,8 @@ void Init(Type type)
     file = std::ofstream("Profiler.csv");
     break;
   case ACCUMULATE:
+    break;
+  case ACCUMULATEPAR:
     break;
   }
 }
@@ -71,6 +74,25 @@ void Close()
 
     file.flush();
     file.close();
+    break;
+  case ACCUMULATEPAR:
+    file = std::ofstream(std::format("Profiler{}.csv", Settings::get().mpi.rank));
+
+    for (const auto& m : map)
+    {
+      const auto& s = m.first;
+      const auto& v = m.second;
+
+      file << s << ',' << v.count << ',' << v.duration << ',' << v.duration / v.count << ',' << v.min << ',' << v.max << '\n';
+    }
+
+    file.flush();
+    file.close();
+    //
+    // create comp data from map
+
+    // mpi gather for comp data
+    // write gather data on main rank
     break;
   }
 }
@@ -115,6 +137,7 @@ void TimeStamp::End()
     file << name << ',' << start << ',' << end << ',' << end - start << ',' << counter << '\n';
     break;
   case ACCUMULATE:
+  {
     auto v = map.find(name);
     if (v == map.end())
     {
@@ -128,7 +151,25 @@ void TimeStamp::End()
       v->second.min = std::min(v->second.min, currentDuration);
       v->second.max = std::max(v->second.max, currentDuration);
     }
-    break;
+  }
+  break;
+  case ACCUMULATEPAR:
+  {
+    auto v = map.find(name);
+    if (v == map.end())
+    {
+      auto currentDuration = end - start;
+      map.insert({ name, { 1, currentDuration, currentDuration, currentDuration } });
+    } else
+    {
+      v->second.count++;
+      auto currentDuration = end - start;
+      v->second.duration += currentDuration;
+      v->second.min = std::min(v->second.min, currentDuration);
+      v->second.max = std::max(v->second.max, currentDuration);
+    }
+  }
+  break;
   }
 }
 

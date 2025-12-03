@@ -91,6 +91,7 @@ public:
     uint32_t index = z_order(x, y);
 #endif
 #ifdef DEBUG
+    assert(I <= range.end + II && "invalid grid range");
     return this->_data.at(index);
 #else
     return this->_data.data()[index];
@@ -105,6 +106,11 @@ public:
     uint32_t index = z_order(x, y);
 #endif
 #ifdef DEBUG
+    if (!(I <= range.end + II))
+    {
+      DebugF("invalid grid range size:{},{}, index {},{}", size_x, size_y, I.x, I.y);
+    }
+    assert(I <= range.end + II && "invalid grid range");
     return this->_data.at(index);
 #else
     return this->_data.data()[index];
