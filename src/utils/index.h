@@ -23,6 +23,10 @@ struct Index
   uint16_t x;
   uint16_t y;
 
+  inline Index operator+(const Index& other)
+  {
+    return { static_cast<uint16_t>(x + other.x), static_cast<uint16_t>(y + other.y) };
+  };
   inline Index operator+(const Offset& other)
   {
     return { static_cast<uint16_t>(this->x + other.x), static_cast<uint16_t>(this->y + other.y) };
@@ -40,6 +44,10 @@ struct Index
     assert(this->y >= other.y);
     return { static_cast<uint16_t>(this->x - other.x), static_cast<uint16_t>(this->y - other.y) };
   };
+  inline bool operator<=(const Index& other) const
+  {
+    return x <= other.x && y <= other.y;
+  }
 };
 
 struct Range
@@ -50,6 +58,14 @@ struct Range
   {
     return { begin + other, end + other };
   };
+  inline size_t count() const
+  {
+    return (end.x - begin.x + 1) * (end.y - begin.y + 1);
+  }
+  inline Index size() const
+  {
+    return { static_cast<uint16_t>(end.x - begin.x + 1), static_cast<uint16_t>(end.y - begin.y + 1) };
+  }
 };
 
 inline Offset Ix = { 1, 0 };
