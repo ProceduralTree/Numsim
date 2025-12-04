@@ -18,6 +18,19 @@ Grid2D::Grid2D(Index beg, Index end)
     // this->_data.resize(1 << size, 0.);
     // this->_data.resize(x * y, init);
   };
+Grid2D::Grid2D(Index beg, Index end, Range globalRange)
+  : size_x(end.x + 2)
+  , size_y(end.y + 2)
+  , begin(beg)
+  , end(end)
+  , range(beg, end)
+  , globalRange(globalRange)
+  , boundary(beg, end)
+  , _data(size_x * size_y, 0.) {
+    // uint32_t size = std::bit_width(x) + std::bit_width(y);
+    // this->_data.resize(1 << size, 0.);
+    // this->_data.resize(x * y, init);
+  };
 
 double& Grid2D::operator[](uint32_t index) { return this->_data.data()[index]; };
 
