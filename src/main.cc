@@ -2,12 +2,15 @@
 #include "utils/Logger.h"
 #include "utils/profiler.h"
 #include "utils/settings.h"
+#include <chrono>
 #include <csignal>
+#include <cstdio>
 #include <grid/grid.h>
 #include <iostream>
 #include <mpi.h>
 #include <output/vtk.h>
 #include <pde/system.h>
+#include <sstream>
 #include <utils/partitioning.h>
 #include <utils/profiler.h>
 
@@ -63,6 +66,11 @@ auto main(int argc, char* argv[]) -> int
   DebugPrintGrid(v, system.v);
   double time = 0;
   ProfilePush("main");
+
+  double next_written_time = 1;
+  std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
+  std::chrono::system_clock::time_point last_time = std::chrono::system_clock::now();
+
   while (time < system.settings.endTime)
   {
     ProfileCount();
@@ -70,19 +78,45 @@ auto main(int argc, char* argv[]) -> int
     time += system.dt;
     step(system, time);
     time += system.dt;
-    for (int i = 0; i < mpiInfo.size; i++)
+    // for (int i = 0; i < mpiInfo.size; i++)
+    //{
+    //   MPI_Barrier(MPI_COMM_WORLD);
+    //   if (mpiInfo.rank == i)
+    //   {
+    //     std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
+    //     std::cout << "\rTime: t=" << time << "\t dt=" << system.dt << std::endl;
+    //     // std::cout << "\rPressure: t=" << system.p << std::endl;
+    //     // std::cout << "\r V: " << system.v << "\t U:" << system.u << std::endl;
+    //   }
+    // }
+    //   break;
+    //
+    if (time > next_written_time)
     {
-      MPI_Barrier(MPI_COMM_WORLD);
-      if (mpiInfo.rank == i)
+      if (mpiInfo.rank == 0)
       {
-        std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
-        std::cout << "\rTime: t=" << time << "\t dt=" << system.dt << std::endl;
-        // std::cout << "\rPressure: t=" << system.p << std::endl;
-        // std::cout << "\r V: " << system.v << "\t U:" << system.u << std::endl;
+        std::chrono::system_clock::time_point tmp_time = std::chrono::system_clock::now();
+        auto diff = tmp_time - start_time;
+        std::stringstream s;
+        s << "\r[";
+        for (int i = 0; i < Settings::get().endTime; i++)
+        {
+          s << ((i < time) ? '#' : ' ');
+        }
+        s << "]";
+        s << "\t Time:" << time << "/" << Settings::get().endTime << "s";
+        s << "\t Iter/s:" << std::chrono::duration<double>(diff).count() / time;
+        s << "\t Wall Time:" << std::chrono::duration<double>(diff).count();
+        s << "\n";
+        printf("%s", s.str().c_str());
+
+        fflush(stdout);
       }
+
+      vtk_par::writeVTK(system, time);
+      next_written_time++;
     }
-    //  break;
-    vtk_par::writeVTK(system, time);
+    // write_vtk(system, time);
   }
   std::cout << std::endl;
   ProfilePop();
