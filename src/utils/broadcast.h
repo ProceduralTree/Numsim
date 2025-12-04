@@ -114,7 +114,7 @@ void parallel_broadcast(Operator&& O, Range r, Args&&... args)
   ProfileScope("Parallel Broadcast");
   constexpr uint16_t BLOCK_SIZE_X = 16;
   constexpr uint16_t BLOCK_SIZE_Y = 16;
-#pragma omp parallel loop bind(parallel) collapse(2)
+  // #pragma omp parallel loop bind(parallel) collapse(2)
   for (uint16_t by = r.begin.y; by <= r.end.y; by += BLOCK_SIZE_Y)
   {
     for (uint16_t bx = r.begin.x; bx <= r.end.x; bx += BLOCK_SIZE_X)

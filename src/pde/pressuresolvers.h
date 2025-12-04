@@ -51,9 +51,9 @@ void solve(CGSolver& S, PDESystem& system);
 void solve(BlackRedSolver& S, PDESystem& system);
 void solve(Jacoby& S, PDESystem& system);
 
-constexpr void copy_with_offset(Index I, Offset O, Grid2D& array) { array[I] = array[I + O]; };
+inline void copy_with_offset(Index I, Offset O, Grid2D& array) { array[I] = array[I + O]; };
 
-constexpr std::pair<double, double> jacoby_update(Index I, const PDESystem& system)
+inline std::pair<double, double> jacoby_update(Index I, const PDESystem& system)
 {
   auto& p = system.p;
   auto& h = system.h;
@@ -93,7 +93,7 @@ inline void black_red_step(Index I, PDESystem& system, BlackRedSolver& solver)
     = res;
   system.p[I] = up;
 };
-constexpr void jacoby_step(Index I, const PDESystem& system, Jacoby& solver)
+inline void jacoby_step(Index I, const PDESystem& system, Jacoby& solver)
 {
   auto [up, res] = jacoby_update(I, system);
   // DebugF("Update {} , residual {}", up, res);

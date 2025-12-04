@@ -9,19 +9,19 @@ find_package(MPI REQUIRED)
 file(GLOB_RECURSE SRC_FILES *.cpp)
 file(GLOB_RECURSE HEADER_FILES *.h)
 
-add_executable(numsim main.cc
+add_executable(numsim_parallel main.cc
   ${SRC_FILES} ${HEADER_FILES}
 )
 
 add_executable(numsim_profiling main.cc
   ${SRC_FILES} ${HEADER_FILES}
 )
-target_link_libraries(numsim PUBLIC MPI::MPI_CXX ${VTK_LIBRARIES})
-target_link_libraries(numsim PRIVATE  ${VTK_LIBRARIES})
+target_link_libraries(numsim_parallel PUBLIC MPI::MPI_CXX ${VTK_LIBRARIES})
+target_link_libraries(numsim_parallel PRIVATE  ${VTK_LIBRARIES})
 target_link_libraries(numsim_profiling PUBLIC MPI::MPI_CXX ${VTK_LIBRARIES})
 target_link_libraries(numsim_profiling PRIVATE  ${VTK_LIBRARIES})
 
-target_compile_definitions(numsim PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+target_compile_definitions(numsim_parallel PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 target_compile_definitions(numsim_profiling PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 # MPI
 
@@ -34,12 +34,12 @@ target_link_options(numsim_profiling PRIVATE -pg)
 
 
 vtk_module_autoinit(
-    TARGETS numsim
+    TARGETS numsim_parallel
     MODULES ${VTK_LIBRARIES}
 )
 
-target_include_directories(numsim PRIVATE ${VTK_INCLUDE_DIRS})
-target_include_directories(numsim PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(numsim_parallel PRIVATE ${VTK_INCLUDE_DIRS})
+target_include_directories(numsim_parallel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(numsim_profiling PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-install(TARGETS numsim RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/build)
+install(TARGETS numsim_parallel RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/build)

@@ -159,7 +159,7 @@ public:
   const uint32_t elements() const { return this->_data.size(); }
   inline double max()
   {
-    double local_max = *std::max_element(std::execution::par_unseq, _data.begin(), _data.end());
+    double local_max = *std::max_element(_data.begin(), _data.end());
     double global_max = 0.;
     MPI_Allreduce(&local_max, &global_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     return global_max;
@@ -178,7 +178,7 @@ public:
   };
   inline double min()
   {
-    double local_min = *std::max_element(std::execution::par_unseq, _data.begin(), _data.end());
+    double local_min = *std::min_element(_data.begin(), _data.end());
     double global_min = 0.;
     MPI_Allreduce(&local_min, &global_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     return global_min;

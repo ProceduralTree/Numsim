@@ -25,7 +25,8 @@ struct MPI_COMM_BUFFER
   MPI_Comm comm;
   Grid2D& comm_array;
   std::array<std::tuple<Range, Offset>, 4> communication_boundary;
-  std::array<MPI_Request, 4> request;
+  std::array<MPI_Request, 4> requestS;
+  std::array<MPI_Request, 4> requestR;
   std::array<double*, 4> sendbuffer;
   std::array<double*, 4> recivebuffer;
 
@@ -33,7 +34,8 @@ struct MPI_COMM_BUFFER
     : comm(comm)
     , comm_array(comm_array)
     , communication_boundary(ghosts)
-    , request({ MPI_REQUEST_NULL, MPI_REQUEST_NULL, MPI_REQUEST_NULL, MPI_REQUEST_NULL })
+    , requestS({ MPI_REQUEST_NULL, MPI_REQUEST_NULL, MPI_REQUEST_NULL, MPI_REQUEST_NULL })
+    , requestR({ MPI_REQUEST_NULL, MPI_REQUEST_NULL, MPI_REQUEST_NULL, MPI_REQUEST_NULL })
     , sendbuffer()
     , recivebuffer()
   {
@@ -55,19 +57,21 @@ struct MPI_COMM_BUFFER
         recivebuffer[i] = (double*)malloc(len(r) * sizeof(double));
         comm_array.get(sendbuffer[i], r - o);
         // DebugF("Request {}", request[i]);
-        MPI_Isendrecv(
-          sendbuffer[i],
-          len(r),
-          MPI_DOUBLE,
-          info.neighbours()[i][0],
-          i + id,
-          recivebuffer[i],
-          len(r),
-          MPI_DOUBLE,
-          info.neighbours()[i][0],
-          info.neighbours()[i][1] + id,
-          comm,
-          &request[i]);
+        MPI_Isend(sendbuffer[i], len(r), MPI_DOUBLE, info.neighbours()[i][0], i + id, comm, &requestS[i]);
+        MPI_Irecv(recivebuffer[i], len(r), MPI_DOUBLE, info.neighbours()[i][0], info.neighbours()[i][1] + id, comm, &requestR[i]);
+        // MPI_Isendrecv(
+        //   sendbuffer[i],
+        //   len(r),
+        //   MPI_DOUBLE,
+        //   info.neighbours()[i][0],
+        //   i + id,
+        //   recivebuffer[i],
+        //   len(r),
+        //   MPI_DOUBLE,
+        //   info.neighbours()[i][0],
+        //   info.neighbours()[i][1] + id,
+        //   comm,
+        //   &request[i]);
       }
     }
   };
@@ -82,7 +86,7 @@ struct MPI_COMM_BUFFER
       int outcout;
 
       // scipped if all requests are MPI_REQUEST_NULL with outcout=MPI_UNDEFINED
-      MPI_Waitsome(4, request.data(), &outcout, indices, MPI_STATUSES_IGNORE);
+      MPI_Waitsome(4, requestR.data(), &outcout, indices, MPI_STATUSES_IGNORE);
       if (outcout == MPI_UNDEFINED)
         break;
       // scipped if outcount=0
@@ -96,6 +100,7 @@ struct MPI_COMM_BUFFER
         free(sendbuffer[index]);
       }
     }
+    MPI_Waitall(4, requestS.data(), MPI_STATUSES_IGNORE);
   }
 };
 
