@@ -118,7 +118,7 @@ void init(const PDESystem& system)
   GlobalvGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
 }
 
-std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::MPIInfo& mpi)
+std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::MPIInfo& mpi, Offset o)
 {
   Range srcR = grid.range;
 
@@ -136,34 +136,51 @@ std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::M
   {
     srcR.end.y++;
     dstR.end.y++;
+  } else
+  {
+    srcR.end.y -= o.y;
+    dstR.end.y -= o.y;
   }
   if (mpi.bottom_neighbor < 0)
   {
     srcR.begin.y--;
     dstR.begin.y--;
+  } else
+  {
+    dstR.begin.y -= o.y;
+    dstR.end.y -= o.y;
   }
   if (mpi.left_neighbor < 0)
   {
     srcR.begin.x--;
     dstR.begin.x--;
+  } else
+  {
+    dstR.begin.x -= o.x;
+    dstR.end.x -= o.x;
   }
   if (mpi.right_neighbor < 0)
   {
     srcR.end.x++;
     dstR.end.x++;
+  } else
+  {
+    srcR.end.x -= o.x;
+    dstR.end.x -= o.x;
   }
+
   return std::make_pair(srcR, dstR);
 }
 void reduceAll(const PDESystem& system, const Partitioning::MPIInfo& mpi)
 {
 #define debugRanges(name, src, dst) DebugF("rank: {}, grid " #name " for src:({},{})({},{}) and dst:({},{})({},{})", mpi.rank, src.begin.x, src.begin.y, src.end.x, src.end.y, dst.begin.x, dst.begin.y, dst.end.x, dst.end.y)
-  auto [srcRP, dstRP] = calcCopyRanges(system.p, mpi);
+  auto [srcRP, dstRP] = calcCopyRanges(system.p, mpi, Offset { 0, 0 });
   // debugRanges(p, srcRP, dstRP);
   pressureGrid.copyFromTo(system.p, srcRP, dstRP);
-  auto [srcRU, dstRU] = calcCopyRanges(system.u, mpi);
+  auto [srcRU, dstRU] = calcCopyRanges(system.u, mpi, Ix);
   // debugRanges(u, srcRU, dstRU);
   uGrid.copyFromTo(system.u, srcRU, dstRU);
-  auto [srcRV, dstRV] = calcCopyRanges(system.v, mpi);
+  auto [srcRV, dstRV] = calcCopyRanges(system.v, mpi, Iy);
   // debugRanges(v, srcRV, dstRV);
   vGrid.copyFromTo(system.v, srcRV, dstRV);
 

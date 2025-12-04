@@ -142,8 +142,8 @@ void update_velocity(PDESystem& system)
   //  broadcast(update_v, v_border.all, system);
   broadcast(update_u, system.u.range, system);
   broadcast(update_v, system.v.range, system);
-  MPI_COMM_BUFFER* u_comm_buffer = new MPI_COMM_BUFFER(system.u, system.u.boundary.u_ghosts(), MPI_COMM_WORLD, system.partitioning);
-  MPI_COMM_BUFFER* v_comm_buffer = new MPI_COMM_BUFFER(system.v, system.v.boundary.v_ghosts(), MPI_COMM_WORLD, system.partitioning);
+  MPI_COMM_BUFFER* u_comm_buffer = new MPI_COMM_BUFFER(system.u, system.u.boundary.u_ghosts(), MPI_COMM_WORLD, system.partitioning, 16);
+  MPI_COMM_BUFFER* v_comm_buffer = new MPI_COMM_BUFFER(system.v, system.v.boundary.v_ghosts(), MPI_COMM_WORLD, system.partitioning, 32);
   delete u_comm_buffer;
   delete v_comm_buffer;
 }

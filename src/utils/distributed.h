@@ -29,7 +29,7 @@ struct MPI_COMM_BUFFER
   std::array<double*, 4> sendbuffer;
   std::array<double*, 4> recivebuffer;
 
-  MPI_COMM_BUFFER(Grid2D& comm_array, std::array<std::tuple<Range, Offset>, 4> ghosts, MPI_Comm comm, Partitioning::MPIInfo& info)
+  MPI_COMM_BUFFER(Grid2D& comm_array, std::array<std::tuple<Range, Offset>, 4> ghosts, MPI_Comm comm, Partitioning::MPIInfo& info, int id = 0)
     : comm(comm)
     , comm_array(comm_array)
     , communication_boundary(ghosts)
@@ -60,17 +60,17 @@ struct MPI_COMM_BUFFER
           len(r),
           MPI_DOUBLE,
           info.neighbours()[i][0],
-          i,
+          i + id,
           recivebuffer[i],
           len(r),
           MPI_DOUBLE,
           info.neighbours()[i][0],
-          info.neighbours()[i][1],
+          info.neighbours()[i][1] + id,
           comm,
           &request[i]);
       }
     }
-  }
+  };
   ~MPI_COMM_BUFFER()
   {
     ProfileScope("MPI Communication Wait");
