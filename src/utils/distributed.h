@@ -39,6 +39,19 @@ struct MPI_COMM_BUFFER
     , sendbuffer()
     , recivebuffer()
   {
+    for (int i = 0; i < 4; i++)
+    {
+
+      if (info.neighbours()[i][0] >= 0)
+      {
+
+        ProfileScope("MPI Communication Init");
+
+        auto [r, o] = ghosts[i];
+        recivebuffer[i] = (double*)malloc(len(r) * sizeof(double));
+        MPI_Irecv(recivebuffer[i], len(r), MPI_DOUBLE, info.neighbours()[i][0], info.neighbours()[i][1] + id, comm, &requestR[i]);
+      }
+    }
 
     for (int i = 0; i < 4; i++)
     {
@@ -54,24 +67,24 @@ struct MPI_COMM_BUFFER
         // DebugF("Range : {{x={} , y={} }} -> {{x={} , y={} }}", r.begin.x, r.begin.y, r.end.x, r.end.y);
         // DebugF("Offset : {{x={} , y={} }}", o.x, o.y);
         sendbuffer[i] = (double*)malloc(len(r) * sizeof(double));
-        recivebuffer[i] = (double*)malloc(len(r) * sizeof(double));
+        // recivebuffer[i] = (double*)malloc(len(r) * sizeof(double));
         comm_array.get(sendbuffer[i], r - o);
         // DebugF("Request {}", request[i]);
         MPI_Isend(sendbuffer[i], len(r), MPI_DOUBLE, info.neighbours()[i][0], i + id, comm, &requestS[i]);
-        MPI_Irecv(recivebuffer[i], len(r), MPI_DOUBLE, info.neighbours()[i][0], info.neighbours()[i][1] + id, comm, &requestR[i]);
-        // MPI_Isendrecv(
-        //   sendbuffer[i],
-        //   len(r),
-        //   MPI_DOUBLE,
-        //   info.neighbours()[i][0],
-        //   i + id,
-        //   recivebuffer[i],
-        //   len(r),
-        //   MPI_DOUBLE,
-        //   info.neighbours()[i][0],
-        //   info.neighbours()[i][1] + id,
-        //   comm,
-        //   &request[i]);
+        // MPI_Irecv(recivebuffer[i], len(r), MPI_DOUBLE, info.neighbours()[i][0], info.neighbours()[i][1] + id, comm, &requestR[i]);
+        //  MPI_Isendrecv(
+        //    sendbuffer[i],
+        //    len(r),
+        //    MPI_DOUBLE,
+        //    info.neighbours()[i][0],
+        //    i + id,
+        //    recivebuffer[i],
+        //    len(r),
+        //    MPI_DOUBLE,
+        //    info.neighbours()[i][0],
+        //    info.neighbours()[i][1] + id,
+        //    comm,
+        //    &request[i]);
       }
     }
   };

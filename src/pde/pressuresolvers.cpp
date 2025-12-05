@@ -25,16 +25,10 @@ void solve(CGSolver& cg, PDESystem& system)
   LaplaceMatrixOperator A = LaplaceMatrixOperator(system.h);
 
   // cg.residual = system.rhs - A*system.p;
-  //  broadcast_boundary(copy_with_offset, system.p.boundary, system.p);
-  // MPI_COMM_BUFFER* comm_p = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
-  // delete comm_p;
-
   broadcast_boundary(copy_with_offset, system.partitioning, system.p.boundary, system.p);
-  // broadcast_boundary(copy, system.partitioning, system.p.boundary, system.p, cg.search_direction);
-  //
   //  cg.residual[I] = s.rhs[I] - A(s.p, I);
-  broadcast(aAxpy, system.p.range, cg.residual, -1., A, system.p, system.rhs);
-
+  parallel_broadcast(aAxpy, system.p.range, cg.residual, -1., A, system.p, system.rhs);
+  parallel_broadcast(axpy, system.p.range, cg.residual, (1 / A.a_ij - 1.), cg.residual, cg.residual);
   residual_norm = dot(cg.residual, cg.residual);
 
   // ensure correct ghosts
@@ -52,12 +46,10 @@ void solve(CGSolver& cg, PDESystem& system)
     // DebugF("Alpha: {}", alpha);
 
     // system.p = system.p + a * cg.search_direction;
-    broadcast(axpy, system.p.range, system.p, alpha, cg.search_direction, system.p);
-    // broadcast_ghosts(axpy, system.partitioning, system.p.boundary, system.p, alpha, cg.search_direction, system.p);
-    //  broadcast(axpy, system.p.boundary.all, system.p, alpha, cg.search_direction, system.p);
+    parallel_broadcast(axpy, system.p.range, system.p, A.a_ij * alpha, cg.search_direction, system.p);
 
     // cg.residual = cg.residual - a * A * cg.search_direction;
-    broadcast(aAxpy, system.p.range, cg.residual, -alpha, A, cg.search_direction, cg.residual);
+    parallel_broadcast(aAxpy, system.p.range, cg.residual, -alpha, A, cg.search_direction, cg.residual);
 
     double residual = cg.residual.max();
     if (residual > 1e5 || residual == -NAN || residual == NAN)
@@ -86,6 +78,7 @@ void solve(CGSolver& cg, PDESystem& system)
       // update Pressure ghosts
       auto comm_buffer = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
       delete comm_buffer;
+      // std::cout << "COnverged after N=" << iter << " Iterations" << std::endl;
       DebugF("COnverged after {} Iterations", iter);
       break;
     }
@@ -97,9 +90,7 @@ void solve(CGSolver& cg, PDESystem& system)
     // TODO Update Ghosts
     // cg.search_direction[I] = cg.residual[I] + beta * cg.search_direction[I];
     distributed_broadcast(axpy, system.partitioning, system.p.range, cg.search_direction, cg.search_direction, beta, cg.search_direction, cg.residual);
-    MPI_Barrier(MPI_COMM_WORLD);
   }
-  MPI_Barrier(MPI_COMM_WORLD);
   broadcast_boundary(copy_with_offset, system.partitioning, system.p.boundary, system.p);
 }
 
@@ -157,6 +148,7 @@ void solve(SORSolver& S, PDESystem& system)
 
     if (iter % 10 && global_residual < Settings::get().epsilon)
     {
+      // std::cout << "COnverged after N=" << iter << " Iterations" << std::endl;
 
       // std::cout << std::scientific << std::setprecision(14) << "Residual: " << system.residual << std::endl;
       //  std::cout << "\nSOR converged after n=" << iter << " Iterations" << std::endl;

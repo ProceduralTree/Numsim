@@ -44,7 +44,7 @@ void update_v(Index I, PDESystem& system)
 void solve_pressure(PDESystem& system)
 {
   ProfileScope("Pressure Solver");
-  switch (Settings::CG) // Settings::get().pressureSolver)
+  switch (Settings::get().pressureSolver) // Settings::get().pressureSolver)
   {
   case Settings::SOR:
   {
