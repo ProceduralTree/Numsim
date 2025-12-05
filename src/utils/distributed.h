@@ -39,13 +39,12 @@ struct MPI_COMM_BUFFER
     , sendbuffer()
     , recivebuffer()
   {
+    ProfileScope("MPI Communication Init");
     for (int i = 0; i < 4; i++)
     {
 
       if (info.neighbours()[i][0] >= 0)
       {
-
-        ProfileScope("MPI Communication Init");
 
         auto [r, o] = ghosts[i];
         recivebuffer[i] = (double*)malloc(len(r) * sizeof(double));
@@ -59,8 +58,6 @@ struct MPI_COMM_BUFFER
 
       if (info.neighbours()[i][0] >= 0)
       {
-
-        ProfileScope("MPI Communication Init");
 
         auto [r, o] = ghosts[i];
         // DebugF("Allocating sendrevieve buffers of size {} from rank {}", len(r), info.rank);
@@ -110,10 +107,24 @@ struct MPI_COMM_BUFFER
         auto [r, o] = communication_boundary[index];
         comm_array.set(recivebuffer[index], r);
         free(recivebuffer[index]);
+      }
+    }
+    for (int i = 0; i < 4; i++)
+    {
+      int indices[4];
+      int outcout;
+
+      // scipped if all requests are MPI_REQUEST_NULL with outcout=MPI_UNDEFINED
+      MPI_Waitsome(4, requestS.data(), &outcout, indices, MPI_STATUSES_IGNORE);
+      if (outcout == MPI_UNDEFINED)
+        break;
+      // scipped if outcount=0
+      for (int succes = 0; succes < outcout; succes++)
+      {
+        int index = indices[succes];
         free(sendbuffer[index]);
       }
     }
-    MPI_Waitall(4, requestS.data(), MPI_STATUSES_IGNORE);
   }
 };
 
@@ -128,6 +139,7 @@ void distributed_broadcast(Operator&& O, Partitioning::MPIInfo p, Range r, Grid2
 
   //  copy boundary sendbuff
   broadcast(std::forward<Operator>(O), border.unique(), std::forward<Args>(args)...);
+  // broadcast(std::forward<Operator>(O), r, std::forward<Args>(args)...);
   MPI_COMM_BUFFER* comm_buffer = new MPI_COMM_BUFFER(comm_array, ghosts.all, MPI_COMM_WORLD, p);
   broadcast(std::forward<Operator>(O), inner, std::forward<Args>(args)...);
   delete comm_buffer;

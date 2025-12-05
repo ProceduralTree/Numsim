@@ -3,7 +3,9 @@
 
 #include "linalg/matrix.h"
 #include "utils/index.h"
+#include "utils/partitioning.h"
 #include "utils/profiler.h"
+#include "utils/settings.h"
 #include <cstdint>
 #include <grid/grid.h>
 #include <mpi.h>
@@ -14,7 +16,7 @@ inline double sum(Operator&& O, Range r, Args&&... args)
 {
   double result = 0;
   ProfileScope("Reduction");
-#pragma omp parallel for simd collapse(2) reduction(+ : result)
+  // #pragma omp parallel for simd collapse(2) reduction(+ : result)
   for (uint16_t j = r.begin.y; j <= r.end.y; j++)
   {
     for (uint16_t i = r.begin.x; i <= r.end.x; i++)
@@ -24,6 +26,23 @@ inline double sum(Operator&& O, Range r, Args&&... args)
   }
   return result;
 }
+
+inline Range plusBoundary(Range r)
+{
+  auto info = Settings::get().mpi;
+  Index begin = r.begin;
+  Index end = r.end;
+  if (info.top_neighbor < 0)
+    end = end + Iy;
+  if (info.bottom_neighbor < 0)
+    begin = begin - Iy;
+  if (info.left_neighbor < 0)
+    begin = begin - Ix;
+  if (info.right_neighbor < 0)
+    end = end + Ix;
+  return { begin, end };
+};
+
 template <typename Operator, typename... Args>
 inline double distributed_sum(Operator&& O, Range r, Args&&... args)
 {
@@ -40,7 +59,8 @@ inline double times(Index I, const Grid2D& a, const Grid2D& b)
 
 inline double dot(Grid2D& a, Grid2D& b)
 {
-  return distributed_sum(times, a.range, a, b);
+  return distributed_sum(times, plusBoundary(a.range), a, b);
+  // return distributed_sum(times, a.range, a, b);
 };
 
 inline double Axy(Index I, LaplaceMatrixOperator A, const Grid2D& x, const Grid2D& y)

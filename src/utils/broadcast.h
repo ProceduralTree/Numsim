@@ -10,7 +10,7 @@
 #include <utils/index.h>
 
 template <typename Operator, typename... Args>
-void broadcast_black(Operator&& O, Range r, Args&&... args)
+void broadcast_blackred(Operator&& O, int parity, Range r, Args&&... args)
 {
   ProfileScope("Black Iteration");
   constexpr uint16_t BLOCK_SIZE_X = 32;
@@ -24,14 +24,14 @@ void broadcast_black(Operator&& O, Range r, Args&&... args)
       uint16_t y_max = std::min<uint16_t>(by + BLOCK_SIZE_Y - 1, r.end.y);
       uint16_t x_max = std::min<uint16_t>(bx + BLOCK_SIZE_X - 1, r.end.x);
 
-      for (uint16_t j = by; j <= y_max; j = j + 2)
+      for (uint16_t j = by + parity; j <= y_max; j = j + 2)
       {
         for (uint16_t i = bx; i <= x_max; i = i + 2)
         {
           std::forward<Operator>(O)(Index { i, j }, std::forward<Args>(args)...);
         }
       }
-      for (uint16_t j = by + 1; j <= y_max; j = j + 2)
+      for (uint16_t j = by + 1 - parity; j <= y_max; j = j + 2)
       {
         for (uint16_t i = bx + 1; i <= x_max; i = i + 2)
         {
@@ -114,7 +114,7 @@ void parallel_broadcast(Operator&& O, Range r, Args&&... args)
   ProfileScope("Parallel Broadcast");
   constexpr uint16_t BLOCK_SIZE_X = 16;
   constexpr uint16_t BLOCK_SIZE_Y = 16;
-#pragma omp for collapse(2)
+  // #pragma omp for collapse(2)
   for (uint16_t by = r.begin.y; by <= r.end.y; by += BLOCK_SIZE_Y)
   {
     for (uint16_t bx = r.begin.x; bx <= r.end.x; bx += BLOCK_SIZE_X)

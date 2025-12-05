@@ -46,33 +46,9 @@ void solve_pressure(PDESystem& system)
   ProfileScope("Pressure Solver");
   switch (Settings::get().pressureSolver) // Settings::get().pressureSolver)
   {
-  case Settings::SOR:
-  {
-    auto solver = SORSolver();
-    solve(solver, system);
-    break;
-  }
-  case Settings::GaussSeidel:
-  {
-    auto solver = GaussSeidelSolver();
-    solve(solver, system);
-    break;
-  }
   case Settings::CG:
   {
-    auto solver = CGSolver(system);
-    solve(solver, system);
-    break;
-  }
-  case Settings::BlackRed:
-  {
-    auto solver = BlackRedSolver(system);
-    solve(solver, system);
-    break;
-  }
-  case Settings::Jacoby:
-  {
-    auto solver = Jacoby(system);
+    static auto solver = CGSolver(system);
     solve(solver, system);
     break;
   }
@@ -130,6 +106,7 @@ void compute_dt(PDESystem& system)
   double dt3 = system.h.y / vmax;
   system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
   system.dt = std::min(system.settings.maximumDt, system.dt);
+  system.dt = std::max(1e-10, system.dt);
 }
 
 void update_velocity(PDESystem& system)

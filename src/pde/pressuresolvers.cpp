@@ -28,6 +28,7 @@ void solve(CGSolver& cg, PDESystem& system)
   broadcast_boundary(copy_with_offset, system.partitioning, system.p.boundary, system.p);
   //  cg.residual[I] = s.rhs[I] - A(s.p, I);
   parallel_broadcast(aAxpy, system.p.range, cg.residual, -1., A, system.p, system.rhs);
+  // A.a_ij modification for diagonal jacoby preconditioner
   parallel_broadcast(axpy, system.p.range, cg.residual, (1 / A.a_ij - 1.), cg.residual, cg.residual);
   residual_norm = dot(cg.residual, cg.residual);
 
@@ -43,9 +44,9 @@ void solve(CGSolver& cg, PDESystem& system)
     broadcast_boundary(copy_with_offset, system.partitioning, cg.search_direction.boundary, cg.search_direction);
 
     double alpha = residual_norm / Adot(A, cg.search_direction, cg.search_direction);
-    // DebugF("Alpha: {}", alpha);
 
-    // system.p = system.p + a * cg.search_direction;
+    // A.a_ij modification for pcg mit diagonal jacoby preconditioner
+    //  system.p = system.p + a * cg.search_direction;
     parallel_broadcast(axpy, system.p.range, system.p, A.a_ij * alpha, cg.search_direction, system.p);
 
     // cg.residual = cg.residual - a * A * cg.search_direction;
@@ -79,7 +80,7 @@ void solve(CGSolver& cg, PDESystem& system)
       auto comm_buffer = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
       delete comm_buffer;
       // std::cout << "COnverged after N=" << iter << " Iterations" << std::endl;
-      DebugF("COnverged after {} Iterations", iter);
+      // DebugF("COnverged after {} Iterations", iter);
       break;
     }
     residual_norm = dot(cg.residual, cg.residual);
@@ -112,16 +113,17 @@ void solve(GaussSeidelSolver& S, PDESystem& system)
 
 void solve(SORSolver& S, PDESystem& system)
 {
+  Index gridpos = system.partitioning.getGridPos();
+  int parity = (gridpos.x + gridpos.y) % 2;
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
     ProfileScope("SOR Iteration");
     system.residual = 0;
     broadcast_boundary(copy_with_offset, system.partitioning, system.p.boundary, system.p);
-    broadcast_black(sor_step, system.p.range, system);
+    broadcast_blackred(sor_step, parity, system.p.range, system);
     MPI_COMM_BUFFER* comm_black = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
     delete comm_black;
-    broadcast_red(sor_step, system.p.range, system);
-    MPI_Barrier(MPI_COMM_WORLD);
+    broadcast_blackred(sor_step, !parity, system.p.range, system);
     MPI_COMM_BUFFER* comm_red = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
     delete comm_red;
 
@@ -135,7 +137,6 @@ void solve(SORSolver& S, PDESystem& system)
 
       for (int i = 0; i < system.partitioning.size; i++)
       {
-        MPI_Barrier(MPI_COMM_WORLD);
         if (system.partitioning.rank == i)
         {
           std::cout << "Hello from Rank " << system.partitioning.rank << " of " << system.partitioning.size << std::endl;
@@ -163,8 +164,8 @@ void solve(BlackRedSolver& S, PDESystem& system)
   for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
   {
     broadcast_boundary(copy_with_offset, system.partitioning, system.p.boundary, system.p);
-    broadcast_black(black_red_step, system.p.range, system, S);
-    broadcast_red(black_red_step, system.p.range, system, S);
+    broadcast_blackred(black_red_step, 0, system.p.range, system, S);
+    broadcast_blackred(black_red_step, 1, system.p.range, system, S);
     if (iter % 100 && S.residual.max() < Settings::get().epsilon)
     {
 

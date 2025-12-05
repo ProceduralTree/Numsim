@@ -5,6 +5,7 @@
 #include <chrono>
 #include <csignal>
 #include <cstdio>
+#include <cstdlib>
 #include <grid/grid.h>
 #include <iostream>
 #include <mpi.h>
@@ -17,14 +18,15 @@
 void signalInt(int sig)
 {
   DebugF("Interrupt from: {}", sig);
-  Profiler::PrintStack();
   Profiler::Close();
+  MPI_Barrier(MPI_COMM_WORLD);
   exit(sig);
 }
 
 auto main(int argc, char* argv[]) -> int
 {
   signal(SIGINT, signalInt);
+  signal(SIGTERM, signalInt);
 
   MPI_Init(&argc, &argv);
   int rank, size;
@@ -32,7 +34,7 @@ auto main(int argc, char* argv[]) -> int
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   LOG::Init(LOG::LoggerType::STDOUT);
-  Profiler::Init(Profiler::Type::ACCUMULATE);
+  Profiler::Init(Profiler::Type::ACCUMULATEPAR);
   if (argc < 2)
   {
     LOG::Warning("missing file name");
@@ -73,24 +75,16 @@ auto main(int argc, char* argv[]) -> int
 
   while (time < system.settings.endTime)
   {
+    // if (system.dt < 1e-16)
+    //{
+    //   std::cerr << "To Small TimeStep" << std::endl;
+    //   abort();
+    // }
     ProfileCount();
     step(system, time);
     time += system.dt;
     step(system, time);
     time += system.dt;
-    // for (int i = 0; i < mpiInfo.size; i++)
-    //{
-    //   MPI_Barrier(MPI_COMM_WORLD);
-    //   if (mpiInfo.rank == i)
-    //   {
-    //     std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
-    //     std::cout << "\rTime: t=" << time << "\t dt=" << system.dt << std::endl;
-    //     // std::cout << "\rPressure: t=" << system.p << std::endl;
-    //     // std::cout << "\r V: " << system.v << "\t U:" << system.u << std::endl;
-    //   }
-    // }
-    //   break;
-    //
     if (time > next_written_time)
     {
       if (mpiInfo.rank == 0)
@@ -112,8 +106,8 @@ auto main(int argc, char* argv[]) -> int
 
         fflush(stdout);
       }
-
       vtk_par::writeVTK(system, time);
+
       next_written_time++;
     }
     // write_vtk(system, time);
