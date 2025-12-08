@@ -97,6 +97,7 @@ void set_uv_boundary(PDESystem& system)
 
 void compute_dt(PDESystem& system)
 {
+  ProfileScope("Compute dt");
   double umax = 0;
   double vmax = 0;
   umax = std::max(system.u.max(), (-system.u.min()));

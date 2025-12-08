@@ -44,7 +44,7 @@ maximumNumberOfIterations = 1e4    # maximum number of iterations in the solver
 
 if __name__ == "__main__":
     for rank in range(1, 9):
-        n = 256
+        n = 64
         with open("/tmp/settings.txt", "w") as file:
             file.write(setting_template.format(n, n))
         print(f"Run Tests with {rank} Ranks")
@@ -56,20 +56,6 @@ if __name__ == "__main__":
                 "../build/numsim_parallel",
                 "/tmp/settings.txt",
             ],
-            capture_output=False,
-            check=False,
+            capture_output=True,
         )
         print(f"Finished Tests with {rank} Ranks")
-
-    # df = pd.read_csv("Profiler.csv")
-    # df.columns = ["name", "t-begin", "t-end", "calltime[ms]", "#calls"]
-    # df["calltime[ms]"] = (
-    #    df["calltime[ms]"].str.replace("ns", "", regex=False).astype(float) * 1e-6
-    # )
-
-    # df["#calls"] = df["#calls"] + 1
-    # group = df.groupby(by="name").agg({"calltime[ms]": "mean", "#calls": "sum"})
-
-    # print(f"\nGridsize: {n}x{n}\n")
-    # print(group)
-    # print("\n\n")

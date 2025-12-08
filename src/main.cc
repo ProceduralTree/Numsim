@@ -67,12 +67,12 @@ auto main(int argc, char* argv[]) -> int
   DebugPrintGrid(u, system.u);
   DebugPrintGrid(v, system.v);
   double time = 0;
-  ProfilePush("main");
 
   double next_written_time = 1;
   std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
   std::chrono::system_clock::time_point last_time = std::chrono::system_clock::now();
 
+  ProfileScope("main");
   while (time < system.settings.endTime)
   {
     // if (system.dt < 1e-16)
@@ -80,7 +80,6 @@ auto main(int argc, char* argv[]) -> int
     //   std::cerr << "To Small TimeStep" << std::endl;
     //   abort();
     // }
-    ProfileCount();
     step(system, time);
     time += system.dt;
     step(system, time);
@@ -113,7 +112,6 @@ auto main(int argc, char* argv[]) -> int
     // write_vtk(system, time);
   }
   std::cout << std::endl;
-  ProfilePop();
 
   MPI_Finalize();
   LOG::Close();

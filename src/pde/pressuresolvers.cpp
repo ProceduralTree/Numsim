@@ -51,8 +51,9 @@ void solve(CGSolver& cg, PDESystem& system)
 
     // cg.residual = cg.residual - a * A * cg.search_direction;
     parallel_broadcast(aAxpy, system.p.range, cg.residual, -alpha, A, cg.search_direction, cg.residual);
-
+    ProfilePush("Residual Calculation");
     double residual = cg.residual.max();
+    ProfilePop();
     if (residual > 1e5 || residual == -NAN || residual == NAN)
     {
       ErrorF("residual exploded {}", residual);

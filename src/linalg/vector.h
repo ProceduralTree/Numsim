@@ -59,6 +59,7 @@ inline double times(Index I, const Grid2D& a, const Grid2D& b)
 
 inline double dot(Grid2D& a, Grid2D& b)
 {
+  ProfileScope("dot Product");
   return distributed_sum(times, plusBoundary(a.range), a, b);
   // return distributed_sum(times, a.range, a, b);
 };
@@ -70,6 +71,8 @@ inline double Axy(Index I, LaplaceMatrixOperator A, const Grid2D& x, const Grid2
 
 inline double Adot(LaplaceMatrixOperator A, Grid2D& a, Grid2D& b)
 {
+
+  ProfileScope("A dot Product");
 
   return distributed_sum(Axy, a.range, A, a, b);
 }
