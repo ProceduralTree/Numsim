@@ -1,4 +1,6 @@
 #pragma once
+
+#define DEBUG
 #include <string>
 
 #include <chrono>
@@ -79,3 +81,4 @@ inline void PrintStack() { }
 #endif
 
 }
+#undef DEBUG

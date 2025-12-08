@@ -6,7 +6,16 @@
 #include <stack>
 #include <unordered_map>
 
+#define DEBUG
 #ifdef DEBUG
+
+static void checkForDir(const std::string& name)
+{
+  if (std::filesystem::is_directory(name))
+    return;
+  std::filesystem::create_directory(name);
+}
+
 static std::ofstream file;
 static Profiler::Type profType;
 
@@ -76,8 +85,8 @@ void Close()
     file.close();
     break;
   case ACCUMULATEPAR:
-    file = std::ofstream(std::format("Profiler{}.csv", Settings::get().mpi.rank));
-
+    checkForDir(std::format("profile_{}", Settings::get().mpi.size));
+    file = std::ofstream(std::format("profile_{}/Profiler{}.csv", Settings::get().mpi.size, Settings::get().mpi.rank));
     for (const auto& m : map)
     {
       const auto& s = m.first;
