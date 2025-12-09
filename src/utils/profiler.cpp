@@ -85,8 +85,9 @@ void Close()
     file.close();
     break;
   case ACCUMULATEPAR:
-    checkForDir(std::format("profile_{}", Settings::get().mpi.size));
-    file = std::ofstream(std::format("profile_{}/Profiler{}.csv", Settings::get().mpi.size, Settings::get().mpi.rank));
+    auto s = Settings::get();
+    checkForDir(std::format("profile_mpi{}_n{}_{}", s.mpi.size, s.nCells[0], s.nCells[1]));
+    file = std::ofstream(std::format("profile_mpi{}_n{}_{}/Profiler{}.csv", Settings::get().mpi.size, s.nCells[0], s.nCells[1], s.mpi.rank));
     for (const auto& m : map)
     {
       const auto& s = m.first;
