@@ -2,14 +2,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# sizes = [256,512,1024]:
-sizes = [64, 128, 256]
+sizes = [256, 512, 1024]
+# sizes = [64, 128, 256]
 
 # data summary change range to fit dataset size
 summaries = []
 for n in sizes:
     df_rank = []
-    for i in range(1, 5):
+    for i in range(1, 9):
         dataframes = []
         for j in range(i):
             df = pd.read_csv(f"profile_mpi{i}_n{n}_{n}/Profiler{j}.csv", header=None)
