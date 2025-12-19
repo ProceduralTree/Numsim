@@ -115,7 +115,7 @@ void initializeHeader(const PDESystem& system)
     uint16_t headerLength = 0;
   };
   std::stringstream headerStr;
-  headerStr << "descr=numpy.double" << ' ' << "fortran_order=false" << ' ' << "shape=(" << system.settings.nCells[0] << ',' << system.settings.nCells[1] << ')' << "\n";
+  headerStr << "descr=numpy.double" << ' ' << "fortran_order=false" << ' ' << "shape=(" << system.settings.nCells[0] + 1 << ',' << system.settings.nCells[1] + 1 << ')' << "\n";
   size_t headerSize = sizeof(Header) + headerStr.str().size() + 1;
   if (headerSize % 64 != 0)
   {
