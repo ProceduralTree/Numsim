@@ -78,8 +78,9 @@ void solve(CGSolver& cg, PDESystem& system)
     if (residual < Settings::get().epsilon)
     {
       // update Pressure ghosts
-      auto comm_buffer = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
-      delete comm_buffer;
+      static MPI_COMM_BUFFER comm_buffer(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
+      comm_buffer.Send(system.p.boundary.all);
+      comm_buffer.Receive();
       // std::cout << "COnverged after N=" << iter << " Iterations" << std::endl;
       // DebugF("COnverged after {} Iterations", iter);
       break;
@@ -122,11 +123,13 @@ void solve(SORSolver& S, PDESystem& system)
     system.residual = 0;
     broadcast_boundary(copy_with_offset, system.partitioning, system.p.boundary, system.p);
     broadcast_blackred(sor_step, parity, system.p.range, system);
-    MPI_COMM_BUFFER* comm_black = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
-    delete comm_black;
+    static MPI_COMM_BUFFER comm_black(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
+    comm_black.Send(system.p.boundary.all);
+    comm_black.Receive();
     broadcast_blackred(sor_step, !parity, system.p.range, system);
-    MPI_COMM_BUFFER* comm_red = new MPI_COMM_BUFFER(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
-    delete comm_red;
+    static MPI_COMM_BUFFER comm_red(system.p, system.p.boundary.all, MPI_COMM_WORLD, system.partitioning);
+    comm_red.Send(system.p.boundary.all);
+    comm_red.Receive();
 
     double local_residual = system.residual;
     double global_residual = 0.;
