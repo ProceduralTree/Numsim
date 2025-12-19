@@ -145,9 +145,9 @@ void init(const PDESystem& system)
   GlobalpressureGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
   GlobaluGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
   GlobalvGrid.setSize(system.settings.nCells[0] + offsetCount, system.settings.nCells[1] + offsetCount);
-  InterpolatedpressureGrid.setSize(system.settings.nCells[0], system.settings.nCells[1]);
-  InterpolateduGrid.setSize(system.settings.nCells[0], system.settings.nCells[1]);
-  InterpolatedvGrid.setSize(system.settings.nCells[0], system.settings.nCells[1]);
+  InterpolatedpressureGrid.setSize(system.settings.nCells[0] + 1, system.settings.nCells[1] + 1);
+  InterpolateduGrid.setSize(system.settings.nCells[0] + 1, system.settings.nCells[1] + 1);
+  InterpolatedvGrid.setSize(system.settings.nCells[0] + 1, system.settings.nCells[1] + 1);
 }
 
 std::pair<Range, Range> calcCopyRanges(const Grid2D& grid, const Partitioning::MPIInfo& mpi, Offset o)
@@ -227,7 +227,6 @@ void writeNP(const PDESystem& system, double dt)
 
   if (mpi.rank != root_rank)
     return;
-
   static int fileNumber = 0;
   set_filename(fileNumber);
   initializeHeader(system);
@@ -240,7 +239,6 @@ void writeNP(const PDESystem& system, double dt)
       InterpolatedpressureGrid[index] = GlobalpressureGrid.interpolate4({ static_cast<uint16_t>(i), static_cast<uint16_t>(j) });
     }
   }
-  assert(index == dataSet->GetNumberOfPoints());
   index = 0; // index for the vtk data structure
   Index I;
   for (size_t j = 0; j <= system.settings.nCells[1]; j++)
@@ -253,7 +251,6 @@ void writeNP(const PDESystem& system, double dt)
       InterpolatedvGrid[index] = GlobalvGrid.interpolate(I, Ix);
     }
   }
-  assert(index == dataSet->GetNumberOfPoints());
 
   outFileP.write((const char*)InterpolatedpressureGrid.data(), InterpolatedpressureGrid.size());
   outFileU.write((const char*)InterpolateduGrid.data(), InterpolateduGrid.size());
