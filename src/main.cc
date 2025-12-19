@@ -1,4 +1,4 @@
-#include "output/vtk_par.h"
+#include "output/np_par.h"
 #include "utils/Logger.h"
 #include "utils/profiler.h"
 #include "utils/settings.h"
@@ -56,7 +56,7 @@ auto main(int argc, char* argv[]) -> int
   Settings::set().mpi = mpiInfo;
   PDESystem system = PDESystem(Settings::get(), mpiInfo);
 
-  vtk_par::init(system);
+  np_par::init(system);
 
   std::cout << "Hello from Rank " << rank << " of " << size << std::endl;
   std::cout << "nX " << mpiInfo.nCells[0] << " nY " << mpiInfo.nCells[1] << std::endl;
@@ -105,7 +105,7 @@ auto main(int argc, char* argv[]) -> int
 
         fflush(stdout);
       }
-      vtk_par::writeVTK(system, time);
+      np_par::writeNP(system, time);
 
       next_written_time++;
     }
