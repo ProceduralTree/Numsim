@@ -6,7 +6,6 @@
 #include <stack>
 #include <unordered_map>
 
-#define DEBUG
 #ifdef DEBUG
 
 static void checkForDir(const std::string& name)

@@ -48,8 +48,10 @@ struct MPI_COMM_BUFFER
     // not needed
     for (size_t i = 0; i < 4; i++)
     {
-      free(sendbuffer[i]);
-      free(recivebuffer[i]);
+      if (sendbuffer[i])
+        free(sendbuffer[i]);
+      if (recivebuffer[i])
+        free(recivebuffer[i]);
     }
   }
   void Init(const std::array<std::tuple<Range, Offset>, 4>& ghosts)
@@ -115,7 +117,6 @@ struct MPI_COMM_BUFFER
         // request[index] = MPI_REQUEST_NULL;
         auto [r, o] = communication_boundary[index];
         comm_array.set(recivebuffer[index], r);
-        // free(recivebuffer[index]);
       }
     }
     for (int i = 0; i < 4; i++)
@@ -131,7 +132,6 @@ struct MPI_COMM_BUFFER
       for (int succes = 0; succes < outcout; succes++)
       {
         int index = indices[succes];
-        // free(sendbuffer[index]);
       }
     }
   }
