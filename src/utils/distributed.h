@@ -22,6 +22,7 @@ inline size_t len(Range r)
 
 struct MPI_COMM_BUFFER
 {
+  const Partitioning::MPIInfo& info;
   MPI_Comm comm;
   Grid2D& comm_array;
   std::array<std::tuple<Range, Offset>, 4> communication_boundary;
@@ -31,7 +32,8 @@ struct MPI_COMM_BUFFER
   std::array<double*, 4> recivebuffer;
 
   MPI_COMM_BUFFER(Grid2D& comm_array, std::array<std::tuple<Range, Offset>, 4> ghosts, MPI_Comm comm, Partitioning::MPIInfo& info, int id = 0)
-    : comm(comm)
+    : info(info)
+    , comm(comm)
     , comm_array(comm_array)
     , communication_boundary(ghosts)
     , requestS({ MPI_REQUEST_NULL, MPI_REQUEST_NULL, MPI_REQUEST_NULL, MPI_REQUEST_NULL })
@@ -39,53 +41,60 @@ struct MPI_COMM_BUFFER
     , sendbuffer()
     , recivebuffer()
   {
+    Init(ghosts);
+  };
+  ~MPI_COMM_BUFFER()
+  {
+    // not needed
+    for (size_t i = 0; i < 4; i++)
+    {
+      free(sendbuffer[i]);
+      free(recivebuffer[i]);
+    }
+  }
+  void Init(const std::array<std::tuple<Range, Offset>, 4>& ghosts)
+  {
+    for (int i = 0; i < 4; i++)
+    {
+      if (info.neighbours()[i][0] >= 0)
+      {
+        auto [r, o] = ghosts[i];
+        recivebuffer[i] = (double*)malloc(len(r) * sizeof(double));
+      }
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+      if (info.neighbours()[i][0] >= 0)
+      {
+        auto [r, o] = ghosts[i];
+        sendbuffer[i] = (double*)malloc(len(r) * sizeof(double));
+      }
+    }
+  }
+  void Send(const std::array<std::tuple<Range, Offset>, 4>& ghosts, int id = 0)
+  {
     ProfileScope("MPI Communication Init");
     for (int i = 0; i < 4; i++)
     {
-
       if (info.neighbours()[i][0] >= 0)
       {
-
         auto [r, o] = ghosts[i];
-        recivebuffer[i] = (double*)malloc(len(r) * sizeof(double));
         MPI_Irecv(recivebuffer[i], len(r), MPI_DOUBLE, info.neighbours()[i][0], info.neighbours()[i][1] + id, comm, &requestR[i]);
       }
     }
 
     for (int i = 0; i < 4; i++)
     {
-      // DebugF("Neighbour: {} , Rank {}", info.neighbours()[i], info.rank);
-
       if (info.neighbours()[i][0] >= 0)
       {
-
         auto [r, o] = ghosts[i];
-        // DebugF("Allocating sendrevieve buffers of size {} from rank {}", len(r), info.rank);
-        // DebugF("Range : {{x={} , y={} }} -> {{x={} , y={} }}", r.begin.x, r.begin.y, r.end.x, r.end.y);
-        // DebugF("Offset : {{x={} , y={} }}", o.x, o.y);
-        sendbuffer[i] = (double*)malloc(len(r) * sizeof(double));
-        // recivebuffer[i] = (double*)malloc(len(r) * sizeof(double));
         comm_array.get(sendbuffer[i], r - o);
-        // DebugF("Request {}", request[i]);
         MPI_Isend(sendbuffer[i], len(r), MPI_DOUBLE, info.neighbours()[i][0], i + id, comm, &requestS[i]);
-        // MPI_Irecv(recivebuffer[i], len(r), MPI_DOUBLE, info.neighbours()[i][0], info.neighbours()[i][1] + id, comm, &requestR[i]);
-        //  MPI_Isendrecv(
-        //    sendbuffer[i],
-        //    len(r),
-        //    MPI_DOUBLE,
-        //    info.neighbours()[i][0],
-        //    i + id,
-        //    recivebuffer[i],
-        //    len(r),
-        //    MPI_DOUBLE,
-        //    info.neighbours()[i][0],
-        //    info.neighbours()[i][1] + id,
-        //    comm,
-        //    &request[i]);
       }
     }
-  };
-  ~MPI_COMM_BUFFER()
+  }
+  void Receive()
   {
     ProfileScope("MPI Communication Wait");
 
@@ -106,7 +115,7 @@ struct MPI_COMM_BUFFER
         // request[index] = MPI_REQUEST_NULL;
         auto [r, o] = communication_boundary[index];
         comm_array.set(recivebuffer[index], r);
-        free(recivebuffer[index]);
+        // free(recivebuffer[index]);
       }
     }
     for (int i = 0; i < 4; i++)
@@ -122,7 +131,7 @@ struct MPI_COMM_BUFFER
       for (int succes = 0; succes < outcout; succes++)
       {
         int index = indices[succes];
-        free(sendbuffer[index]);
+        // free(sendbuffer[index]);
       }
     }
   }
@@ -140,9 +149,10 @@ void distributed_broadcast(Operator&& O, Partitioning::MPIInfo p, Range r, Grid2
   //  copy boundary sendbuff
   broadcast(std::forward<Operator>(O), border.unique(), std::forward<Args>(args)...);
   // broadcast(std::forward<Operator>(O), r, std::forward<Args>(args)...);
-  MPI_COMM_BUFFER* comm_buffer = new MPI_COMM_BUFFER(comm_array, ghosts.all, MPI_COMM_WORLD, p);
+  MPI_COMM_BUFFER comm_buffer(comm_array, ghosts.all, MPI_COMM_WORLD, p);
+  comm_buffer.Send(ghosts.all);
   broadcast(std::forward<Operator>(O), inner, std::forward<Args>(args)...);
-  delete comm_buffer;
+  comm_buffer.Receive();
 };
 
 #endif // DISTRIBUTED_H_
