@@ -68,7 +68,7 @@ auto main(int argc, char* argv[]) -> int
   DebugPrintGrid(v, system.v);
   double time = 0;
 
-  double next_written_time = 1;
+  double next_written_time = 0;
   std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
   std::chrono::system_clock::time_point last_time = std::chrono::system_clock::now();
 
@@ -82,8 +82,8 @@ auto main(int argc, char* argv[]) -> int
     // }
     step(system, time);
     time += system.dt;
-    step(system, time);
-    time += system.dt;
+    // step(system, time);
+    // time += system.dt;
     if (time > next_written_time)
     {
       if (mpiInfo.rank == 0)
@@ -105,12 +105,13 @@ auto main(int argc, char* argv[]) -> int
 
         fflush(stdout);
       }
-      vtk_par::writeVTK(system, time);
+      // vtk_par::writeVTK(system, time);
 
-      next_written_time++;
+      next_written_time += 1;
     }
     // write_vtk(system, time);
   }
+  vtk_par::writeVTK(system, time);
   std::cout << std::endl;
 
   MPI_Finalize();
