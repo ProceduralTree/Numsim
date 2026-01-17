@@ -64,6 +64,7 @@
             pkgs.cmake
             pkgs.gcc
             pkgs.openmpi
+            pkgs.llvmPackages_14.clang-tools
           ];
 
           buildInputs = [
