@@ -1,0 +1,25 @@
+* TODO Sparse Quadtree Index Datastruct [0/0]
+* TODO Sparse Grid data storage [0/2]
+** TODO Level based acces
+** TODO Mipmap updating
+
+* TODO Index Mapping [0/2] 
+** TODO Local to Global
+
+** TODO Global to local
+
+* TODO Z-Order Indexing [0/3]
++ [[https://en.wikipedia.org/wiki/Z-order_curve]]
+** TODO Zindex to x,y,(z)
+** TODO x,y,(z) to zorder
+** TODO Neighbour indexing
+
+* TODO Data File output (VTKHDF5 writer , Unstructured Grid output) [0/0]
++ [[https://docs.vtk.org/en/latest/vtk_file_formats/vtkhdf_file_format/vtkhdf_specifications.html#unstructured-grid]]
+
+* TODO Gradient calulations for heterogenious grids
++ [[https://cs.uwaterloo.ca/~c2batty/papers/Ando2020/Ando2020.pdf]]
+
+* TODO Time adaptive remeshing
+
+* TODO Arbitrary boundaries
