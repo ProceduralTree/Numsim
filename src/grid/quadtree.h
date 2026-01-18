@@ -57,12 +57,14 @@ struct dynamic_bitset
 
   void resize(size_t bitSize)
   {
+    size_t oldSize = _numBytes;
     _numBits = bitSize;
     if (bitSize < 8)
       _numBytes = 1;
     else
       _numBytes = 1 + (bitSize - 1) / 8;
     _data = (uint8_t*)realloc(_data, _numBytes);
+    std::fill(_data + oldSize, _data + _numBytes, 0);
   }
   const uint8_t* data() const
   {
@@ -89,8 +91,8 @@ struct dynamic_bitset
 
 private:
   uint8_t* _data = nullptr;
-  size_t _numBits;
-  size_t _numBytes;
+  size_t _numBits = 0;
+  size_t _numBytes = 0;
 };
 
 inline bool isPowerOf4(size_t x)
@@ -120,13 +122,13 @@ struct QuadTree
     assert(isPowerOf4(sizeX) && sizeX == sizeY);
     depth = __builtin_ctz(sizeX) / 2;
     size_t allocSize = sizeX * sizeY;
-    size_t tempSizeX = sizeX / 4;
-    size_t tempSizeY = sizeY / 4;
-    for (size_t i = 1; i < depth; ++i)
+    size_t tempSizeX = sizeX / 2;
+    size_t tempSizeY = sizeY / 2;
+    for (size_t i = 1; i < depth - 1; ++i) // from 1.. d-1 because max depth is already in allocSize and root node is 4 not 1
     {
       allocSize += tempSizeX * tempSizeY;
-      tempSizeX = sizeX / 4;
-      tempSizeY = sizeY / 4;
+      tempSizeX /= 2;
+      tempSizeY /= 2;
     }
 
     _data = malloc(sizeof(T) * allocSize);
@@ -146,27 +148,33 @@ struct QuadTree
     free(_data);
   }
 
-  size_t calcTreeIndex(Index I)
+  const T& getLowestValue(Index I) const
   {
-    size_t DepthOffset = I.depth * 4;
+    size_t zorder = IndexToZOrder(I.x, I.y);
+    size_t d = depth - 1;
+    for (; d > 1 && !tree[(zorder >> (2 * d)) + depthOffset[d]]; d--)
+    {
+    }
+    return _data[(zorder >> (2 * d)) + depthOffset[d]];
+  }
+  const size_t getLowestDepth(Index I) const
+  {
+    size_t zorder = IndexToZOrder(I.x, I.y);
+    size_t d = depth - 1;
+    for (; d > 1 && !tree[(zorder >> (2 * d)) + depthOffset[d]]; d--)
+    {
+    }
+    return d;
   }
   T& operator[](Index I)
   {
     size_t zorder = IndexToZOrder(I.x, I.y);
-    size_t d = depth - 1;
-    for (size_t d = depth - 1; d > 1 && !tree[(zorder >> 2 * d) + depthOffset[d]]; d--)
-    {
-    }
-    return _data[(zorder >> 2 * d) + depthOffset[d]];
+    return _data[(zorder >> (2 * I.depth)) + depthOffset[I.depth]];
   }
   const T& operator[](Index I) const
   {
     size_t zorder = IndexToZOrder(I.x, I.y);
-    size_t d = depth - 1;
-    for (size_t d = depth - 1; d > 1 && !tree[(zorder >> 2 * d) + depthOffset[d]]; d--)
-    {
-    }
-    return _data[(zorder >> 2 * d) + depthOffset[d]];
+    return _data[(zorder >> (2 * I.depth)) + depthOffset[I.depth]];
   }
 
 private:
