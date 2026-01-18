@@ -2,57 +2,178 @@
 #define QUADTREE_H_
 #include "utils/index.h"
 #include <cstdint>
+#include <sstream>
 
-struct SparseNode
+struct dynamic_bitset
 {
-  uint32_t parent;
-  uint32_t children;
-  Index global_index;
-  uint4_t mask;
-  // TODO Potential Neighbour caching
-  // uint32_t begin;
-  // uint32_t top;
-  // uint32_t bottom;
-  // uint32_t left;
-  // uint32_t right;
-};
-
-struct TreeIndices
-{
-
-  uint8_t min_depth;
-  uint8_t max_depth;
-  SparseNode _indices[];
-
-  uint32_t global_to_local(uint32_t global_index, int depth)
+  dynamic_bitset() { }
+  dynamic_bitset(const size_t bitSize)
   {
-    uint32_t index = 0;
-    // iterate tree
+    resize(bitSize);
+  }
+  ~dynamic_bitset()
+  {
+    free(_data);
+  }
 
-    return index;
-  };
+  void set(const size_t index, const bool value = true)
+  {
+    size_t byteIndex = index / 8;
+    size_t offset = index % 8;
+
+    uint8_t bitfield = 1 << offset;
+    if (value)
+      _data[byteIndex] |= bitfield;
+    else
+      _data[byteIndex] &= ~bitfield;
+  }
+  void setAll(const bool value)
+  {
+    uint8_t fillValue = 0xFF;
+    if (!value)
+      fillValue = 0;
+    std::fill(_data, _data + _numBytes, fillValue);
+  }
+  void reset()
+  {
+    setAll(false);
+  }
+  const bool get(const size_t index) const
+  {
+    assert(index < _numBits);
+    return operator[](index);
+  }
+  void flip(const size_t index)
+  {
+    set(index, !operator[](index));
+  }
+
+  const bool operator[](size_t index) const
+  {
+    size_t byteIndex = index / 8;
+    size_t offset = index % 8;
+    return (_data[byteIndex] >> offset) & 0x1;
+  }
+
+  void resize(size_t bitSize)
+  {
+    _numBits = bitSize;
+    if (bitSize < 8)
+      _numBytes = 1;
+    else
+      _numBytes = 1 + (bitSize - 1) / 8;
+    _data = (uint8_t*)realloc(_data, _numBytes);
+  }
+  const uint8_t* data() const
+  {
+    return _data;
+  }
+  const size_t size() const
+  {
+    return _numBits;
+  }
+  const size_t dataSize() const
+  {
+    return _numBytes;
+  }
+
+  std::string toString() const
+  {
+    std::stringstream ss;
+    for (size_t i = 0; i < _numBits; ++i)
+    {
+      ss << (operator[](i) ? "1" : "0");
+    }
+    return ss.str();
+  }
+
+private:
+  uint8_t* _data = nullptr;
+  size_t _numBits;
+  size_t _numBytes;
 };
+
+inline bool isPowerOf4(size_t x)
+{
+  return x != 0 && ((x & (x - 1)) == 0) && !(x & 0xAAAAAAAA);
+}
+inline size_t part1by1(const size_t n)
+{
+  size_t x = n;
+  x = (x | (x << 8)) & 0x00FF00FF;
+  x = (x | (x << 4)) & 0x0F0F0F0F;
+  x = (x | (x << 2)) & 0x33333333;
+  x = (x | (x << 1)) & 0x55555555;
+  return x;
+}
+
+inline size_t IndexToZOrder(const size_t x, const size_t y)
+{
+  return (part1by1(y) << 1) | part1by1(x);
+}
 
 template <typename T>
-class QuadTree<T>
+struct QuadTree
 {
-  TreeIndices& indices;
-  uint64_t data_size;
-  T _data[];
-  T& operator[](Index I);
-  // T& get_lowest_value(Index I); // get lowest depht value for global index
-};
-
-void broadcast_leafs(QuadTree<Index> index_cache, Range range)
-{
-
-  for (uint64_t i; i < index_cache.data_size; i++)
+  QuadTree<T>(size_t sizeX, size_t sizeY)
   {
-    Index I = index_cache._data[i];
-    // if Index in range:
-    //       do something;
+    assert(isPowerOf4(sizeX) && sizeX == sizeY);
+    depth = __builtin_ctz(sizeX) / 2;
+    size_t allocSize = sizeX * sizeY;
+    size_t tempSizeX = sizeX / 4;
+    size_t tempSizeY = sizeY / 4;
+    for (size_t i = 1; i < depth; ++i)
+    {
+      allocSize += tempSizeX * tempSizeY;
+      tempSizeX = sizeX / 4;
+      tempSizeY = sizeY / 4;
+    }
+
+    _data = malloc(sizeof(T) * allocSize);
+    tree.resize(allocSize - sizeX * sizeY);
+    depthOffset.resize(depth);
+    size_t offset = 0;
+    size_t nodesCount = 4;
+    for (size_t i = 0; i < depth; i++)
+    {
+      depthOffset[i] = offset;
+      offset += nodesCount;
+      nodesCount *= 4;
+    }
   }
+  ~QuadTree<T>()
+  {
+    free(_data);
+  }
+
+  size_t calcTreeIndex(Index I)
+  {
+    size_t DepthOffset = I.depth * 4;
+  }
+  T& operator[](Index I)
+  {
+    size_t zorder = IndexToZOrder(I.x, I.y);
+    size_t d = depth - 1;
+    for (size_t d = depth - 1; d > 1 && !tree[(zorder >> 2 * d) + depthOffset[d]]; d--)
+    {
+    }
+    return _data[(zorder >> 2 * d) + depthOffset[d]];
+  }
+  const T& operator[](Index I) const
+  {
+    size_t zorder = IndexToZOrder(I.x, I.y);
+    size_t d = depth - 1;
+    for (size_t d = depth - 1; d > 1 && !tree[(zorder >> 2 * d) + depthOffset[d]]; d--)
+    {
+    }
+    return _data[(zorder >> 2 * d) + depthOffset[d]];
+  }
+
+private:
+  dynamic_bitset tree;
+  size_t depth;
+  T* _data;
+  std::vector<size_t> depthOffset;
 };
-void update_mipmap();
 
 #endif // QUADTREE_H_
