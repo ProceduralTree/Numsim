@@ -26,8 +26,8 @@ dirichletRightX  = 0
 dirichletRightY  = 0
 
 # Discretization parameters
-nCellsX = {}          # number of cells in x and y direction
-nCellsY = {} 
+nCellsX = {ncells}          # number of cells in x and y direction
+nCellsY = {ncells} 
 useDonorCell = true   # if donor cell discretization should be used, possible values: true false
 alpha = 0.5           # factor for donor-cell scheme, 0 is equivalent to central differences
 tau = 0.5             # safety factor for time step width
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     for rank in range(1, 9):
         n = 64
         with open("/tmp/settings.txt", "w") as file:
-            file.write(setting_template.format(n, n))
+            file.write(setting_template.format(ncells=n))
         print(f"Run Tests with {rank} Ranks")
         subprocess.run(
             [
