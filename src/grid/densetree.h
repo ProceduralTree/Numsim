@@ -4,32 +4,54 @@
 #include <bit>
 #include <vector>
 #define ONES 0xFFFFFFFFF
-#include "quadtree.h"
 #include <cstddef>
 #include <cstdint>
+#include <grid/quadtree.h>
+
+inline uint16_t compact1by1(uint32_t n)
+{
+  n &= 0x55555555;
+  n = (n ^ (n >> 1)) & 0x33333333;
+  n = (n ^ (n >> 2)) & 0x0F0F0F0F;
+  n = (n ^ (n >> 4)) & 0x00FF00FF;
+  n = (n ^ (n >> 8)) & 0x0000FFFF;
+  return static_cast<uint16_t>(n);
+}
+
+Index ZorderToIndex(uint32_t index)
+{
+  uint16_t x = compact1by1(index >> 0); // even bits
+  uint16_t y = compact1by1(index >> 1); // odd bits
+  return Index { x, y };
+}
 
 namespace DenseTree {
-struct TreeIndex
+struct Zindex
 {
   size_t index;
   uint8_t depth;
+  Zindex(Index I)
+    : index(IndexToZOrder(I.x, I.y))
+    , depth(I.depth) { };
 };
 
 struct DenseTree
 {
-  TreeIndex _data[];
+
   size_t _indices[];
   uint8_t _depths[];
-  TreeIndex _index_cache[];
+  size_t _index_cache[];
+
+  uint8_t _sizes[];
   uint8_t maxDepth;
 };
 
-TreeIndex get_sparse_index(DenseTree tree, size_t index)
+Zindex get_sparse_index(DenseTree tree, size_t index)
 {
   return DenseTree._index_cache[index];
 };
 
-size_t get_dense_index(DenseTree tree, TreeIndex index)
+size_t get_dense_index(DenseTree tree, Zindex index)
 {
   size_t idx = 0;
   uint8_t currentDepth = 0;
@@ -50,12 +72,37 @@ size_t get_dense_index(DenseTree tree, TreeIndex index)
   return idx;
 };
 
-bool has_children(size_t index)
+void optimize_depths();
+void add_layer();
+void mark_subtree_unused();
+
+template <typename T>
+void mipmap(DenseTree tree, std::vector<T> _data)
 {
-  return false;
+  for (size_t depth = tree.maxDepth - 1; depth > 0; depth--)
+  {
+    for (size_t local_index = tree._sizes.at(depth - 1); local_index < tree._sizes.at(depth); local_index++)
+    {
+      if (tree._depths[local_index] > 0)
+      {
+        size_t data_index = tree._indices[local_index];
+        _data[local_index] = 0;
+        for (int i = 0; i < 4; i++)
+          _data[local_index] += _data[data_index + i];
+      }
+    }
+  }
+}
+
+bool has_children(size_t index, size_t height, size_t nx, size_t ny)
+{
+  size_t local_cell_size = 1 << height;
+  auto [x, y] = ZorderToIndex(index);
+  if ((x <= nx && nx <= x + local_cell_size) || (y <= ny && ny <= y + local_cell_size))
+    return false;
 };
 
-void build_tree_from_settings(size_t nx, size_t ny)
+void build_from_rectangle(size_t nx, size_t ny)
 {
   std::vector<size_t> _indices;
   std::vector<size_t> _index_cache;
@@ -68,12 +115,6 @@ void build_tree_from_settings(size_t nx, size_t ny)
   size_t y_power = std::bit_width<size_t>(ny - 1);
   const size_t size = std::max(x_power, y_power);
 
-  // log2 of the larges square with size 2^dense_size x 2^dense_size,
-  // such that it fits inside the rectangle nx x ny
-  size_t dense_size = (1 << (x_power - 1));
-  const size_t leftover = std::min(nx - dense_size, ny - dense_size);
-  size_t dense_depth = std::bit_width<size_t>(leftover);
-
   _sizes.emplace_back(0);
   size_t index = 0;
   // Iterate over depths
@@ -83,16 +124,17 @@ void build_tree_from_settings(size_t nx, size_t ny)
     // Iterate Over All nodes on current depth
     for (size_t local_index = _sizes.at(depth - 1); local_index < _sizes.at(depth); local_index++)
     {
-
-      if (has_children(index))
+      size_t global_index = _index_cache.at(local_index);
+      if (has_children(global_index, size - depth, , nx, ny))
       {
-        _indices.emplace_back(index);
-        _depth.emplace_back(1);
-        index += 4;
-      } else
-      {
-        _indices.emplace_back(0);
-        _depth.emplace_back(0);
+        _depth.at(local_index) = 1;
+        for (size_t i = 0; i < 4; i++)
+        {
+          index++;
+          _indices.emplace_back(index);
+          _depth.emplace_back(0);
+          _index_cache.emplace_back(global_index + i);
+        }
       }
 
       // Get maximum subdepth

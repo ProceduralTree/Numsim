@@ -30,9 +30,9 @@ struct PDESystem
   double residual = 0;
   const Index begin;
   const Index end;
-  TreeIndices indices;
-  QuadTree<Index> local_to_global_chache;
-  QuadTree<std::array<Index, 4>> neighbours;
+  // TreeIndices indices;
+  // QuadTree<Index> local_to_global_chache;
+  // QuadTree<std::array<Index, 4>> neighbours;
 
   double dt;
   Grid2D p;
