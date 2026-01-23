@@ -11,7 +11,7 @@ file(GLOB_RECURSE SRC_FILES
 )
 
 add_executable(tests
-    test_tree.cpp
+    run_test.cpp
     ${SRC_FILES}
 )
 

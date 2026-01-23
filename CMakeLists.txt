@@ -3,7 +3,7 @@ project (Numsim)
 
 set(CMAKE_CXX_STANDARD 23)
 # -fopenmp flag (enables OpenMP)
-set(GCC_COVERAGE_COMPILE_FLAGS "-march=native -Wall -pedantic   -lm -O3 -fopenmp -funroll-loops -ftree-vectorize ")
+set(GCC_COVERAGE_COMPILE_FLAGS "-march=native -Wall -pedantic   -lm -O3 -fopenmp -funroll-loops -ftree-vectorize -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
 
 

@@ -2,7 +2,7 @@
   description = "Numsim C++ project with VTK + MPI built via CMake";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -61,10 +61,11 @@
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = [
             pkgs.ninja
+            pkgs.graphviz
             pkgs.cmake
             pkgs.gcc
             pkgs.openmpi
-            pkgs.llvmPackages_14.clang-tools
+            pkgs.llvmPackages_20.clang-tools
           ];
 
           buildInputs = [
