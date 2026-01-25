@@ -1,57 +1,15 @@
 #ifndef DENSETREE_H_
 #define DENSETREE_H_
-#include "utils/index.h"
-#include <algorithm>
-#include <bit>
+#include "zindex.h"
 #include <bitset>
+#include <cstddef>
 #include <utility>
 #include <vector>
-#define ONES 0xFFFFFFFFF
-#include <cstddef>
+#define ONES SIZE_MAX
 #include <cstdint>
-#include <format>
 #include <iostream>
-inline size_t part1by1(const size_t n)
-{
-  size_t x = n;
-  x = (x | (x << 8)) & 0x00FF00FF;
-  x = (x | (x << 4)) & 0x0F0F0F0F;
-  x = (x | (x << 2)) & 0x33333333;
-  x = (x | (x << 1)) & 0x55555555;
-  return x;
-}
-
-inline size_t IndexToZOrder(const size_t x, const size_t y)
-{
-  return (part1by1(y) << 1) | part1by1(x);
-}
-
-inline uint16_t compact1by1(uint32_t n)
-{
-  n &= 0x55555555;
-  n = (n ^ (n >> 1)) & 0x33333333;
-  n = (n ^ (n >> 2)) & 0x0F0F0F0F;
-  n = (n ^ (n >> 4)) & 0x00FF00FF;
-  n = (n ^ (n >> 8)) & 0x0000FFFF;
-  return static_cast<uint16_t>(n);
-}
-
-constexpr Index ZorderToIndex(uint32_t index)
-{
-  uint16_t x = compact1by1(index >> 0); // even bits
-  uint16_t y = compact1by1(index >> 1); // odd bits
-  return Index { x, y, 0 };
-}
 
 namespace DenseTree {
-struct Zindex
-{
-  size_t index;
-  uint8_t depth;
-  Zindex(Index I)
-    : index(IndexToZOrder(I.x, I.y))
-    , depth(I.depth) { };
-};
 
 struct DenseTree
 {
@@ -62,7 +20,7 @@ struct DenseTree
   std::vector<size_t> _index_cache;
   std::vector<uint16_t> _sizes;
 
-  void print();
+  constexpr void print();
 };
 
 constexpr size_t get_sparse_index(DenseTree tree, size_t index)
@@ -77,14 +35,18 @@ constexpr size_t get_dense_index(DenseTree tree, Zindex index)
   for (size_t depth = 0; depth < index.depth; depth++)
   {
     uint16_t subtreeDepth = tree._depths[idx];
-    uint16_t dDepth = index.depth - subtreeDepth;
-    if (dDepth < 1)
+    if (subtreeDepth < 1)
+    {
+
       return idx;
-    // Filter out already acounted for depth:
-    // ie. for currentDepth=3 and maxdepth=5 use bitmask (4^3-1)*4^(5-2)=0b11_11_11_00_00
-    size_t mask = ONES >> (sizeof(size_t) * 8 - currentDepth);
-    size_t local_index = (index.index & mask) >> 2 * dDepth;
-    idx = tree._indices[idx + local_index];
+    }
+    //  Filter out already acounted for depth:
+    //  ie. for currentDepth=3 and maxdepth=5 use bitmask (4^3-1)*4^(5-2)=0b11_11_11_00_00
+    uint16_t dDepth = index.depth - currentDepth;
+    size_t mask = ((size_t(1) << 2 * index.depth) - 1) >> 2 * currentDepth;
+
+    size_t local_index = (index.index & mask) >> 2 * (dDepth - 1);
+    idx = tree._indices[idx] + local_index;
     currentDepth += subtreeDepth;
   }
 
@@ -142,7 +104,7 @@ T max(std::array<T, 4> data)
 //   return 0;
 // };
 
-template <typename Operator, typename T, typename... Args>
+template <typename Operator, typename... Args>
 DenseTree build_tree(Operator&& O, uint16_t maxDepth, Args&&... args)
 {
   std::vector<size_t> _indices;
@@ -176,7 +138,7 @@ DenseTree build_tree(Operator&& O, uint16_t maxDepth, Args&&... args)
         for (size_t i = 0; i < 4; i++)
         {
           size_t child_zindex = global_index + (i << 2 * (maxDepth - depth - 1));
-          bool has_child = std::forward<Operator>(O)(child_zindex, depth + 1, std::forward<Args>(args)...);
+          bool has_child = std::forward<Operator>(O)(child_zindex, maxDepth, depth + 1, std::forward<Args>(args)...);
           index += 4 * has_child;
           _indices.push_back(index);
           _depth.push_back(has_child);
@@ -227,7 +189,7 @@ constexpr void print_node(size_t index, uint8_t depth, const DenseTree& tree)
 {
   auto [x, y, d] = ZorderToIndex(tree._index_cache.at(index));
 
-  std::cout << "N" << index << " [label=\"x:" << x << "\ny:" << y << "\nd:" << static_cast<size_t>(tree._depths.at(index)) << "\nh:" << (1 << tree.maxDepth - depth) << "\"]" << ";" << std::endl;
+  std::cout << "N" << index << " [label=\"x:" << x << "\ny:" << y << "\nd:" << static_cast<size_t>(tree._depths.at(index)) << "\nh:" << (1 << (tree.maxDepth - depth)) << "\"]" << ";" << std::endl;
   if (tree._depths.at(index) > 0)
   {
     for (size_t i = 0; i < 4; i++)
@@ -238,7 +200,7 @@ constexpr void print_node(size_t index, uint8_t depth, const DenseTree& tree)
   }
 };
 
-void DenseTree::print()
+constexpr void DenseTree::print()
 {
 
   // std::cout << "Size:\t";

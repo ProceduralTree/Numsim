@@ -22,7 +22,7 @@ struct Index
 {
   uint16_t x;
   uint16_t y;
-  uint8_t depth;
+  uint16_t depth;
 
   inline Index operator+(const Index& other)
   {

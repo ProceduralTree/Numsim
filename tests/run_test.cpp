@@ -1,4 +1,6 @@
 
+#include "output/vtk_tree.h"
+#include <cstddef>
 #include <grid/densetree.h>
 #include <iostream>
 #include <mpi.h>
@@ -13,33 +15,35 @@
     }                                                            \
   } while (0)
 
-uint16_t has_children(size_t index, uint16_t maxDepth, uint16_t depth, size_t nx, size_t ny)
+uint16_t intersects_boundary(size_t index, uint16_t maxDepth, uint16_t depth, size_t nx, size_t ny)
 {
   // size_t x_power = std::bit_width<size_t>(nx - 1);
   // size_t y_power = std::bit_width<size_t>(ny - 1);
   // const size_t size = std::max(x_power, y_power);
   if (depth >= maxDepth)
     return 0;
-  ;
 
   size_t local_cell_size = 1 << (maxDepth - depth);
   auto [x, y, _] = ZorderToIndex(index);
   // std::cout << "X:" << x << "Y:" << y << std::endl;
   // std::cout << "local size:" << local_cell_size << std::endl;
   bool on_x_boundary = (x <= nx && nx <= x + local_cell_size);
-  bool on_y_boundary = (x <= nx && nx <= x + local_cell_size);
+  bool on_y_boundary = (y <= ny && ny <= y + local_cell_size);
   bool in_xy = x <= nx && y <= ny;
-  if (on_x_boundary && on_y_boundary && in_xy)
+  if ((on_x_boundary || on_y_boundary) && in_xy)
     return 1;
   return 0;
 };
 void test_build_tree()
 {
+  size_t nx = 50;
+  size_t ny = 50;
   size_t x_power = std::bit_width<size_t>(nx - 1);
   size_t y_power = std::bit_width<size_t>(ny - 1);
   const uint16_t maxDepth = std::max(x_power, y_power);
-  auto t = DenseTree::build_from_rectangle(has_children, maxDepth, 50, 50);
+  auto t = DenseTree::build_tree(intersects_boundary, maxDepth, nx, ny);
   t.print();
+  write_tree(t);
 };
 
 // void set_one(Index I, Offset O, Grid2D& array)
