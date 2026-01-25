@@ -161,13 +161,29 @@ struct QuadTree
     size_t zorder = IndexToZOrder(I.x, I.y);
     return _data[(zorder >> (2 * I.depth)) + depthOffset[I.depth]];
   }
+  void SetTreeNode(Index I, bool value = true)
+  {
+    size_t zorder = IndexToZOrder(I.x, I.y);
+    tree.set((zorder >> (2 * I.depth)) + depthOffset[I.depth], value);
+  }
+  const bool GetTreeNode(Index I) const
+  {
+    size_t zorder = IndexToZOrder(I.x, I.y);
+    return tree.get((zorder >> (2 * I.depth)) + depthOffset[I.depth]);
+  }
 
 private:
   dynamic_bitset tree;
   size_t depth;
   T* _data;
   std::vector<size_t> depthOffset;
+  size_t maxSize;
 
+  size_t clamp(size_t min, size_t max, size_t x)
+  {
+    return min > x ? min : max < x ? max
+                                   : x;
+  }
   bool generateGridFromImage(std::filesystem::path imagePath, int rgbOffset = 0)
   {
 
@@ -180,7 +196,45 @@ private:
     {
       for (int y = 0; y < width; y++)
       {
-        operator[]({ x, y, depth }) = ((int8_t)data[(width * y + x) * channels + rgbOffset]) / 255.f;
+        int8_t down = (int8_t)data[(width * clamp(0, height - 1, y - 1) + x) * channels]; // this is boundary check down
+        int8_t left = (int8_t)data[(width * y + clamp(0, width - 1, x - 1)) * channels]; // this is boundary check left
+        int8_t d = (int8_t)data[(width * y + x) * channels + rgbOffset];
+        if (rgbOffset == 0) // reading p
+        {
+          if (d != 0)
+            SetTreeNode({ x, y, depth });
+        } else if (rgbOffset == 1) // reading u
+        {
+          if (d != 0)
+          {
+            if (left != 0)
+            {
+              SetTreeNode({ x + 1, y, depth });
+              operator[]({ x + 1, y, depth }) = data;
+
+            } else
+            {
+              SetTreeNode({ x, y, depth });
+              operator[]({ x, y, depth }) = data;
+            }
+          }
+
+        } else if (rgbOffset == 2) // reading v
+        {
+          if (d != 0)
+          {
+            if (down != 0)
+            {
+              SetTreeNode({ x, y + 1, depth });
+              operator[]({ x, y + 1, depth }) = data;
+
+            } else
+            {
+              SetTreeNode({ x, y, depth });
+              operator[]({ x, y, depth }) = data;
+            }
+          }
+        }
       }
     }
     floodTreeToRoot();
@@ -188,6 +242,7 @@ private:
   void createWithSize(size_t sizeX, size_t sizeY)
   {
     assert(isPowerOf2(sizeX) && sizeX == sizeY);
+    maxSize = sizeX;
     depth = __builtin_ctz(sizeX);
     size_t allocSize = sizeX * sizeY;
     size_t tempSizeX = sizeX / 2;
@@ -213,12 +268,22 @@ private:
   }
   void floodTreeToRoot()
   {
-    for (depth)
+    size_t offset = 1;
+    for (size_t d = depth - 1; d >= 0; d--)
     {
       offset *= 2;
-      for (x = 0; x += offset)
+      for (size_t x = 0; x < maxSize; x += offset)
       {
-        for (y...)
+        for (size_t y = 0; y < maxSize; y += offset)
+        {
+          Index I = { (uint16_t)x, (uint16_t)y, (uint8_t)(d + 1) };
+          size_t zorder = IndexToZOrder(I.x, I.y);
+          size_t index = (zorder >> (2 * I.depth)) + depthOffset[I.depth];
+          if (tree[index] | tree[index + 1] | tree[index + 2] | tree[index + 3])
+          {
+            SetTreeNode({ x, y, d });
+          }
+        }
       }
     }
   }
