@@ -1,0 +1,4 @@
+#ifndef TREETRAVERSAL_H_
+#define TREETRAVERSAL_H_
+
+#endif // TREETRAVERSAL_H_
