@@ -1,7 +1,9 @@
 #ifndef DENSETREE_H_
 #define DENSETREE_H_
+#include "utils/profiler.h"
 #include "zindex.h"
 #include <bitset>
+#include <cassert>
 #include <cstddef>
 #include <utility>
 #include <vector>
@@ -17,19 +19,29 @@ struct DenseTree
   uint16_t maxDepth;
   std::vector<size_t> _indices;
   std::vector<uint16_t> _depths;
-  std::vector<size_t> _index_cache;
+  std::vector<Zindex> _index_cache;
   std::vector<uint16_t> _sizes;
+  // Delete copy constructor and copy assignment
+  DenseTree(const DenseTree&) = delete;
+  DenseTree& operator=(const DenseTree&) = delete;
+
+  // move constructor and move assignment
+  DenseTree(DenseTree&&) = default;
+  DenseTree& operator=(DenseTree&&) = default;
+  // default constructor
+  DenseTree() = default;
 
   constexpr void print();
 };
 
-constexpr size_t get_sparse_index(DenseTree tree, size_t index)
+constexpr Zindex get_sparse_index(DenseTree tree, size_t index)
 {
   return tree._index_cache[index];
 };
 
-constexpr size_t get_dense_index(DenseTree tree, Zindex index)
+constexpr size_t get_dense_index(const DenseTree& tree, Zindex index)
 {
+  ProfileScope("Index Lookup");
   size_t idx = 0;
   uint16_t currentDepth = 0;
   for (size_t depth = 0; depth < index.depth; depth++)
@@ -89,39 +101,20 @@ T max(std::array<T, 4> data)
   return 0.25 * (data[0] + data[1] + data[2] + data[3]);
 };
 
-// uint16_t has_children(size_t index, size_t height, size_t nx, size_t ny)
-//{
-//   // size_t x_power = std::bit_width<size_t>(nx - 1);
-//   // size_t y_power = std::bit_width<size_t>(ny - 1);
-//   //  const size_t size = std::max(x_power, y_power);
-//
-//   size_t local_cell_size = 1 << height;
-//   auto [x, y, depth] = ZorderToIndex(index << height * 2);
-//   bool inside = (x + local_cell_size <= nx) && (y + local_cell_size <= ny);
-//   bool on_boundary = (x <= nx && nx < x + local_cell_size) || (y <= ny && ny < y + local_cell_size);
-//   if ((inside || on_boundary) && (height > 0))
-//     return 1;
-//   return 0;
-// };
-
 template <typename Operator, typename... Args>
-DenseTree build_tree(Operator&& O, uint16_t maxDepth, Args&&... args)
+DenseTree build_tree(Operator&& has_children, uint16_t maxDepth, Args&&... args)
 {
-  std::vector<size_t> _indices;
-  std::vector<size_t> _index_cache;
-  std::vector<uint16_t> _depth;
-
+  DenseTree tree;
+  tree.maxDepth = maxDepth;
   // log2 of the smallest square with size 2^size x 2^size,
   // such that the rectangle with nx x ny fits inside
 
-  std::vector<uint16_t> _sizes;
-
   // Root node
-  _sizes.push_back(0);
-  _depth.push_back(1);
-  _index_cache.push_back(0);
-  _indices.push_back(1);
-  _sizes.push_back(1);
+  tree._sizes.push_back(0);
+  tree._depths.push_back(1);
+  tree._index_cache.push_back({ 0, 0 });
+  tree._indices.push_back(1);
+  tree._sizes.push_back(1);
 
   size_t index = 1;
   size_t size = 1;
@@ -130,30 +123,31 @@ DenseTree build_tree(Operator&& O, uint16_t maxDepth, Args&&... args)
   for (uint16_t depth = 0; depth < maxDepth; depth++)
   {
     // Iterate Over All nodes on current depth
-    for (size_t local_index = _sizes.at(depth); local_index < _sizes.at(depth + 1); local_index++)
+    for (size_t local_index = tree._sizes.at(depth); local_index < tree._sizes.at(depth + 1); local_index++)
     {
-      if (_depth.at(local_index) > 0)
+      if (tree._depths.at(local_index) > 0)
       {
-        size_t global_index = _index_cache[local_index];
+        auto [global_index, _] = tree._index_cache[local_index];
         for (size_t i = 0; i < 4; i++)
         {
-          size_t child_zindex = global_index + (i << 2 * (maxDepth - depth - 1));
-          bool has_child = std::forward<Operator>(O)(child_zindex, maxDepth, depth + 1, std::forward<Args>(args)...);
+          size_t child_zindex = global_index + (i << 2 * static_cast<size_t>(maxDepth - depth - 1));
+          uint16_t has_child = std::forward<Operator>(has_children)(child_zindex, depth + 1, std::forward<Args>(args)...);
+          has_child = has_child & ((depth + 1) < maxDepth);
           index += 4 * has_child;
-          _indices.push_back(index);
-          _depth.push_back(has_child);
-          _index_cache.push_back(child_zindex);
+          tree._indices.push_back(index);
+          tree._depths.push_back(has_child && (depth + 1 < maxDepth));
+          tree._index_cache.push_back({ child_zindex, depth });
           size++;
         }
       }
     }
-    _sizes.push_back(size);
+    tree._sizes.push_back(size);
   }
-  return DenseTree { maxDepth, _indices, _depth, _index_cache, _sizes };
+  return tree;
 };
 
 template <typename Operator, typename... Args>
-void broadcast_subtree(Operator&& O, size_t index, uint8_t depth, DenseTree tree, Args&&... args)
+void broadcast_subtree(Operator&& O, size_t index, uint8_t depth, const DenseTree& tree, Args&&... args)
 {
 
   std::forward<Operator>(O)(index, depth, std::forward<Args>(args)...);
@@ -166,7 +160,7 @@ void broadcast_subtree(Operator&& O, size_t index, uint8_t depth, DenseTree tree
   }
 };
 template <typename Operator, typename... Args>
-void broadcast_depth_first(Operator&& O, DenseTree tree, uint8_t maxDepth, Args&&... args)
+void broadcast_depth_first(Operator&& O, const DenseTree& tree, uint8_t maxDepth, Args&&... args)
 {
   broadcast_subtree(std::forward<Operator>(O), 0, maxDepth, tree, std::forward<Args>(args)...);
 };
@@ -187,7 +181,7 @@ void broadcast_breath_first(Operator&& O, const DenseTree& tree, uint8_t iter_de
 
 constexpr void print_node(size_t index, uint8_t depth, const DenseTree& tree)
 {
-  auto [x, y, d] = ZorderToIndex(tree._index_cache.at(index));
+  auto [x, y, d] = ZorderToIndex(tree._index_cache.at(index).index);
 
   std::cout << "N" << index << " [label=\"x:" << x << "\ny:" << y << "\nd:" << static_cast<size_t>(tree._depths.at(index)) << "\nh:" << (1 << (tree.maxDepth - depth)) << "\"]" << ";" << std::endl;
   if (tree._depths.at(index) > 0)
