@@ -13,20 +13,20 @@ struct SparseGrid2D
 
   constexpr double& operator[](size_t index)
   {
-    return _data[index];
+    return _data.at(index);
   };
   constexpr const double& operator[](size_t index) const
   {
-    return _data[index];
+    return _data.at(index);
   }
 
   constexpr double& operator[](Index I)
   {
-    return _data[DenseTree::get_dense_index(tree, I)];
+    return _data.at(DenseTree::get_dense_index(tree, I));
   };
   constexpr const double& operator[](Index I) const
   {
-    return _data[DenseTree::get_dense_index(tree, I)];
+    return _data.at(DenseTree::get_dense_index(tree, I));
   };
 };
 

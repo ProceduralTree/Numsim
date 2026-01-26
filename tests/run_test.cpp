@@ -1,4 +1,5 @@
 
+#include "grid/boundary.h"
 #include "grid/sparsegrid.h"
 #include "output/vtk_tree.h"
 #include "utils/Logger.h"
@@ -27,7 +28,7 @@ void signalInt(int sig)
   Profiler::Close();
   MPI_Barrier(MPI_COMM_WORLD);
   exit(sig);
-}
+};
 
 uint16_t intersects_range(size_t index, uint16_t depth, Range r, uint16_t maxDepth)
 {
@@ -50,53 +51,67 @@ uint16_t intersects_range(size_t index, uint16_t depth, Range r, uint16_t maxDep
     return 1;
   return 0;
 };
-void test_build_tree()
-{
-
-  auto begin = Index { 1, 1, 0 };
-  auto end = Index { 2000, 2000, 0 };
-
-  size_t x_power = std::bit_width<size_t>(end.x - 1);
-  size_t y_power = std::bit_width<size_t>(end.y - 1);
-  const uint16_t maxDepth = std::max(x_power, y_power);
-  auto t = DenseTree::build_tree(intersects_range, maxDepth, Range { begin, end }, maxDepth);
-
-  auto data_set = init(t);
-  // ASSERT(tree.sizes, message)
-  // t.print();
-  write_field("Indices", SparseGrid2D<size_t>(t, t._indices), data_set);
-  save_dataset(data_set);
-};
-
 uint16_t is_desired_depth(size_t index, uint16_t depth, uint16_t maxDepth, uint16_t desired, const DenseTree::DenseTree& old_tree)
 {
-  if (depth < desired)
+  if (depth <= desired && depth <= maxDepth)
   {
     return 1;
   }
   size_t old_index = DenseTree::get_dense_index(old_tree, { index, maxDepth });
   auto [_, old_depth] = old_tree._index_cache[old_index];
-  if (depth < old_depth)
+  if (depth <= old_depth && depth <= maxDepth)
   {
     return 1;
   }
   return 0;
 };
+Range get_test_range()
+{
+  auto begin = Index { 1, 1, 0 };
+  auto end = Index { 50, 50, 0 };
+  return { begin, end };
+}
+
+DenseTree::DenseTree get_test_tree()
+{
+  Range r = get_test_range();
+
+  size_t x_power = std::bit_width<size_t>(r.end.x - 1);
+  size_t y_power = std::bit_width<size_t>(r.end.y - 1);
+  const uint16_t maxDepth = std::max(x_power, y_power);
+  auto t = DenseTree::build_tree(intersects_range, maxDepth, r, maxDepth);
+  return t;
+};
+
+void test_build_tree()
+{
+
+  auto t = get_test_tree();
+  auto data_set = init(t);
+  // ASSERT(tree.sizes, message)
+  // t.print();
+  write_field("Indices", t, t._depths, data_set);
+  save_dataset(data_set);
+};
 
 void test_tree_refinement()
 {
-  auto begin = Index { 1, 1, 0 };
-  auto end = Index { 2000, 2000, 0 };
+  auto t = get_test_tree();
 
-  size_t x_power = std::bit_width<size_t>(end.x - 1);
-  size_t y_power = std::bit_width<size_t>(end.y - 1);
-  const uint16_t maxDepth = std::max(x_power, y_power);
-  auto t = DenseTree::build_tree(intersects_range, maxDepth, Range { begin, end }, maxDepth);
-
-  auto updated_tree = DenseTree::build_tree(is_desired_depth, maxDepth, maxDepth, 6, t);
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
   updated_tree.print();
   auto data_set = init(updated_tree);
-  write_field("Updated Indices", SparseGrid2D<size_t>(updated_tree, updated_tree._indices), data_set);
+  write_field("Updated Indices", updated_tree, updated_tree._indices, data_set);
+  save_dataset(data_set);
+};
+
+void test_set_boundary()
+{
+  auto t = get_test_tree();
+  Range r = get_test_range();
+  BoundaryFlags b = BoundaryFlags(t, r);
+  auto data_set = init(t);
+  write_field("BoundaryFlags", b.tree, b.boundary_flags, data_set);
   save_dataset(data_set);
 };
 
@@ -136,6 +151,7 @@ int main()
 
   test_build_tree();
   test_tree_refinement();
+  test_set_boundary();
 
   LOG::Close();
   Profiler::Close();

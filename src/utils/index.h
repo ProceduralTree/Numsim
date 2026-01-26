@@ -49,6 +49,10 @@ struct Index
   {
     return x <= other.x && y <= other.y;
   }
+  inline bool operator>=(const Index& other) const
+  {
+    return x >= other.x && y >= other.y;
+  }
 };
 
 struct Range
