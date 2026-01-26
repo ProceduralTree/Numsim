@@ -1,7 +1,10 @@
 #ifndef QUADTREE_H_
 #define QUADTREE_H_
 #include "utils/index.h"
+#include "utils/stb_image.h"
+#include <bits/floatn.h>
 #include <cstdint>
+#include <filesystem>
 #include <sstream>
 
 struct dynamic_bitset
@@ -95,9 +98,9 @@ private:
   size_t _numBytes = 0;
 };
 
-inline bool isPowerOf4(size_t x)
+inline bool isPowerOf2(size_t x)
 {
-  return x != 0 && ((x & (x - 1)) == 0) && !(x & 0xAAAAAAAA);
+  return __builtin_popcount(x) == 1;
 }
 inline size_t part1by1(const size_t n)
 {
@@ -117,31 +120,13 @@ inline size_t IndexToZOrder(const size_t x, const size_t y)
 template <typename T>
 struct QuadTree
 {
+  QuadTree<T>(std::filesystem::path imagePath)
+  {
+    generateGridFromImage(imagePath);
+  }
   QuadTree<T>(size_t sizeX, size_t sizeY)
   {
-    assert(isPowerOf4(sizeX) && sizeX == sizeY);
-    depth = __builtin_ctz(sizeX) / 2;
-    size_t allocSize = sizeX * sizeY;
-    size_t tempSizeX = sizeX / 2;
-    size_t tempSizeY = sizeY / 2;
-    for (size_t i = 1; i < depth - 1; ++i) // from 1.. d-1 because max depth is already in allocSize and root node is 4 not 1
-    {
-      allocSize += tempSizeX * tempSizeY;
-      tempSizeX /= 2;
-      tempSizeY /= 2;
-    }
-
-    _data = malloc(sizeof(T) * allocSize);
-    tree.resize(allocSize - sizeX * sizeY);
-    depthOffset.resize(depth);
-    size_t offset = 0;
-    size_t nodesCount = 4;
-    for (size_t i = 0; i < depth; i++)
-    {
-      depthOffset[i] = offset;
-      offset += nodesCount;
-      nodesCount *= 4;
-    }
+    createWithSize(sizeX, sizeY);
   }
   ~QuadTree<T>()
   {
@@ -182,6 +167,61 @@ private:
   size_t depth;
   T* _data;
   std::vector<size_t> depthOffset;
+
+  bool generateGridFromImage(std::filesystem::path imagePath, int rgbOffset = 0)
+  {
+
+    int width, height, channels;
+    unsigned char* data = stbi_load(imagePath.c_str(), &width, &height, &channels, 4);
+    size_t leadingZeros = std::min(__builtin_clz(width), __builtin_clz(height)); // ggrks
+    size_t size = ((((size_t)-1) >> 1) + 1) >> (leadingZeros - 1);
+    createWithSize(size, size);
+    for (int x = 0; x < width; x++)
+    {
+      for (int y = 0; y < width; y++)
+      {
+        operator[]({ x, y, depth }) = ((int8_t)data[(width * y + x) * channels + rgbOffset]) / 255.f;
+      }
+    }
+    floodTreeToRoot();
+  }
+  void createWithSize(size_t sizeX, size_t sizeY)
+  {
+    assert(isPowerOf2(sizeX) && sizeX == sizeY);
+    depth = __builtin_ctz(sizeX);
+    size_t allocSize = sizeX * sizeY;
+    size_t tempSizeX = sizeX / 2;
+    size_t tempSizeY = sizeY / 2;
+    for (size_t i = 1; i < depth - 1; ++i) // from 1.. d-1 because max depth is already in allocSize and root node is 4 not 1
+    {
+      allocSize += tempSizeX * tempSizeY;
+      tempSizeX /= 2;
+      tempSizeY /= 2;
+    }
+
+    _data = malloc(sizeof(T) * allocSize);
+    tree.resize(allocSize - sizeX * sizeY);
+    depthOffset.resize(depth);
+    size_t offset = 0;
+    size_t nodesCount = 4;
+    for (size_t i = 0; i < depth; i++)
+    {
+      depthOffset[i] = offset;
+      offset += nodesCount;
+      nodesCount *= 4;
+    }
+  }
+  void floodTreeToRoot()
+  {
+    for (depth)
+    {
+      offset *= 2;
+      for (x = 0; x += offset)
+      {
+        for (y...)
+      }
+    }
+  }
 };
 
 #endif // QUADTREE_H_
