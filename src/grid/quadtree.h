@@ -1,10 +1,12 @@
 #ifndef QUADTREE_H_
 #define QUADTREE_H_
+#include "utils/Logger.h"
 #include "utils/index.h"
 #include "utils/stb_image.h"
 #include <bits/floatn.h>
 #include <cstdint>
 #include <filesystem>
+#include <iostream>
 #include <sstream>
 
 struct dynamic_bitset
@@ -17,6 +19,7 @@ struct dynamic_bitset
   ~dynamic_bitset()
   {
     free(_data);
+    _data = nullptr;
   }
 
   void set(const size_t index, const bool value = true)
@@ -102,7 +105,7 @@ inline bool isPowerOf2(size_t x)
 {
   return __builtin_popcount(x) == 1;
 }
-inline size_t part1by1(const size_t n)
+inline size_t part1by1_l(const size_t n)
 {
   size_t x = n;
   x = (x | (x << 8)) & 0x00FF00FF;
@@ -112,15 +115,15 @@ inline size_t part1by1(const size_t n)
   return x;
 }
 
-inline size_t IndexToZOrder(const size_t x, const size_t y)
+inline size_t IndexToZOrder_l(const size_t x, const size_t y)
 {
-  return (part1by1(y) << 1) | part1by1(x);
+  return (part1by1_l(y) << 1) | part1by1_l(x);
 }
 
 template <typename T>
 struct QuadTree
 {
-  QuadTree<T>(std::filesystem::path imagePath)
+  QuadTree<T>(const std::filesystem::path& imagePath)
   {
     generateGridFromImage(imagePath);
   }
@@ -130,67 +133,165 @@ struct QuadTree
   }
   ~QuadTree<T>()
   {
-    free(_data);
+    free(_dataU);
+    _dataU = nullptr;
+    free(_dataV);
+    _dataV = nullptr;
+  }
+  QuadTree<T>(const QuadTree<T>&) = delete;
+  QuadTree<T>& operator=(const QuadTree<T>&) = delete;
+  QuadTree<T>(QuadTree<T>&&) = delete;
+  QuadTree<T>& operator=(QuadTree<T>&&) = delete;
+
+  size_t getZorderIndex(Index I) const
+  {
+    size_t zorder = IndexToZOrder_l(I.x, I.y);
+    return (zorder >> (2 * (depth - I.depth))) + depthOffset[I.depth - 1];
+  }
+  const T& getULowestValue(Index I) const
+  {
+    I.depth = 0;
+    while (I.depth < depth && uTree.get(getZorderIndex(I)))
+    {
+      I.depth++;
+    }
+    return _dataU[getZorderIndex(I)];
+  }
+  const size_t getPLowestDepth(Index I) const
+  {
+    I.depth = 0;
+    while (I.depth < depth && pTree.get(getZorderIndex(I)))
+    {
+      I.depth++;
+    }
+    return I.depth;
   }
 
-  const T& getLowestValue(Index I) const
+  void SetPTreeNode(Index I, bool value = true)
   {
-    size_t zorder = IndexToZOrder(I.x, I.y);
-    size_t d = depth - 1;
-    for (; d > 1 && !tree[(zorder >> (2 * d)) + depthOffset[d]]; d--)
+    size_t index = getZorderIndex(I);
+    pTree.set(index, value);
+  }
+  const bool GetPTreeNode(Index I) const
+  {
+    size_t index = getZorderIndex(I);
+    return pTree.get(index);
+  }
+  void SetUTreeNode(Index I, bool value = true)
+  {
+    size_t index = getZorderIndex(I);
+    uTree.set(index, value);
+  }
+  const bool GetUTreeNode(Index I) const
+  {
+    size_t index = getZorderIndex(I);
+    return uTree.get(index);
+  }
+  void SetVTreeNode(Index I, bool value = true)
+  {
+    size_t index = getZorderIndex(I);
+    vTree.set(index, value);
+  }
+  const bool GetVTreeNode(Index I) const
+  {
+    size_t index = getZorderIndex(I);
+    return vTree.get(index);
+  }
+  void SetPData(Index I, bool value = true)
+  {
+    size_t index = getZorderIndex(I);
+    return _dataP.set(index, value);
+  }
+  void SetUData(Index I, T data)
+  {
+    size_t index = getZorderIndex(I);
+    _dataU[index] = data;
+  }
+  void SetVData(Index I, T data)
+  {
+    size_t index = getZorderIndex(I);
+    _dataV[index] = data;
+  }
+  const bool GetPData(Index I) const
+  {
+    size_t index = getZorderIndex(I);
+    return _dataP.get(index);
+  }
+  const void GetUData(Index I) const
+  {
+    size_t index = getZorderIndex(I);
+    return _dataU[index];
+  }
+  const void GetVData(Index I) const
+  {
+    size_t index = getZorderIndex(I);
+    return _dataV[index];
+  }
+
+  friend std::ostream& operator<<(std::ostream& o, const QuadTree<T>& tree)
+  {
+    o << "Printing QuadTree bitset:\n";
+    o << "p:";
+    o << tree.pTree.toString() << "\n";
+    o << "u:";
+    o << tree.uTree.toString() << "\n";
+    o << "v:";
+    o << tree.vTree.toString() << "\n";
+    o << "data:\np:";
+    o << tree._dataP.toString() << "\nu:";
+    for (T* t = tree._dataU; t < tree._dataU + tree.dataAllocSize; t++)
     {
+      o << (int)*t;
     }
-    return _data[(zorder >> (2 * d)) + depthOffset[d]];
-  }
-  const size_t getLowestDepth(Index I) const
-  {
-    size_t zorder = IndexToZOrder(I.x, I.y);
-    size_t d = depth - 1;
-    for (; d > 1 && !tree[(zorder >> (2 * d)) + depthOffset[d]]; d--)
+    o << "\nv:";
+    for (T* t = tree._dataV; t < tree._dataV + tree.dataAllocSize; t++)
     {
+      o << (int)*t;
     }
-    return d;
+    return o << "\n";
   }
-  T& operator[](Index I)
+
+  uint16_t hasChildrenP(size_t zorder, uint8_t d)
   {
-    size_t zorder = IndexToZOrder(I.x, I.y);
-    return _data[(zorder >> (2 * I.depth)) + depthOffset[I.depth]];
+    size_t index = (zorder >> (2 * (depth - d))) + depthOffset[d - 1];
+    return pTree[index];
   }
-  const T& operator[](Index I) const
+  uint16_t hasChildrenU(size_t zorder, uint8_t d)
   {
-    size_t zorder = IndexToZOrder(I.x, I.y);
-    return _data[(zorder >> (2 * I.depth)) + depthOffset[I.depth]];
+    size_t index = (zorder >> (2 * (depth - d))) + depthOffset[d - 1];
+    return uTree[index];
   }
-  void SetTreeNode(Index I, bool value = true)
+  uint16_t hasChildrenV(size_t zorder, uint8_t d)
   {
-    size_t zorder = IndexToZOrder(I.x, I.y);
-    tree.set((zorder >> (2 * I.depth)) + depthOffset[I.depth], value);
-  }
-  const bool GetTreeNode(Index I) const
-  {
-    size_t zorder = IndexToZOrder(I.x, I.y);
-    return tree.get((zorder >> (2 * I.depth)) + depthOffset[I.depth]);
+    size_t index = (zorder >> (2 * (depth - d))) + depthOffset[d - 1];
+    return vTree[index];
   }
 
 private:
-  dynamic_bitset tree;
+  dynamic_bitset pTree;
+  dynamic_bitset uTree;
+  dynamic_bitset vTree;
   size_t depth;
-  T* _data;
+  dynamic_bitset _dataP;
+  T* _dataU = nullptr;
+  T* _dataV = nullptr;
   std::vector<size_t> depthOffset;
   size_t maxSize;
+  size_t dataAllocSize;
 
   size_t clamp(size_t min, size_t max, size_t x)
   {
     return min > x ? min : max < x ? max
                                    : x;
   }
-  bool generateGridFromImage(std::filesystem::path imagePath, int rgbOffset = 0)
+  bool generateGridFromImage(const std::filesystem::path& imagePath, int rgbOffset = 0)
   {
-
     int width, height, channels;
-    unsigned char* data = stbi_load(imagePath.c_str(), &width, &height, &channels, 4);
-    size_t leadingZeros = std::min(__builtin_clz(width), __builtin_clz(height)); // ggrks
-    size_t size = ((((size_t)-1) >> 1) + 1) >> (leadingZeros - 1);
+    unsigned char* data = stbi_load(imagePath.c_str(), &width, &height, &channels, STBI_rgb);
+    assert(data);
+    size_t leadingZeros = std::min(__builtin_clz(width), __builtin_clz(height)); // ggrks apparently builtinclz ignores bitwidth and is 32 bit only ty for nothing
+    size_t size = ((((uint32_t)-1) >> 1) + 1) >> (leadingZeros - 1); // so 32 bit only -> cast -1 to uint32 instead of size_t
+    DebugF("found image with size {}, {} and chose {}, channels {}", width, height, size, channels);
     createWithSize(size, size);
     for (int x = 0; x < width; x++)
     {
@@ -198,46 +299,43 @@ private:
       {
         int8_t down = (int8_t)data[(width * clamp(0, height - 1, y - 1) + x) * channels]; // this is boundary check down
         int8_t left = (int8_t)data[(width * y + clamp(0, width - 1, x - 1)) * channels]; // this is boundary check left
-        int8_t d = (int8_t)data[(width * y + x) * channels + rgbOffset];
-        if (rgbOffset == 0) // reading p
+        int8_t p = (int8_t)data[(width * y + x) * channels + 0];
+        int8_t u = (int8_t)data[(width * y + x) * channels + 1];
+        int8_t v = (int8_t)data[(width * y + x) * channels + 2];
+        if (p != 0)
         {
-          if (d != 0)
-            SetTreeNode({ x, y, depth });
-        } else if (rgbOffset == 1) // reading u
+          SetPData({ x, y, depth });
+        }
+        if (u != 0)
         {
-          if (d != 0)
+          if (left != 0)
           {
-            if (left != 0)
-            {
-              SetTreeNode({ x + 1, y, depth });
-              operator[]({ x + 1, y, depth }) = data;
+            SetUData({ x + 1, y, depth }, u);
 
-            } else
-            {
-              SetTreeNode({ x, y, depth });
-              operator[]({ x, y, depth }) = data;
-            }
+          } else
+          {
+            SetUData({ x, y, depth }, u);
           }
+        }
 
-        } else if (rgbOffset == 2) // reading v
+        if (v != 0)
         {
-          if (d != 0)
+          if (down != 0)
           {
-            if (down != 0)
-            {
-              SetTreeNode({ x, y + 1, depth });
-              operator[]({ x, y + 1, depth }) = data;
+            SetVData({ x, y + 1, depth }, v);
 
-            } else
-            {
-              SetTreeNode({ x, y, depth });
-              operator[]({ x, y, depth }) = data;
-            }
+          } else
+          {
+            SetVData({ x, y, depth }, v);
           }
         }
       }
     }
+    // TODO: read extra u on top and extra v on right
+    std::cout << "read data into tree" << std::endl;
+    std::cout << *this;
     floodTreeToRoot();
+    return true;
   }
   void createWithSize(size_t sizeX, size_t sizeY)
   {
@@ -247,15 +345,22 @@ private:
     size_t allocSize = sizeX * sizeY;
     size_t tempSizeX = sizeX / 2;
     size_t tempSizeY = sizeY / 2;
-    for (size_t i = 1; i < depth - 1; ++i) // from 1.. d-1 because max depth is already in allocSize and root node is 4 not 1
+    for (size_t i = 1; i < depth; ++i)
     {
       allocSize += tempSizeX * tempSizeY;
       tempSizeX /= 2;
       tempSizeY /= 2;
     }
-
-    _data = malloc(sizeof(T) * allocSize);
-    tree.resize(allocSize - sizeX * sizeY);
+    dataAllocSize = allocSize;
+    DebugF("maxSize:{}, allocSize:{}, allocTreeSize:{}", maxSize, allocSize, allocSize - sizeX * sizeY);
+    _dataP.resize(allocSize);
+    _dataU = (T*)malloc(sizeof(T) * allocSize);
+    _dataV = (T*)malloc(sizeof(T) * allocSize);
+    std::fill(_dataU, _dataU + dataAllocSize, 0);
+    std::fill(_dataV, _dataV + dataAllocSize, 0);
+    pTree.resize(allocSize - sizeX * sizeY);
+    uTree.resize(allocSize - sizeX * sizeY);
+    vTree.resize(allocSize - sizeX * sizeY);
     depthOffset.resize(depth);
     size_t offset = 0;
     size_t nodesCount = 4;
@@ -265,23 +370,83 @@ private:
       offset += nodesCount;
       nodesCount *= 4;
     }
+    DebugF("created tree with depth {} and offsets:{}", depth, depthOffset);
   }
+
+#define CHILDRENAREEQUAL(dataArray, firstChild) dataArray[firstChild] == dataArray[firstChild + 1] && dataArray[firstChild + 1] == dataArray[firstChild + 2] && dataArray[firstChild + 2] == dataArray[firstChild + 3]
+#define ALLCHILDRENARELEAFS(tree, firstChild) !(tree[firstChild] || tree[firstChild + 1] || tree[firstChild + 2] || tree[firstChild + 3])
   void floodTreeToRoot()
   {
     size_t offset = 1;
-    for (size_t d = depth - 1; d >= 0; d--)
+    size_t d = depth - 1;
+    offset *= 2;
+    // start by writing either data or hasChildren flag to d-1
+    for (size_t y = 0; y < maxSize; y += offset)
     {
-      offset *= 2;
       for (size_t x = 0; x < maxSize; x += offset)
       {
-        for (size_t y = 0; y < maxSize; y += offset)
+        size_t indexChild = getZorderIndex({ x, y, d + 1 });
+        size_t indexCurrent = getZorderIndex({ x, y, d });
+        // flood P Tree
+        if (CHILDRENAREEQUAL(_dataP, indexChild))
         {
-          Index I = { (uint16_t)x, (uint16_t)y, (uint8_t)(d + 1) };
-          size_t zorder = IndexToZOrder(I.x, I.y);
-          size_t index = (zorder >> (2 * I.depth)) + depthOffset[I.depth];
-          if (tree[index] | tree[index + 1] | tree[index + 2] | tree[index + 3])
+          _dataP.set(indexCurrent, _dataP.get(indexChild));
+        } else
+        {
+          pTree.set(indexCurrent, true);
+        }
+        // flood U Tree
+        if (CHILDRENAREEQUAL(_dataV, indexChild))
+        {
+          _dataU[indexCurrent] = _dataU[indexChild];
+        } else
+        {
+          uTree.set(indexCurrent, true);
+        }
+        // flood V Tree
+        if (CHILDRENAREEQUAL(_dataV, indexChild))
+        {
+          _dataV[indexCurrent] = _dataV[indexChild];
+        } else
+        {
+          vTree.set(indexCurrent, true);
+        }
+      }
+    }
+
+    offset = 2;
+    for (d = depth - 2; d > 0; d--)
+    {
+      offset *= 2;
+      for (size_t y = 0; y < maxSize; y += offset)
+      {
+        for (size_t x = 0; x < maxSize; x += offset)
+        {
+          size_t indexChild = getZorderIndex({ x, y, d + 1 });
+          size_t indexCurrent = getZorderIndex({ x, y, d });
+          // flood P tree
+          if (ALLCHILDRENARELEAFS(pTree, indexChild) && CHILDRENAREEQUAL(_dataP, indexChild))
           {
-            SetTreeNode({ x, y, d });
+            _dataP.set(indexCurrent, _dataP.get(indexChild));
+          } else
+          {
+            pTree.set(indexCurrent, true);
+          }
+          // flood U Tree
+          if (ALLCHILDRENARELEAFS(uTree, indexChild) && CHILDRENAREEQUAL(_dataV, indexChild))
+          {
+            _dataU[indexCurrent] = _dataU[indexChild];
+          } else
+          {
+            uTree.set(indexCurrent, true);
+          }
+          // flood V Tree
+          if (ALLCHILDRENARELEAFS(vTree, indexChild) && CHILDRENAREEQUAL(_dataV, indexChild))
+          {
+            _dataV[indexCurrent] = _dataV[indexChild];
+          } else
+          {
+            vTree.set(indexCurrent, true);
           }
         }
       }
