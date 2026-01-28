@@ -16,16 +16,22 @@ enum class BoundaryType : uint16_t
   U_LEFT = 0b0000'0000'0000'0100,
   U_RIGHT = 0b0000'0000'0000'1000,
   U_Inside = 0b0000'0000'0001'0000,
+  U = U_BOTTOM | U_LEFT | U_RIGHT | U_TOP | U_Inside,
+  U_BOUNDARY = U_BOTTOM | U_LEFT | U_RIGHT | U_TOP,
   P_BOTTOM = 0b0000'0000'0010'0000,
   P_TOP = 0b0000'0000'0100'0000,
   P_LEFT = 0b0000'0000'1000'0000,
   P_RIGHT = 0b0000'0001'0000'0000,
   P_Inside = 0b0000'0010'0000'0000,
+  P = P_BOTTOM | P_LEFT | P_RIGHT | P_TOP | P_Inside,
+  P_BOUNDARY = P_BOTTOM | P_LEFT | P_RIGHT | P_TOP,
   V_BOTTOM = 0b0000'0100'0000'0000,
   V_TOP = 0b0000'1000'0000'0000,
   V_LEFT = 0b0001'0000'0000'0000,
   V_RIGHT = 0b0010'0000'0000'0000,
   V_Inside = 0b0100'0000'0000'0000,
+  V = V_BOTTOM | V_LEFT | V_RIGHT | V_TOP | V_Inside,
+  V_BOUNDARY = V_BOTTOM | V_LEFT | V_RIGHT | V_TOP,
 };
 
 constexpr void set_u_boundary(size_t local_index, uint16_t depth, SparseGrid2D<uint16_t>& flags)

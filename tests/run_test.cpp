@@ -1,6 +1,7 @@
 
 #include "grid/boundary.h"
 #include "grid/sparsegrid.h"
+#include "linalg/matrix.h"
 #include "output/vtk_tree.h"
 #include "utils/Logger.h"
 #include "utils/index.h"
@@ -11,6 +12,7 @@
 #include <cstdint>
 #include <grid/densetree.h>
 #include <iostream>
+#include <linalg/sparsevector.h>
 #include <mpi.h>
 
 #define ASSERT(condition, message)                               \
@@ -150,20 +152,10 @@ void test_set_values()
   SparseGrid2D<double> ugrid = SparseGrid2D<double>(updated_tree);
   SparseGrid2D<double> vgrid = SparseGrid2D<double>(updated_tree);
   SparseGrid2D<double> pgrid = SparseGrid2D<double>(updated_tree);
-  uint16_t u_boundary = static_cast<uint16_t>(BoundaryType::U_BOTTOM)
-    | static_cast<uint16_t>(BoundaryType::U_TOP)
-    | static_cast<uint16_t>(BoundaryType::U_LEFT)
-    | static_cast<uint16_t>(BoundaryType::U_RIGHT);
-  uint16_t v_boundary = static_cast<uint16_t>(BoundaryType::V_BOTTOM)
-    | static_cast<uint16_t>(BoundaryType::V_TOP)
-    | static_cast<uint16_t>(BoundaryType::V_LEFT)
-    | static_cast<uint16_t>(BoundaryType::V_RIGHT);
-  uint16_t p_boundary = static_cast<uint16_t>(BoundaryType::P_BOTTOM)
-    | static_cast<uint16_t>(BoundaryType::P_TOP)
-    | static_cast<uint16_t>(BoundaryType::P_LEFT)
-    | static_cast<uint16_t>(BoundaryType::P_RIGHT);
-  auto data_set
-    = init(updated_tree);
+  uint16_t u_boundary = static_cast<uint16_t>(BoundaryType::U_BOUNDARY);
+  uint16_t v_boundary = static_cast<uint16_t>(BoundaryType::V_BOUNDARY);
+  uint16_t p_boundary = static_cast<uint16_t>(BoundaryType::P_BOUNDARY);
+  auto data_set = init(updated_tree);
   tree_broadcast(_set, b, u_boundary, ugrid, 1.);
   tree_broadcast(_set, b, v_boundary, vgrid, 1.);
   tree_broadcast(_set, b, p_boundary, pgrid, 1.);
@@ -171,6 +163,25 @@ void test_set_values()
   write_field("V boundary", b.tree, vgrid._data, data_set);
   write_field("P boundary", b.tree, pgrid._data, data_set);
   save_dataset(data_set);
+};
+
+void test_vector_operations()
+{
+  auto t = get_test_tree();
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
+  Range r = get_test_range();
+  BoundaryFlags b = BoundaryFlags(updated_tree, r);
+  SparseGrid2D<double> u = SparseGrid2D<double>(updated_tree);
+  SparseGrid2D<double> v = SparseGrid2D<double>(updated_tree);
+  SparseGrid2D<double> p = SparseGrid2D<double>(updated_tree);
+  u[{ 4, 2, u.tree.maxDepth }] = 2.;
+  v[{ 4, 2, v.tree.maxDepth }] = 2.;
+  ASSERT(SparseVector::dot(u, v, b) == 4, "<a,b> != 4");
+  tree_broadcast(SparseVector::axpy, b, static_cast<uint16_t>(BoundaryType::P_Inside), p, 3., u, v);
+
+  auto A = SparseMatrixOperator();
+  ASSERT((p[{ 4, 2, p.tree.maxDepth }] == 8.), "axpy did not succed");
+  tree_broadcast(SparseVector::aAxpy, b, static_cast<uint16_t>(BoundaryType::P_Inside), p, 3., A, u, v);
 };
 
 int main()
@@ -185,6 +196,7 @@ int main()
   test_set_cartesian_index();
   test_set_boundary();
   test_set_values();
+  test_vector_operations();
 
   LOG::Close();
   Profiler::Close();

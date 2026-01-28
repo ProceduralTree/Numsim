@@ -49,5 +49,11 @@ struct Zindex
     : index(z)
     , depth(d) { };
 };
+constexpr Index ZorderToIndex(Zindex Z)
+{
+  uint16_t x = compact1by1(Z.index >> 0); // even bits
+  uint16_t y = compact1by1(Z.index >> 1); // odd bits
+  return Index { x, y, Z.depth };
+};
 
 #endif // ZIDEX_H_

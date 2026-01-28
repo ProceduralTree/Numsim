@@ -16,22 +16,6 @@
 #include <utility>
 
 template <typename Operator, typename... Args>
-void _sum(size_t index, uint16_t depth, Operator&& O, const SparseGrid2D<double>& grid, double& result, Args&&... args)
-{
-  result += std::forward<Operator>(O)();
-};
-
-template <typename Operator, typename... Args>
-inline double sum(Operator&& O, const BoundaryFlags& flags, BoundaryType B, Args&&... args)
-{
-  double result = 0;
-
-  broadcast_cell_type(_sum, 0, flags.tree.maxDepth, flags, B, std::forward<Operator>(O), result, std::forward<Args>(args)...);
-
-  return result;
-};
-
-template <typename Operator, typename... Args>
 inline double sum(Operator&& O, Range r, Args&&... args)
 {
   double result = 0;
