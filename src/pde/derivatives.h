@@ -3,7 +3,6 @@
 
 #include <cassert>
 #include <grid/grid.h>
-#include <grid/indexing.h>
 #include <pde/system.h>
 #include <utils/index.h>
 

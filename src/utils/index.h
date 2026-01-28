@@ -26,24 +26,24 @@ struct Index
 
   inline Index operator+(const Index& other)
   {
-    return { static_cast<uint16_t>(x + other.x), static_cast<uint16_t>(y + other.y) };
+    return { static_cast<uint16_t>(x + other.x), static_cast<uint16_t>(y + other.y), depth };
   };
   inline Index operator+(const Offset& other)
   {
-    return { static_cast<uint16_t>(this->x + other.x), static_cast<uint16_t>(this->y + other.y) };
+    return { static_cast<uint16_t>(this->x + other.x), static_cast<uint16_t>(this->y + other.y), depth };
   };
   inline const Index operator+(const Offset& other) const { return { static_cast<uint16_t>(this->x + other.x), static_cast<uint16_t>(this->y + other.y) }; };
   inline Index operator-(const Offset& other)
   {
     assert(this->x >= other.x);
     assert(this->y >= other.y);
-    return { static_cast<uint16_t>(this->x - other.x), static_cast<uint16_t>(this->y - other.y) };
+    return { static_cast<uint16_t>(this->x - other.x), static_cast<uint16_t>(this->y - other.y), depth };
   };
   inline const Index operator-(const Offset& other) const
   {
     assert(this->x >= other.x);
     assert(this->y >= other.y);
-    return { static_cast<uint16_t>(this->x - other.x), static_cast<uint16_t>(this->y - other.y) };
+    return { static_cast<uint16_t>(this->x - other.x), static_cast<uint16_t>(this->y - other.y), depth };
   };
   inline bool operator<=(const Index& other) const
   {

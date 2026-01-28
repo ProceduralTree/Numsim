@@ -5,6 +5,7 @@
 #include "utils/Logger.h"
 #include "utils/index.h"
 #include "utils/profiler.h"
+#include <cassert>
 #include <csignal>
 #include <cstddef>
 #include <cstdint>
@@ -68,7 +69,7 @@ uint16_t is_desired_depth(size_t index, uint16_t depth, uint16_t maxDepth, uint1
 Range get_test_range()
 {
   auto begin = Index { 1, 1, 0 };
-  auto end = Index { 50, 50, 0 };
+  auto end = Index { 5, 5, 0 };
   return { begin, end };
 }
 
@@ -90,7 +91,7 @@ void test_build_tree()
   auto data_set = init(t);
   // ASSERT(tree.sizes, message)
   // t.print();
-  write_field("Indices", t, t._depths, data_set);
+  write_depth("Tree Depth", t, data_set);
   save_dataset(data_set);
 };
 
@@ -101,46 +102,76 @@ void test_tree_refinement()
   auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
   updated_tree.print();
   auto data_set = init(updated_tree);
-  write_field("Updated Indices", updated_tree, updated_tree._indices, data_set);
+  write_depth("Updated Depth", updated_tree, data_set);
+  save_dataset(data_set);
+};
+
+void test_set_cartesian_index()
+{
+  auto t = get_test_tree();
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
+  auto sparse_grid = SparseGrid2D<double>(t);
+  auto data_set = init(updated_tree);
+  for (uint16_t i = 0; i < 1ULL << t.maxDepth; i++)
+  {
+    sparse_grid[{ i, i, t.maxDepth }] = 1. * i + 1.;
+  }
+  for (uint16_t i = 0; i < 10; i++)
+  {
+    assert((sparse_grid[{ i, i, t.maxDepth }] == 1. * i && "Did not set value at expected point"));
+  }
+  write_field("Grid", sparse_grid.tree, sparse_grid._data, data_set);
+  // ASSERT(sparse_grid[{ 5, 5, t.maxDepth }] == 1., "Did not set value at expected point");
   save_dataset(data_set);
 };
 
 void test_set_boundary()
 {
   auto t = get_test_tree();
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
   Range r = get_test_range();
-  BoundaryFlags b = BoundaryFlags(t, r);
-  auto data_set = init(t);
-  write_field("BoundaryFlags", b.tree, b.boundary_flags, data_set);
+  BoundaryFlags b = BoundaryFlags(updated_tree, r);
+  auto data_set = init(updated_tree);
+  write_field("BoundaryFlags", b.tree, b.flags._data, data_set);
   save_dataset(data_set);
 };
 
-// void set_one(Index I, Offset O, Grid2D& array)
-//{
-//
-// array[I] += O.x;
-// array[I] += O.y;
-//};
-//
-// void test_boundary(PDESystem& system)
-//{
-//// TODO add proper boundary tests
-// broadcast_boundary(set_one, system.p.boundary, system.p);
-// ASSERT(system.p[system.p.end + Ix] == 1, "system boundary was " << system.p[system.p.end + Ix])
-//
-// std::cout << system.p;
-//}
-//
-// void test_index()
-//{
-// Index I = { 1, 1 };
-// Index Ipx = I + Ix;
-// ASSERT(Ipx.x == 2 && Ipx.y == 1, "Plus Failed I.x=" << Ipx.x << " I.y=" << Ipx.y);
-// Index Imx = I - Ix;
-// ASSERT(Imx.x == 0 && Imx.y == 1, "Minus Failed I.x=" << Imx.x << " I.y=" << Imx.y);
-// ASSERT((-5 * Ix).x == -5 && (-5 * Ix).y == 0, "Invert Failed I.x=" << (-5 * Ix).x << " I.y=" << (-5 * Ix).y);
-// ASSERT((-Ix).x == -1 && (-Ix).y == 0, "Invert Failed I.x=" << (-Ix).x << " I.y=" << (-Ix).y);
-//}
+constexpr void _set(size_t index, uint16_t depth, SparseGrid2D<double>& grid, double value)
+{
+  grid[index] = value;
+};
+
+void test_set_values()
+{
+  auto t = get_test_tree();
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
+  Range r = get_test_range();
+  BoundaryFlags b = BoundaryFlags(updated_tree, r);
+  SparseGrid2D<double> ugrid = SparseGrid2D<double>(updated_tree);
+  SparseGrid2D<double> vgrid = SparseGrid2D<double>(updated_tree);
+  SparseGrid2D<double> pgrid = SparseGrid2D<double>(updated_tree);
+  uint16_t u_boundary = static_cast<uint16_t>(BoundaryType::U_BOTTOM)
+    | static_cast<uint16_t>(BoundaryType::U_TOP)
+    | static_cast<uint16_t>(BoundaryType::U_LEFT)
+    | static_cast<uint16_t>(BoundaryType::U_RIGHT);
+  uint16_t v_boundary = static_cast<uint16_t>(BoundaryType::V_BOTTOM)
+    | static_cast<uint16_t>(BoundaryType::V_TOP)
+    | static_cast<uint16_t>(BoundaryType::V_LEFT)
+    | static_cast<uint16_t>(BoundaryType::V_RIGHT);
+  uint16_t p_boundary = static_cast<uint16_t>(BoundaryType::P_BOTTOM)
+    | static_cast<uint16_t>(BoundaryType::P_TOP)
+    | static_cast<uint16_t>(BoundaryType::P_LEFT)
+    | static_cast<uint16_t>(BoundaryType::P_RIGHT);
+  auto data_set
+    = init(updated_tree);
+  tree_broadcast(_set, b, u_boundary, ugrid, 1.);
+  tree_broadcast(_set, b, v_boundary, vgrid, 1.);
+  tree_broadcast(_set, b, p_boundary, pgrid, 1.);
+  write_field("U boundary", b.tree, ugrid._data, data_set);
+  write_field("V boundary", b.tree, vgrid._data, data_set);
+  write_field("P boundary", b.tree, pgrid._data, data_set);
+  save_dataset(data_set);
+};
 
 int main()
 {
@@ -151,7 +182,9 @@ int main()
 
   test_build_tree();
   test_tree_refinement();
+  test_set_cartesian_index();
   test_set_boundary();
+  test_set_values();
 
   LOG::Close();
   Profiler::Close();

@@ -10,8 +10,7 @@
 #include <vtkPointData.h>
 #include <vtkXMLImageDataWriter.h>
 
-template <typename T>
-void write_depth(std::string name, const SparseGrid2D<T>& data, vtkSmartPointer<vtkImageData> dataSet)
+constexpr void write_depth(std::string name, const DenseTree::DenseTree& tree, vtkSmartPointer<vtkImageData> dataSet)
 {
   ProfileScope("Write Field");
   vtkSmartPointer<vtkIntArray> array = vtkIntArray::New();
@@ -22,16 +21,16 @@ void write_depth(std::string name, const SparseGrid2D<T>& data, vtkSmartPointer<
 
   // double* ptr = static_cast<double*>(array->GetVoidPointer(0));
   size_t idx = 0;
-  for (uint16_t j = 0; j < (1ULL << data.tree.maxDepth); j++)
-    for (uint16_t i = 0; i < (1ULL << data.tree.maxDepth); i++)
+  for (uint16_t j = 0; j < (1ULL << tree.maxDepth); j++)
+    for (uint16_t i = 0; i < (1ULL << tree.maxDepth); i++)
     {
       {
 
-        Index I = { i, j, data.tree.maxDepth };
+        Index I = { i, j, tree.maxDepth };
         Zindex Z = Zindex(I);
-        size_t index = DenseTree::get_dense_index(data.tree, Z);
+        size_t index = DenseTree::get_dense_index(tree, Z);
 
-        array->SetValue(idx++, data.tree._index_cache[index].depth);
+        array->SetValue(idx++, tree._index_cache[index].depth);
       }
     }
   dataSet->GetPointData()->AddArray(array);

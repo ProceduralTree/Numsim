@@ -1,13 +1,29 @@
 #ifndef MATRIX_H_
 #define MATRIX_H_
 
+#include "grid/boundary.h"
+#include "grid/densetree.h"
 #include "grid/grid.h"
+#include "grid/sparsegrid.h"
 #include "pde/system.h"
 #include "utils/broadcast.h"
 #include "utils/index.h"
-struct SparseMatrixOperator
-{
-};
+#include <cstddef>
+// struct SparseMatrixOperator
+//{
+//   SparseMatrixOperator(const SparseMatrixOperator&) = default;
+//   SparseMatrixOperator(SparseMatrixOperator&&) = default;
+//   SparseMatrixOperator& operator=(const SparseMatrixOperator&) = delete;
+//   LaplaceMatrixOperator& operator=(SparseMatrixOperator&&) = delete;
+//   SparseMatrixOperator(const BoundaryFlags& flags);
+//
+//   inline double operator()(const SparseGrid2D<double>& vec, size_t local_index) const
+//   {
+//     double res = ((vec[I - Ix] + vec[I + Ix]) * h_x_squared_inv) + ((vec[I - Iy] + vec[I + Iy]) * h_y_squared_inv);
+//     res += a_ij * vec[I];
+//     return res;
+//   }
+// };
 
 struct LaplaceMatrixOperator
 {

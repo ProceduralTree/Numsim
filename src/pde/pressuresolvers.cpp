@@ -12,7 +12,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <grid/grid.h>
-#include <grid/indexing.h>
 #include <ios>
 #include <mpi.h>
 #include <pde/system.h>
