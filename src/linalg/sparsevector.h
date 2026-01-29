@@ -4,6 +4,7 @@
 #include "grid/boundary.h"
 #include "grid/sparsegrid.h"
 #include "linalg/matrix.h"
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 
@@ -45,6 +46,28 @@ constexpr double dot(SparseGrid2D<double>& a, SparseMatrixOperator A, SparseGrid
   broadcast_cell_type(times, 0, flags.tree.maxDepth, flags, p_with_boundary, a, b, result);
   return result;
 };
+constexpr void max_(size_t index, uint16_t depth, SparseGrid2D<double>& v, double& result)
+{
+  result = std::max(result, v[index]);
+};
+
+constexpr double max(SparseGrid2D<double>& v, const BoundaryFlags& flags)
+{
+
+  size_t p_with_boundary = static_cast<uint16_t>(BoundaryType::P);
+  double result = 0.;
+  broadcast_cell_type(max_, 0, flags.tree.maxDepth, flags, p_with_boundary, v, result);
+  return result;
+};
+constexpr double min(SparseGrid2D<double>& v, const BoundaryFlags& flags)
+{
+
+  size_t p_with_boundary = static_cast<uint16_t>(BoundaryType::P);
+  double result = -INFINITY;
+  broadcast_cell_type(max_, 0, flags.tree.maxDepth, flags, p_with_boundary, v, result);
+  return result;
+};
 
 };
+
 #endif // SPARSEVECTOR_H_

@@ -1,8 +1,8 @@
 #ifndef DENSETREE_H_
 #define DENSETREE_H_
+#include "grid/rectangle.h"
 #include "utils/profiler.h"
 #include "zindex.h"
-#include <bitset>
 #include <cassert>
 #include <cstddef>
 #include <utility>
@@ -12,6 +12,10 @@
 #include <iostream>
 
 namespace DenseTree {
+
+struct DenseTree;
+template <typename Operator, typename... Args>
+DenseTree build_tree(Operator&& has_children, uint16_t maxDepth, Args&&... args);
 
 struct DenseTree
 {
@@ -32,6 +36,14 @@ struct DenseTree
   DenseTree() = default;
 
   constexpr void print();
+};
+
+constexpr DenseTree from_range(Range r)
+{
+  size_t x_power = std::bit_width<size_t>(r.end.x - 1);
+  size_t y_power = std::bit_width<size_t>(r.end.y - 1);
+  const uint16_t maxDepth = std::max(x_power, y_power);
+  return build_tree(intersects_range, maxDepth, r, maxDepth);
 };
 
 constexpr Zindex get_sparse_index(DenseTree tree, size_t index)

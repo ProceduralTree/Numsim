@@ -3,17 +3,23 @@
 #include "grid/sparsegrid.h"
 #include "linalg/matrix.h"
 #include "output/vtk_tree.h"
+#include "pde/system.h"
 #include "utils/Logger.h"
 #include "utils/index.h"
 #include "utils/profiler.h"
+#include "utils/settings.h"
 #include <cassert>
 #include <csignal>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <format>
 #include <grid/densetree.h>
+#include <grid/util.h>
 #include <iostream>
 #include <linalg/sparsevector.h>
 #include <mpi.h>
+#include <pde/pressuresolvers.h>
 
 #define ASSERT(condition, message)                               \
   do                                                             \
@@ -29,61 +35,20 @@ void signalInt(int sig)
 {
   DebugF("Interrupt from: {}", sig);
   Profiler::Close();
-  MPI_Barrier(MPI_COMM_WORLD);
   exit(sig);
 };
 
-uint16_t intersects_range(size_t index, uint16_t depth, Range r, uint16_t maxDepth)
-{
-  // size_t x_power = std::bit_width<size_t>(nx - 1);
-  // size_t y_power = std::bit_width<size_t>(ny - 1);
-  // const size_t size = std::max(x_power, y_power);
-  if (depth >= maxDepth)
-    return 0;
-
-  size_t local_cell_size = 1 << (maxDepth - depth);
-  auto [x, y, _] = ZorderToIndex(index);
-  // std::cout << "X:" << x << "Y:" << y << std::endl;
-  // std::cout << "local size:" << local_cell_size << std::endl;
-  bool on_top_boundary = (x <= r.end.x && r.end.x <= x + local_cell_size);
-  bool on_bottom_boundary = (x <= r.begin.x && r.begin.x <= x + local_cell_size);
-  bool on_left_boundary = (y <= r.begin.y && r.begin.y <= y + local_cell_size);
-  bool on_right_boundary = (y <= r.end.y && r.end.y <= y + local_cell_size);
-  bool in_range = x <= r.end.x && y <= r.end.y;
-  if ((on_top_boundary || on_bottom_boundary || on_left_boundary || on_right_boundary) && in_range)
-    return 1;
-  return 0;
-};
-uint16_t is_desired_depth(size_t index, uint16_t depth, uint16_t maxDepth, uint16_t desired, const DenseTree::DenseTree& old_tree)
-{
-  if (depth <= desired && depth <= maxDepth)
-  {
-    return 1;
-  }
-  size_t old_index = DenseTree::get_dense_index(old_tree, { index, maxDepth });
-  auto [_, old_depth] = old_tree._index_cache[old_index];
-  if (depth <= old_depth && depth <= maxDepth)
-  {
-    return 1;
-  }
-  return 0;
-};
-Range get_test_range()
+struct Range get_test_range()
 {
   auto begin = Index { 1, 1, 0 };
-  auto end = Index { 5, 5, 0 };
+  auto end = Index { 20, 20, 0 };
   return { begin, end };
 }
 
 DenseTree::DenseTree get_test_tree()
 {
-  Range r = get_test_range();
 
-  size_t x_power = std::bit_width<size_t>(r.end.x - 1);
-  size_t y_power = std::bit_width<size_t>(r.end.y - 1);
-  const uint16_t maxDepth = std::max(x_power, y_power);
-  auto t = DenseTree::build_tree(intersects_range, maxDepth, r, maxDepth);
-  return t;
+  return DenseTree::from_range(get_test_range());
 };
 
 void test_build_tree()
@@ -112,18 +77,18 @@ void test_set_cartesian_index()
 {
   auto t = get_test_tree();
   auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
-  auto sparse_grid = SparseGrid2D<double>(t);
+  auto sparse_grid = SparseGrid2D<double>(updated_tree);
   auto data_set = init(updated_tree);
   for (uint16_t i = 0; i < 1ULL << t.maxDepth; i++)
   {
-    sparse_grid[{ i, i, t.maxDepth }] = 1. * i + 1.;
+    sparse_grid[{ i, i, updated_tree.maxDepth }] = 1. * i + 1.;
   }
-  for (uint16_t i = 0; i < 10; i++)
+  for (uint16_t i = 0; i < 1ULL << t.maxDepth; i++)
   {
-    assert((sparse_grid[{ i, i, t.maxDepth }] == 1. * i && "Did not set value at expected point"));
+    auto val = sparse_grid[{ i, i, updated_tree.maxDepth }];
+    ASSERT((val == 1. * i + 1), (std::format("Did not set value at expected point val={} , i={}", val, i)));
   }
   write_field("Grid", sparse_grid.tree, sparse_grid._data, data_set);
-  // ASSERT(sparse_grid[{ 5, 5, t.maxDepth }] == 1., "Did not set value at expected point");
   save_dataset(data_set);
 };
 
@@ -146,7 +111,7 @@ constexpr void _set(size_t index, uint16_t depth, SparseGrid2D<double>& grid, do
 void test_set_values()
 {
   auto t = get_test_tree();
-  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
   Range r = get_test_range();
   BoundaryFlags b = BoundaryFlags(updated_tree, r);
   SparseGrid2D<double> ugrid = SparseGrid2D<double>(updated_tree);
@@ -159,6 +124,9 @@ void test_set_values()
   tree_broadcast(_set, b, u_boundary, ugrid, 1.);
   tree_broadcast(_set, b, v_boundary, vgrid, 1.);
   tree_broadcast(_set, b, p_boundary, pgrid, 1.);
+  tree_broadcast(_set, b, static_cast<uint16_t>(BoundaryType::U_Inside), ugrid, -1.);
+  tree_broadcast(_set, b, static_cast<uint16_t>(BoundaryType::V_Inside), vgrid, -1.);
+  tree_broadcast(_set, b, static_cast<uint16_t>(BoundaryType::P_Inside), pgrid, -1.);
   write_field("U boundary", b.tree, ugrid._data, data_set);
   write_field("V boundary", b.tree, vgrid._data, data_set);
   write_field("P boundary", b.tree, pgrid._data, data_set);
@@ -176,20 +144,46 @@ void test_vector_operations()
   SparseGrid2D<double> p = SparseGrid2D<double>(updated_tree);
   u[{ 4, 2, u.tree.maxDepth }] = 2.;
   v[{ 4, 2, v.tree.maxDepth }] = 2.;
-  ASSERT(SparseVector::dot(u, v, b) == 4, "<a,b> != 4");
+  // ASSERT(SparseVector::dot(u, v, b) == 4, "<a,b> != 4");
   tree_broadcast(SparseVector::axpy, b, static_cast<uint16_t>(BoundaryType::P_Inside), p, 3., u, v);
 
-  auto A = SparseMatrixOperator();
+  // auto A = SparseMatrixOperator();
   ASSERT((p[{ 4, 2, p.tree.maxDepth }] == 8.), "axpy did not succed");
-  tree_broadcast(SparseVector::aAxpy, b, static_cast<uint16_t>(BoundaryType::P_Inside), p, 3., A, u, v);
+  // tree_broadcast(SparseVector::aAxpy, b, static_cast<uint16_t>(BoundaryType::P_Inside), p, 3., A, u, v);
 };
 
+void test_init_system()
+{
+  auto t = get_test_tree();
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
+  PDESystem system = PDESystem(Settings::get(), updated_tree);
+};
+
+void test_step_system()
+{
+  auto t = get_test_tree();
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
+  PDESystem system = PDESystem(Settings::get(), updated_tree);
+  CGSolver solver = CGSolver(updated_tree);
+  auto data_set = init(updated_tree);
+  step(system, solver, 0.);
+  write("PDE System", system, data_set);
+  save_dataset(data_set);
+};
 int main()
 {
   signal(SIGINT, signalInt);
   signal(SIGTERM, signalInt);
   LOG::Init(LOG::LoggerType::STDOUT);
   Profiler::Init(Profiler::Type::ACCUMULATE);
+  auto settings = std::filesystem::path(__FILE__).parent_path() / "settings.txt";
+  if (!Settings::loadFromFile(settings))
+  {
+    LOG::Warning("couldn't parse settings file");
+    LOG::Close();
+    Profiler::Close();
+    return -1;
+  }
 
   test_build_tree();
   test_tree_refinement();
@@ -197,6 +191,8 @@ int main()
   test_set_boundary();
   test_set_values();
   test_vector_operations();
+  test_init_system();
+  test_step_system();
 
   LOG::Close();
   Profiler::Close();

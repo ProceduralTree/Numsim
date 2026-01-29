@@ -33,11 +33,11 @@ struct SparseGrid2D
 
   SparseGrid2D(const DenseTree::DenseTree& tree)
     : tree(tree)
-    , _data(tree._sizes[tree.maxDepth + 1]) { };
+    , _data(tree._sizes[tree.maxDepth + 1], 0) { };
 
   SparseGrid2D(const DenseTree::DenseTree& tree, std::vector<T> data)
     : tree(tree)
-    , _data(tree._sizes[tree.maxDepth + 1])
+    , _data(tree._sizes[tree.maxDepth + 1], 0)
   {
     assert(data.size() == _data.size());
     std::copy(data.begin(), data.end(), _data);
@@ -56,7 +56,7 @@ template <typename Operator, typename T, typename... Args>
 void mipmap(Operator&& O, SparseGrid2D<T>& grid, Args&&... args)
 {
 
-  for (uint16_t depth = 3; depth > 0; depth--)
+  for (uint16_t depth = grid.tree.maxDepth; depth > 0; depth--)
   {
     for (size_t local_index = grid.tree._sizes.at(depth - 1); local_index < grid.tree._sizes.at(depth); local_index++)
     {
@@ -82,7 +82,7 @@ T _mean(std::array<T, 4> data)
 template <typename T>
 T _max(std::array<T, 4> data)
 {
-  return 0.25 * (data[0] + data[1] + data[2] + data[3]);
+  return std::max(data[0], data[1], data[2], data[3]);
 };
 template <typename T>
 T _or(std::array<T, 4> data)

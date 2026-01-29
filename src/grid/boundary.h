@@ -32,6 +32,10 @@ enum class BoundaryType : uint16_t
   V_Inside = 0b0100'0000'0000'0000,
   V = V_BOTTOM | V_LEFT | V_RIGHT | V_TOP | V_Inside,
   V_BOUNDARY = V_BOTTOM | V_LEFT | V_RIGHT | V_TOP,
+  TOP = U_TOP | V_TOP | P_TOP,
+  BOTTOM = U_BOTTOM | V_BOTTOM | P_BOTTOM,
+  LEFT = U_LEFT | V_LEFT | P_LEFT,
+  RIGHT = U_RIGHT | V_RIGHT | P_RIGHT,
 };
 
 constexpr void set_u_boundary(size_t local_index, uint16_t depth, SparseGrid2D<uint16_t>& flags)
@@ -121,7 +125,7 @@ template <typename Operator, typename... Args>
 void broadcast_cell_type(Operator&& O, size_t index, uint8_t depth, const BoundaryFlags& flags, uint16_t cell_type, Args&&... args)
 {
   bool contains_cell_type = cell_type & flags.flags[index];
-  if (depth == 0 && contains_cell_type)
+  if (contains_cell_type && depth == 0)
   {
     std::forward<Operator>(O)(index, depth, std::forward<Args>(args)...);
     return;
