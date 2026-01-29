@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <mpi.h>
-#include <utils/partitioning.h>
 
 struct Settings
 {
@@ -36,10 +35,8 @@ struct Settings
   };
   PressureSolver pressureSolver = SOR; //< which pressure solver to use, "GaussSeidel" or "SOR"
   double omega = 1.8; //< overrelaxation factor
-  double epsilon = 1e-4; //< tolerance for the residual in the pressure solver
+  double epsilon = 1e-5; //< tolerance for the residual in the pressure solver
   int maximumNumberOfIterations = 1e5; //< maximum number of iterations in the solver
-
-  Partitioning::MPIInfo mpi; //< information about the MPI partitioning
 
   //! parse a text file with settings, each line contains "<parameterName> = <value>"
   static bool loadFromFile(std::filesystem::path filename);

@@ -4,7 +4,7 @@
 #include <ostream>
 
 namespace LOG {
-#ifdef DEBUG
+#ifndef NDEBUG
 static std::ostream* outstream;
 static std::ofstream* outfstream;
 static LoggerType loggerType;

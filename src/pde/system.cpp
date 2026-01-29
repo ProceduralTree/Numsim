@@ -1,6 +1,5 @@
-#include "grid/grid.h"
-#include "output/vtk.h"
-#include "utils/distributed.h"
+#include "grid/boundary.h"
+#include "grid/sparsegrid.h"
 #include "utils/profiler.h"
 #include <algorithm>
 #include <cstdint>
@@ -41,24 +40,25 @@ void update_v(Index I, PDESystem& system)
   system.v[I] = system.G[I] - system.dt * d(Iy, system.p, I, system.h.y);
 }
 
-void solve_pressure(PDESystem& system)
+void solve_pressure(PDESystem& system, CGSolver& solver)
 {
-  ProfileScope("Pressure Solver");
-  switch (Settings::get().pressureSolver) // Settings::get().pressureSolver)
-  {
-  case Settings::CG:
-  {
-    static auto solver = CGSolver(system);
-    solve(solver, system);
-    break;
-  }
-  default:
-  {
-    auto solver = SORSolver();
-    solve(solver, system);
-    break;
-  }
-  }
+  // ProfileScope("Pressure Solver");
+  // switch (Settings::get().pressureSolver) // Settings::get().pressureSolver)
+  //{
+  // case Settings::CG:
+  //{
+  //   static auto solver = CGSolver(system);
+  //   solve(solver, system);
+  //   break;
+  // }
+  // default:
+  //{
+  //   auto solver = SORSolver();
+  //   solve(solver, system);
+  //   break;
+  // }
+  // }
+  solve(solver, system);
 }
 
 inline void calculate_pressure_rhs(Index I, PDESystem& system)
@@ -69,80 +69,70 @@ inline void calculate_pressure_rhs(Index I, PDESystem& system)
   system.rhs[I] = (1 / system.dt) * (d(Ix, F, I - Ix, h.x) + d(Iy, G, I - Iy, h.y));
 }
 
-inline void set_with_neighbour(Index I, Offset O, Grid2D& array, double value)
+inline void set_with_neighbour(Index I, Offset O, SparseGrid2D<double>& array, double value)
 {
   array[I] = 2 * value - array[I - O];
 }
 
 void set_uv_boundary(PDESystem& system)
 {
-  if (system.partitioning.top_neighbor < 0)
-    parallel_broadcast(set_with_neighbour, system.u.boundary.top, Iy, system.u, system.settings.dirichletBcTop[0]);
-  if (system.partitioning.bottom_neighbor < 0)
-    parallel_broadcast(set_with_neighbour, system.u.boundary.bottom, -Iy, system.u, system.settings.dirichletBcBottom[0]);
-  if (system.partitioning.left_neighbor < 0)
-    parallel_broadcast(set, system.u.boundary.left, -Ix, system.u, system.settings.dirichletBcLeft[0]);
-  if (system.partitioning.right_neighbor < 0)
-    parallel_broadcast(set, system.u.boundary.right, Ix, system.u, system.settings.dirichletBcRight[0]);
-
-  if (system.partitioning.top_neighbor < 0)
-    parallel_broadcast(set, system.v.boundary.top, Iy, system.v, system.settings.dirichletBcTop[1]);
-  if (system.partitioning.bottom_neighbor < 0)
-    parallel_broadcast(set, system.v.boundary.bottom, -Iy, system.v, system.settings.dirichletBcBottom[1]);
-  if (system.partitioning.left_neighbor < 0)
-    parallel_broadcast(set_with_neighbour, system.v.boundary.left, -Ix, system.v, system.settings.dirichletBcLeft[1]);
-  if (system.partitioning.right_neighbor < 0)
-    parallel_broadcast(set_with_neighbour, system.v.boundary.right, Ix, system.v, system.settings.dirichletBcRight[1]);
+  // clang-format off
+  broadcast(set_with_neighbour , system.boundary , static_cast<uint16_t>(BoundaryType::U_TOP)    ,  Iy , system.u , system.settings.dirichletBcTop[0]);
+  broadcast(set_with_neighbour , system.boundary , static_cast<uint16_t>(BoundaryType::U_BOTTOM) , -Iy , system.u , system.settings.dirichletBcBottom[0]);
+  broadcast(set                , system.boundary , static_cast<uint16_t>(BoundaryType::U_LEFT)   , -Ix , system.u , system.settings.dirichletBcLeft[0]);
+  broadcast(set                , system.boundary , static_cast<uint16_t>(BoundaryType::U_RIGHT)  ,  Ix , system.u , system.settings.dirichletBcRight[0]);
+  // clang-format on
+  // clang-format off
+  broadcast(set_with_neighbour , system.boundary , static_cast<uint16_t>(BoundaryType::V_TOP)    ,  Iy , system.v , system.settings.dirichletBcTop[1]);
+  broadcast(set_with_neighbour , system.boundary , static_cast<uint16_t>(BoundaryType::V_BOTTOM) , -Iy , system.v , system.settings.dirichletBcBottom[1]);
+  broadcast(set                , system.boundary , static_cast<uint16_t>(BoundaryType::V_LEFT)   , -Ix , system.v , system.settings.dirichletBcLeft[1]);
+  broadcast(set                , system.boundary , static_cast<uint16_t>(BoundaryType::V_RIGHT)  ,  Ix , system.v , system.settings.dirichletBcRight[1]);
+  // clang-format on
 };
 
 void compute_dt(PDESystem& system)
 {
-  ProfileScope("Compute dt");
-  double umax = 0;
-  double vmax = 0;
-  umax = std::max(system.u.max(), (-system.u.min()));
-  vmax = std::max(system.v.max(), (-system.v.min()));
-  double dt1 = (system.settings.re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
-  double dt2 = system.h.x / umax;
-  double dt3 = system.h.y / vmax;
-  system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
-  system.dt = std::min(system.settings.maximumDt, system.dt);
-  system.dt = std::max(1e-10, system.dt);
-}
+  //   ProfileScope("Compute dt");
+  //   double umax = 0;
+  //   double vmax = 0;
+  //   umax = std::max(system.u.max(), (-system.u.min()));
+  //   vmax = std::max(system.v.max(), (-system.v.min()));
+  //   double dt1 = (system.settings.re / 2) * ((system.h.x_squared * system.h.y_squared) / ((system.h.x_squared) + (system.h.y_squared)));
+  //   double dt2 = system.h.x / umax;
+  //   double dt3 = system.h.y / vmax;
+  //   system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
+  //   system.dt = std::min(system.settings.maximumDt, system.dt);
+  //   system.dt = std::max(1e-10, system.dt);
+  system.dt = 1e-5;
+};
 
 void update_velocity(PDESystem& system)
 {
-  // Range u_inner = Range { system.u.begin + II, system.u.end - II };
-  // Range v_inner = Range { system.v.begin + II, system.v.end - II };
-  // Boundaries u_border = Boundaries(u_inner.begin, u_inner.end);
-  // Boundaries v_border = Boundaries(v_inner.begin, v_inner.end);
-  //  broadcast(update_u, u_border.all, system);
-  //  broadcast(update_v, v_border.all, system);
-  broadcast(update_u, system.u.range, system);
-  broadcast(update_v, system.v.range, system);
-  MPI_COMM_BUFFER* u_comm_buffer = new MPI_COMM_BUFFER(system.u, system.u.boundary.u_ghosts(), MPI_COMM_WORLD, system.partitioning, 16);
-  MPI_COMM_BUFFER* v_comm_buffer = new MPI_COMM_BUFFER(system.v, system.v.boundary.v_ghosts(), MPI_COMM_WORLD, system.partitioning, 32);
-  delete u_comm_buffer;
-  delete v_comm_buffer;
+  broadcast(update_u, system.boundary, static_cast<uint16_t>(BoundaryType::U_Inside), system);
+  broadcast(update_v, system.boundary, static_cast<uint16_t>(BoundaryType::V_Inside), system);
+  ////MPI_COMM_BUFFER* u_comm_buffer = new MPI_COMM_BUFFER(system.u, system.u.boundary.u_ghosts(), MPI_COMM_WORLD, system.partitioning, 16);
+  ////MPI_COMM_BUFFER* v_comm_buffer = new MPI_COMM_BUFFER(system.v, system.v.boundary.v_ghosts(), MPI_COMM_WORLD, system.partitioning, 32);
+  // delete u_comm_buffer;
+  // delete v_comm_buffer;
 }
 
-void step(PDESystem& system, double time)
+void step(PDESystem& system, CGSolver solver, double time)
 {
   ProfileScope("Time Step");
 
   set_uv_boundary(system);
 
   compute_dt(system);
+  //
+  broadcast(copy, system.boundary, static_cast<uint16_t>(BoundaryType::U_BOUNDARY), Offset { 0, 0 }, system.u, system.F);
+  broadcast(copy, system.boundary, static_cast<uint16_t>(BoundaryType::U_BOUNDARY), Offset { 0, 0 }, system.v, system.G);
 
-  broadcast_halo(copy, system.F.boundary, system.u, system.F);
-  broadcast_halo(copy, system.G.boundary, system.v, system.G);
+  broadcast(calculate_F, system.boundary, static_cast<uint16_t>(BoundaryType::U_Inside), system);
+  broadcast(calculate_G, system.boundary, static_cast<uint16_t>(BoundaryType::V_Inside), system);
 
-  broadcast(calculate_F, system.u.range, system);
-  broadcast(calculate_G, system.v.range, system);
+  broadcast(calculate_pressure_rhs, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), system);
 
-  broadcast(calculate_pressure_rhs, system.p.range, system);
-
-  solve_pressure(system);
+  solve_pressure(system, solver);
 
   update_velocity(system);
 
@@ -156,17 +146,17 @@ void print_pde_system(const PDESystem& sys)
   printf("╚═══════════════════════════════════════════════╝\n");
   Settings::get().printSettings();
 }
-double interpolate_u(const PDESystem& sys, const Grid2D& field, Index I)
+double interpolate_u(const PDESystem& sys, const SparseGrid2D<double>& field, Index I)
 {
   return (field[I] + field[I + Iy]) / 2;
 }
 
-double interpolate_v(const PDESystem& sys, const Grid2D& field, Index I)
+double interpolate_v(const PDESystem& sys, const SparseGrid2D<double>& field, Index I)
 {
   return (field[I] + field[I + Ix]) / 2;
 }
 
-double interpolate_p(const PDESystem& sys, const Grid2D& field, Index I)
+double interpolate_p(const PDESystem& sys, const SparseGrid2D<double>& field, Index I)
 {
   return (field[I] + field[I + Ix] + field[I + Iy] + field[I + Iy + Ix]) / 4;
 }

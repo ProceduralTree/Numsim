@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "indexing.h"
 #include "utils/Logger.h"
 #include "utils/index.h"
 

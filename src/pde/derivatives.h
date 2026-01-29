@@ -1,11 +1,13 @@
 #ifndef DERIVATIVES_H_
 #define DERIVATIVES_H_
 
+#include "grid/sparsegrid.h"
 #include <cassert>
 #include <grid/grid.h>
-#include <grid/indexing.h>
 #include <pde/system.h>
 #include <utils/index.h>
+template <typename T>
+concept Grid = std::same_as<T, Grid2D> || std::same_as<T, SparseGrid2D<double>>;
 
 #define ASSERT(condition, message)                               \
   do                                                             \
@@ -17,19 +19,22 @@
     }                                                            \
   } while (0)
 
-inline double d(Offset Direction, const Grid2D& field, Index I, double h)
+template <Grid G>
+inline double d(Offset Direction, const G& field, Index I, double h)
 {
   assert(Direction.x <= I.x + 1);
   assert(Direction.y <= I.y + 1);
   return 1 / h * (field[I + Direction] - field[I]);
 }
-inline double dd(Offset Direction, const Grid2D& field, Index I, double h_squared)
+template <Grid G>
+inline double dd(Offset Direction, const G& field, Index I, double h_squared)
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);
   return 1 / h_squared * (field[I + Direction] + field[I - Direction] - 2 * field[I]);
 }
-inline double duv(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h, double alpha)
+template <Grid G>
+inline double duv(Offset Direction, const G& field1, const G& field2, Index I, double h, double alpha)
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);
@@ -48,7 +53,8 @@ inline double duv(Offset Direction, const Grid2D& field1, const Grid2D& field2, 
   }
 }
 
-inline double dxx(Offset Direction, const Grid2D& field1, const Grid2D& field2, Index I, double h, double alpha)
+template <Grid G>
+inline double dxx(Offset Direction, const G& field1, const G& field2, Index I, double h, double alpha)
 {
   assert(Direction.x <= I.x);
   assert(Direction.y <= I.y);

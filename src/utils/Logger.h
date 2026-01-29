@@ -12,7 +12,7 @@ enum class LoggerType
   STDERR,
   FILE
 };
-#ifdef DEBUG
+#ifndef NDEBUG
 void Init(LoggerType type);
 void Close();
 void Debug(const std::string& string);
@@ -27,8 +27,14 @@ inline void Close() { }
 inline void Debug(const std::string& string) { }
 inline void Warning(const std::string& string) { }
 inline void Error(const std::string& string) { }
-#define DebugF(str, ...) 0
-#define WarningF(str, ...) 0
-#define ErrorF(str, ...) 0
+#define DebugF(str, ...) \
+  {                      \
+  }
+#define WarningF(str, ...) \
+  {                        \
+  }
+#define ErrorF(str, ...) \
+  {                      \
+  }
 #endif
 }

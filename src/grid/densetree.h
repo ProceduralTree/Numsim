@@ -1,8 +1,8 @@
 #ifndef DENSETREE_H_
 #define DENSETREE_H_
+#include "grid/rectangle.h"
 #include "utils/profiler.h"
 #include "zindex.h"
-#include <bitset>
 #include <cassert>
 #include <cstddef>
 #include <utility>
@@ -12,6 +12,10 @@
 #include <iostream>
 
 namespace DenseTree {
+
+struct DenseTree;
+template <typename Operator, typename... Args>
+DenseTree build_tree(Operator&& has_children, uint16_t maxDepth, Args&&... args);
 
 struct DenseTree
 {
@@ -34,6 +38,14 @@ struct DenseTree
   constexpr void print();
 };
 
+constexpr DenseTree from_range(Range r)
+{
+  size_t x_power = std::bit_width<size_t>(r.end.x - 1);
+  size_t y_power = std::bit_width<size_t>(r.end.y - 1);
+  const uint16_t maxDepth = std::max(x_power, y_power);
+  return build_tree(intersects_range, maxDepth, r, maxDepth);
+};
+
 constexpr Zindex get_sparse_index(DenseTree tree, size_t index)
 {
   return tree._index_cache[index];
@@ -47,11 +59,8 @@ constexpr size_t get_dense_index(const DenseTree& tree, Zindex index)
   for (size_t depth = 0; depth < index.depth; depth++)
   {
     uint16_t subtreeDepth = tree._depths[idx];
-    if (subtreeDepth < 1)
-    {
-
+    if (subtreeDepth == 0)
       return idx;
-    }
     //  Filter out already acounted for depth:
     //  ie. for currentDepth=3 and maxdepth=5 use bitmask (4^3-1)*4^(5-2)=0b11_11_11_00_00
     uint16_t dDepth = index.depth - currentDepth;
@@ -68,38 +77,6 @@ constexpr size_t get_dense_index(const DenseTree& tree, Zindex index)
 void optimize_depths();
 void add_layer();
 void mark_subtree_unused();
-
-template <typename Operator, typename T, typename... Args>
-void mipmap(Operator&& O, DenseTree tree, std::vector<T> _data, Args&&... args)
-{
-  for (size_t depth = tree.maxDepth - 1; depth > 0; depth--)
-  {
-    for (size_t local_index = tree._sizes.at(depth - 1); local_index < tree._sizes.at(depth); local_index++)
-    {
-      if (tree._depths[local_index] > 0)
-      {
-        size_t data_index = tree._indices[local_index];
-        _data[local_index] = std::forward<Operator>(O)({ _data[data_index + 1], _data[data_index + 2], _data[data_index + 3], _data[data_index + 4] }, std::forward<Args>(args)...);
-      }
-    }
-  }
-}
-
-template <typename T>
-T sum(std::array<T, 4> data)
-{
-  return data[0] + data[1] + data[2] + data[3];
-};
-template <typename T>
-T mean(std::array<T, 4> data)
-{
-  return 0.25 * (data[0] + data[1] + data[2] + data[3]);
-};
-template <typename T>
-T max(std::array<T, 4> data)
-{
-  return 0.25 * (data[0] + data[1] + data[2] + data[3]);
-};
 
 template <typename Operator, typename... Args>
 DenseTree build_tree(Operator&& has_children, uint16_t maxDepth, Args&&... args)
