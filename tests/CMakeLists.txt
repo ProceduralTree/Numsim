@@ -12,6 +12,7 @@ file(GLOB_RECURSE SRC_FILES
 
 add_executable(tests
     run_test.cpp
+    stbimageImpl.cpp
     ${SRC_FILES}
 )
 
