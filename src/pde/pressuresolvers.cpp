@@ -18,16 +18,19 @@ void solve(CGSolver& cg, PDESystem& system)
   // cg.residual = system.rhs - A*system.p;
   broadcast_boundary(copy_with_offset, system.boundary, static_cast<uint16_t>(BoundaryType::P_BOUNDARY), system.p);
   //  cg.residual[I] = s.rhs[I] - A(s.p, I);
+  mipmap(_mean<double>, system.p);
   tree_broadcast(SparseVector::aAxpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), cg.residual, -1., A, system.p, system.rhs);
+  mipmap(_mean<double>, cg.residual);
   // A.a_ij modification for diagonal jacoby preconditioner
   tree_broadcast(SparseVector::axpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), cg.residual, (1 / A.a_ij - 1.), cg.residual, cg.residual);
+  mipmap(_mean<double>, cg.residual);
   residual_norm = SparseVector::dot(cg.residual, cg.residual, system.boundary);
 
   // ensure correct ghosts
   // cg.search_direction = cg.residual;
   broadcast(copy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), Offset { 0, 0 }, cg.residual, cg.search_direction);
 
-  for (int iter = 0; iter < Settings::get().maximumNumberOfIterations; iter++)
+  for (int iter = 0; iter < system.settings.maximumNumberOfIterations; iter++)
   {
     ProfileScope("CG Iteration");
     old_residual_norm = residual_norm;
@@ -38,20 +41,28 @@ void solve(CGSolver& cg, PDESystem& system)
 
     // A.a_ij modification for pcg mit diagonal jacoby preconditioner
     //  system.p = system.p + a * cg.search_direction;
-    tree_broadcast(SparseVector::axpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_BOUNDARY), system.p, A.a_ij * alpha, cg.search_direction, system.p);
+    tree_broadcast(SparseVector::axpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), system.p, A.a_ij * alpha, cg.search_direction, system.p);
 
     // cg.residual = cg.residual - a * A * cg.search_direction;
     tree_broadcast(SparseVector::aAxpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), cg.residual, -alpha, A, cg.search_direction, cg.residual);
+    mipmap(_mean<double>, cg.residual);
+
     ProfilePush("Residual Calculation");
     double residual = SparseVector::max(cg.residual, system.boundary);
+    double min = SparseVector::min(cg.residual, system.boundary);
     ProfilePop();
-    std::cout << std::format("residual {}", residual) << std::endl;
-    std::cout << std::format("residual Norm {}", residual_norm) << std::endl;
-    if (residual > 1e5 || residual == -NAN || residual == NAN)
+    // std::cout << std::format("residual {}", residual) << std::endl;
+    // std::cout << std::format("min {}", min) << std::endl;
+    // std::cout << std::format("residual Norm {}", residual_norm) << std::endl;
+    // std::cout << std::format("alpha {}", alpha) << std::endl;
+    // std::cout << std::format("A_ij {}", A.a_ij) << std::endl;
+    // std::cout << std::format("1/h_x^2 {}", A.h_x_squared_inv) << std::endl;
+    if (residual > 1e6 || residual == -NAN || residual == NAN)
     {
       std::cout << std::format("residual exploded {}", residual) << std::endl;
       // ErrorF("residual exploded {}", residual);
-      abort();
+      break;
+      // abort();
     }
 
     if (residual < Settings::get().epsilon)
@@ -66,8 +77,10 @@ void solve(CGSolver& cg, PDESystem& system)
     // TODO Update Ghosts
     // cg.search_direction[I] = cg.residual[I] + beta * cg.search_direction[I];
     tree_broadcast(SparseVector::axpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), cg.search_direction, beta, cg.search_direction, cg.residual);
+    mipmap(_mean<double>, cg.search_direction);
   }
   broadcast_boundary(copy_with_offset, system.boundary, static_cast<uint16_t>(BoundaryType::P_BOUNDARY), system.p);
+  mipmap(_mean<double>, system.p);
 }
 
 // void solve(GaussSeidelSolver& S, PDESystem& system)

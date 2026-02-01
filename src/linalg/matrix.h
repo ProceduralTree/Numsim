@@ -35,8 +35,11 @@ struct SparseMatrixOperator
 
   constexpr double operator()(size_t local_index, uint16_t depth, const SparseGrid2D<double>& vec) const
   {
+    double local_cell_size = static_cast<double>(1ULL << (depth + 1));
+    double local_hx_2_inv = h_x_squared_inv * (1. / (local_cell_size * local_cell_size));
+    double local_hy_2_inv = h_y_squared_inv * (1. / (local_cell_size * local_cell_size));
     Index I = ZorderToIndex(vec.tree._index_cache[local_index]);
-    double res = ((vec[I - Ix] + vec[I + Ix]) * h_x_squared_inv) + ((vec[I - Iy] + vec[I + Iy]) * h_y_squared_inv);
+    double res = ((vec[I - Ix] + vec[I + Ix]) * local_hx_2_inv) + ((vec[I - Iy] + vec[I + Iy]) * local_hy_2_inv);
     res += a_ij * vec[local_index];
     return res;
   }

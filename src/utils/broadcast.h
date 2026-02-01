@@ -18,6 +18,7 @@ void broadcast_type(Operator&& O, size_t index, uint8_t depth, const BoundaryFla
   if (contains_cell_type && depth == 0)
   {
     Index I = ZorderToIndex(flags.tree._index_cache[index]);
+    I.depth = flags.tree.maxDepth;
     std::forward<Operator>(O)(I, std::forward<Args>(args)...);
     return;
   }

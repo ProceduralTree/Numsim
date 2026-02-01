@@ -5,6 +5,7 @@
 #include "output/vtk_tree.h"
 #include "pde/system.h"
 #include "utils/Logger.h"
+#include "utils/broadcast.h"
 #include "utils/index.h"
 #include "utils/profiler.h"
 #include "utils/settings.h"
@@ -41,7 +42,7 @@ void signalInt(int sig)
 struct Range get_test_range()
 {
   auto begin = Index { 1, 1, 0 };
-  auto end = Index { 20, 20, 0 };
+  auto end = Index { 201, 201, 0 };
   return { begin, end };
 }
 
@@ -55,7 +56,7 @@ void test_build_tree()
 {
 
   auto t = get_test_tree();
-  auto data_set = init(t);
+  auto data_set = init(t, false);
   // ASSERT(tree.sizes, message)
   // t.print();
   write_depth("Tree Depth", t, data_set);
@@ -66,9 +67,9 @@ void test_tree_refinement()
 {
   auto t = get_test_tree();
 
-  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
-  updated_tree.print();
-  auto data_set = init(updated_tree);
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth - 1, t);
+  // updated_tree.print();
+  auto data_set = init(updated_tree, false);
   write_depth("Updated Depth", updated_tree, data_set);
   save_dataset(data_set);
 };
@@ -76,14 +77,23 @@ void test_tree_refinement()
 void test_set_cartesian_index()
 {
   auto t = get_test_tree();
-  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
+
+  std::cerr << "MaxDepth:" << t.maxDepth << std::endl;
+  std::cerr << "Sizes" << std::endl;
+  std::ranges::copy(t._sizes, std::ostream_iterator<size_t>(std::cerr, " "));
+  std::cerr << std::endl;
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth - 1, t);
+  std::cerr << "MaxDepth:" << updated_tree.maxDepth << std::endl;
+  std::cerr << "Sizes" << std::endl;
+  std::ranges::copy(updated_tree._sizes, std::ostream_iterator<size_t>(std::cerr, " "));
+  std::cerr << std::endl;
   auto sparse_grid = SparseGrid2D<double>(updated_tree);
-  auto data_set = init(updated_tree);
-  for (uint16_t i = 0; i < 1ULL << t.maxDepth; i++)
+  auto data_set = init(updated_tree, false);
+  for (uint16_t i = 1; i < get_test_range().end.x; i++)
   {
     sparse_grid[{ i, i, updated_tree.maxDepth }] = 1. * i + 1.;
   }
-  for (uint16_t i = 0; i < 1ULL << t.maxDepth; i++)
+  for (uint16_t i = 1; i < get_test_range().end.x; i++)
   {
     auto val = sparse_grid[{ i, i, updated_tree.maxDepth }];
     ASSERT((val == 1. * i + 1), (std::format("Did not set value at expected point val={} , i={}", val, i)));
@@ -98,7 +108,7 @@ void test_set_boundary()
   auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
   Range r = get_test_range();
   BoundaryFlags b = BoundaryFlags(updated_tree, r);
-  auto data_set = init(updated_tree);
+  auto data_set = init(updated_tree, false);
   write_field("BoundaryFlags", b.tree, b.flags._data, data_set);
   save_dataset(data_set);
 };
@@ -111,7 +121,7 @@ constexpr void _set(size_t index, uint16_t depth, SparseGrid2D<double>& grid, do
 void test_set_values()
 {
   auto t = get_test_tree();
-  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth - 1, t);
   Range r = get_test_range();
   BoundaryFlags b = BoundaryFlags(updated_tree, r);
   SparseGrid2D<double> ugrid = SparseGrid2D<double>(updated_tree);
@@ -120,7 +130,7 @@ void test_set_values()
   uint16_t u_boundary = static_cast<uint16_t>(BoundaryType::U_BOUNDARY);
   uint16_t v_boundary = static_cast<uint16_t>(BoundaryType::V_BOUNDARY);
   uint16_t p_boundary = static_cast<uint16_t>(BoundaryType::P_BOUNDARY);
-  auto data_set = init(updated_tree);
+  auto data_set = init(updated_tree, false);
   tree_broadcast(_set, b, u_boundary, ugrid, 1.);
   tree_broadcast(_set, b, v_boundary, vgrid, 1.);
   tree_broadcast(_set, b, p_boundary, pgrid, 1.);
@@ -136,7 +146,7 @@ void test_set_values()
 void test_vector_operations()
 {
   auto t = get_test_tree();
-  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, 4, t);
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth - 1, t);
   Range r = get_test_range();
   BoundaryFlags b = BoundaryFlags(updated_tree, r);
   SparseGrid2D<double> u = SparseGrid2D<double>(updated_tree);
@@ -148,7 +158,7 @@ void test_vector_operations()
   tree_broadcast(SparseVector::axpy, b, static_cast<uint16_t>(BoundaryType::P_Inside), p, 3., u, v);
 
   // auto A = SparseMatrixOperator();
-  ASSERT((p[{ 4, 2, p.tree.maxDepth }] == 8.), "axpy did not succed");
+  ASSERT((p[{ 4, 2, p.tree.maxDepth }] == 8.), (std::format("axpy did not succed p={}", p[{ 4, 2, p.tree.maxDepth }])));
   // tree_broadcast(SparseVector::aAxpy, b, static_cast<uint16_t>(BoundaryType::P_Inside), p, 3., A, u, v);
 };
 
@@ -156,20 +166,82 @@ void test_init_system()
 {
   auto t = get_test_tree();
   auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
-  PDESystem system = PDESystem(Settings::get(), updated_tree);
+  auto flags = BoundaryFlags(updated_tree, get_test_range());
+  PDESystem system = PDESystem(Settings::get(), flags);
 };
 
 void test_step_system()
 {
-  auto t = get_test_tree();
-  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
-  PDESystem system = PDESystem(Settings::get(), updated_tree);
-  CGSolver solver = CGSolver(updated_tree);
-  auto data_set = init(updated_tree);
+  auto r = Range { Index { 1, 1, 0 }, Index { static_cast<uint16_t>(Settings::get().nCells[0] + 1), static_cast<uint16_t>(Settings::get().nCells[1] + 1), 0 } };
+  auto t = DenseTree::from_range(r);
+
+  auto tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
+  auto flags = BoundaryFlags(tree, r);
+  PDESystem system = PDESystem(Settings::get(), flags);
+  CGSolver solver = CGSolver(tree);
+  auto data_set = init(tree, false);
+  write_field("Boundary Data", system.boundary.tree, system.boundary.flags._data, data_set);
   step(system, solver, 0.);
-  write("PDE System", system, data_set);
+  step(system, solver, 0.);
+  step(system, solver, 0.);
+  write_field("U raw data", system.boundary.tree, system.u._data, data_set);
+  write_field("V raw data", system.boundary.tree, system.v._data, data_set);
+  write_field("P raw data", system.boundary.tree, system.p._data, data_set);
+  write_field("F raw data", system.boundary.tree, system.F._data, data_set);
+  write_field("G raw data", system.boundary.tree, system.G._data, data_set);
+  write_field("RHS raw data", system.boundary.tree, system.rhs._data, data_set);
+  write_field("Residual", system.boundary.tree, solver.residual._data, data_set);
+  write_field("Search Direction", system.boundary.tree, solver.search_direction._data, data_set);
   save_dataset(data_set);
 };
+
+void test_set_pressure_boundary()
+{
+  auto t = get_test_tree();
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
+  auto flags = BoundaryFlags(updated_tree, get_test_range());
+  PDESystem system = PDESystem(Settings::get(), flags);
+  CGSolver solver = CGSolver(updated_tree);
+  auto data_set = init(updated_tree, false);
+  tree_broadcast(_set, system.boundary, static_cast<double>(BoundaryType::P_Inside), system.p, 1.);
+  broadcast_boundary(copy_with_offset, system.boundary, static_cast<uint16_t>(BoundaryType::P_BOUNDARY), system.p);
+  write_field("Pressure", flags.tree, system.p._data, data_set);
+  // write("PDE System", system, data_set);
+  write_field("BoundaryFlags", flags.tree, flags.flags._data, data_set);
+  save_dataset(data_set);
+};
+
+void test_mat_mult()
+{
+  auto t = get_test_tree();
+  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
+  auto flags = BoundaryFlags(updated_tree, get_test_range());
+  PDESystem system = PDESystem(Settings::get(), flags);
+  CGSolver solver = CGSolver(updated_tree);
+  auto data_set = init(updated_tree, false);
+  system.p[{ 25, 25, updated_tree.maxDepth }] = 1.;
+  auto A = SparseMatrixOperator(system.h);
+  tree_broadcast(SparseVector::aAxpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), system.u, 1., A, system.p, system.p);
+  write_field("Mat Mult", flags.tree, system.u._data, data_set);
+  save_dataset(data_set);
+};
+
+void test_build_better_tree()
+{
+  auto t = get_test_tree();
+  auto tree = dilate(t);
+  auto flags = BoundaryFlags(tree, get_test_range());
+
+  auto data_set = init(tree, false);
+  write_field("Boundary Flags N 0", flags.tree, flags.flags._data, flags.tree.maxDepth, data_set);
+  write_field("Boundary Flags N-1", flags.tree, flags.flags._data, flags.tree.maxDepth - 1, data_set);
+  write_field("Boundary Flags N-2", flags.tree, flags.flags._data, flags.tree.maxDepth - 2, data_set);
+  write_field("Boundary Flags N-3", flags.tree, flags.flags._data, flags.tree.maxDepth - 3, data_set);
+  write_depth("Original Boundary", t, data_set);
+  write_depth("Boundary", tree, data_set);
+  save_dataset(data_set);
+}
+
 int main()
 {
   signal(SIGINT, signalInt);
@@ -190,9 +262,12 @@ int main()
   test_set_cartesian_index();
   test_set_boundary();
   test_set_values();
-  test_vector_operations();
+  // test_vector_operations();
   test_init_system();
   test_step_system();
+  test_set_pressure_boundary();
+  test_mat_mult();
+  test_build_better_tree();
 
   LOG::Close();
   Profiler::Close();

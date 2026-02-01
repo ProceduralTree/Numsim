@@ -30,6 +30,7 @@ struct Gridsize
 
 struct PDESystem
 {
+
   const Settings& settings;
   double residual = 0;
   // TreeIndices indices;
@@ -37,7 +38,7 @@ struct PDESystem
   // QuadTree<std::array<Index, 4>> neighbours;
 
   double dt;
-  const BoundaryFlags boundary;
+  const BoundaryFlags& boundary;
   SparseGrid2D<double> p;
   SparseGrid2D<double> u;
   SparseGrid2D<double> v;
@@ -46,26 +47,30 @@ struct PDESystem
   SparseGrid2D<double> rhs;
   const Gridsize h;
 
-  PDESystem(const Settings& settings, const DenseTree::DenseTree& tree)
+  PDESystem(const Settings& settings, const BoundaryFlags& flags)
     : settings(settings)
-    , boundary(tree, Range { Index { 1, 1, tree.maxDepth }, Index { static_cast<uint16_t>(settings.nCells[0] + 1), static_cast<uint16_t>(settings.nCells[1] + 1), tree.maxDepth } })
-    , p(tree)
-    , u(tree)
-    , v(tree)
-    , F(tree)
-    , G(tree)
-    , rhs(tree)
+    , boundary(flags)
+    , p(flags.tree)
+    , u(flags.tree)
+    , v(flags.tree)
+    , F(flags.tree)
+    , G(flags.tree)
+    , rhs(flags.tree)
     , h(Gridsize(settings)) { };
 
   PDESystem(const PDESystem&) = delete;
   PDESystem& operator=(const PDESystem&) = delete;
+
+  PDESystem(PDESystem&&) = default;
+  PDESystem& operator=(PDESystem&&) = delete;
 };
 
-void step(PDESystem& system, CGSolver solver, double time);
+void step(PDESystem& system, CGSolver& solver, double time);
 void print_pde_system(const PDESystem& sys);
 
 double interpolate_u(const PDESystem& sys, const SparseGrid2D<double>& field, Index I);
 double interpolate_v(const PDESystem& sys, const SparseGrid2D<double>& field, Index I);
 double interpolate_p(const PDESystem& sys, const SparseGrid2D<double>& field, Index I);
+void set_uv_boundary(PDESystem& system);
 
 #endif // SYSTEM_H_

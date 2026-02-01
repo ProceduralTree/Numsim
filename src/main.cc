@@ -1,5 +1,7 @@
+#include "grid/boundary.h"
 #include "grid/densetree.h"
 #include "grid/util.h"
+#include "output/vtk_tree.h"
 #include "pde/pressuresolvers.h"
 #include "utils/Logger.h"
 #include "utils/profiler.h"
@@ -49,7 +51,8 @@ auto main(int argc, char* argv[]) -> int
   auto t = DenseTree::from_range(r);
 
   auto tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
-  PDESystem system = PDESystem(Settings::get(), tree);
+  auto flags = BoundaryFlags(tree, r);
+  PDESystem system = PDESystem(Settings::get(), flags);
   CGSolver solver = CGSolver(tree);
 
   double time = 0;
@@ -68,8 +71,7 @@ auto main(int argc, char* argv[]) -> int
     // }
     step(system, solver, time);
     time += system.dt;
-    // step(system, time);
-    // time += system.dt;
+
     if (time > next_written_time)
     {
       std::chrono::system_clock::time_point tmp_time = std::chrono::system_clock::now();
@@ -88,9 +90,13 @@ auto main(int argc, char* argv[]) -> int
       printf("%s", s.str().c_str());
 
       fflush(stdout);
-    }
+      auto data_set = init(tree, true);
+      write("Solve", system, data_set);
+      save_dataset(data_set);
 
-    next_written_time += 1;
+      fflush(stdout);
+      next_written_time += 1;
+    }
   }
   std::cout << std::endl;
 
