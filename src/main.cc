@@ -48,9 +48,9 @@ auto main(int argc, char* argv[]) -> int
   }
   // Settings::get().printSettings();
   auto r = Range { Index { 1, 1, 0 }, Index { static_cast<uint16_t>(Settings::get().nCells[0] + 1), static_cast<uint16_t>(Settings::get().nCells[1] + 1), 0 } };
-  auto tree = DenseTree::from_range(r);
+  auto t = DenseTree::from_range(r);
 
-  // auto tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
+  auto tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
   auto flags = BoundaryFlags(tree, r);
   PDESystem system = PDESystem(Settings::get(), flags);
   CGSolver solver = CGSolver(tree);
@@ -95,6 +95,7 @@ auto main(int argc, char* argv[]) -> int
       save_dataset(data_set);
 
       fflush(stdout);
+      next_written_time += 1;
     }
   }
   std::cout << std::endl;
