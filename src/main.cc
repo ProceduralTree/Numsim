@@ -94,7 +94,7 @@ auto main(int argc, char* argv[]) -> int
       write("Solve", system, data_set);
       save_dataset(data_set);
 
-      next_written_time += 1;
+      fflush(stdout);
     }
   }
   std::cout << std::endl;

@@ -18,7 +18,10 @@ void broadcast_type(Operator&& O, size_t index, uint8_t depth, const BoundaryFla
   if (contains_cell_type && depth == 0)
   {
     Index I = ZorderToIndex(flags.tree._index_cache[index]);
+<<<<<<< HEAD
     I.depth = flags.tree.maxDepth;
+=======
+>>>>>>> 8707aa0c (Feature/densequadtree (#27))
     std::forward<Operator>(O)(I, std::forward<Args>(args)...);
     return;
   }
