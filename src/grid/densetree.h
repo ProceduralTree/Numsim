@@ -3,8 +3,10 @@
 #include "grid/rectangle.h"
 #include "utils/profiler.h"
 #include "zindex.h"
+#include <bitset>
 #include <cassert>
 #include <cstddef>
+#include <iterator>
 #include <utility>
 #include <vector>
 #define ONES SIZE_MAX
@@ -24,7 +26,7 @@ struct DenseTree
   std::vector<size_t> _indices;
   std::vector<uint16_t> _depths;
   std::vector<Zindex> _index_cache;
-  std::vector<uint16_t> _sizes;
+  std::vector<size_t> _sizes;
   // Delete copy constructor and copy assignment
   DenseTree(const DenseTree&) = delete;
   DenseTree& operator=(const DenseTree&) = delete;
@@ -56,20 +58,26 @@ constexpr size_t get_dense_index(const DenseTree& tree, Zindex index)
   ProfileScope("Index Lookup");
   size_t idx = 0;
   uint16_t currentDepth = 0;
-  for (size_t depth = 0; depth < index.depth; depth++)
+  for (size_t depth = 0; depth <= index.depth; depth++)
   {
     uint16_t subtreeDepth = tree._depths[idx];
-    if (subtreeDepth == 0)
+    if (subtreeDepth == 0 || currentDepth == index.depth || currentDepth == tree.maxDepth)
+    {
       return idx;
+    }
     //  Filter out already acounted for depth:
     //  ie. for currentDepth=3 and maxdepth=5 use bitmask (4^3-1)*4^(5-2)=0b11_11_11_00_00
-    uint16_t dDepth = index.depth - currentDepth;
-    size_t mask = ((size_t(1) << 2 * index.depth) - 1) >> 2 * currentDepth;
+    uint16_t dDepth = tree.maxDepth - currentDepth;
+    size_t mask = ((size_t(1) << (2 * tree.maxDepth)) - 1) >> (2 * currentDepth);
 
     size_t local_index = (index.index & mask) >> 2 * (dDepth - 1);
-    idx = tree._indices[idx] + local_index;
+    size_t new_index = tree._indices.at(idx) + local_index;
+    // idx = (new_index < tree._sizes[currentDepth]) ? new_index : idx;
+    idx = new_index;
     currentDepth += subtreeDepth;
   }
+
+  assert(false);
 
   return idx;
 };
@@ -107,13 +115,14 @@ DenseTree build_tree(Operator&& has_children, uint16_t maxDepth, Args&&... args)
         auto [global_index, _] = tree._index_cache[local_index];
         for (size_t i = 0; i < 4; i++)
         {
-          size_t child_zindex = global_index + (i << 2 * static_cast<size_t>(maxDepth - depth - 1));
+
+          size_t child_zindex = global_index + (i << (2 * static_cast<size_t>(maxDepth - depth - 1)));
           uint16_t has_child = std::forward<Operator>(has_children)(child_zindex, depth + 1, std::forward<Args>(args)...);
-          has_child = has_child & ((depth + 1) < maxDepth);
+          has_child = has_child && ((depth + 1) <= maxDepth);
           index += 4 * has_child;
-          tree._indices.push_back(index);
-          tree._depths.push_back(has_child && (depth + 1 < maxDepth));
-          tree._index_cache.push_back({ child_zindex, depth });
+          tree._indices.push_back(has_child ? index : SIZE_MAX);
+          tree._depths.push_back(has_child);
+          tree._index_cache.push_back({ child_zindex, static_cast<uint16_t>(1 + depth) });
           size++;
         }
       }
@@ -143,7 +152,17 @@ void broadcast_depth_first(Operator&& O, const DenseTree& tree, uint8_t maxDepth
 };
 
 template <typename Operator, typename... Args>
-void broadcast_breath_first(Operator&& O, const DenseTree& tree, uint8_t iter_depth, Args&&... args)
+constexpr void broadcast_level(Operator&& O, const DenseTree& tree, uint16_t depth, Args&&... args)
+{
+
+  for (size_t local_index = tree._sizes.at(depth); local_index < tree._sizes.at(depth + 1); local_index++)
+  {
+    std::forward<Operator>(O)(local_index, depth, std::forward<Args>(args)...);
+  }
+}
+
+template <typename Operator, typename... Args>
+void broadcast_breath_first(Operator&& O, const DenseTree& tree, uint16_t iter_depth, Args&&... args)
 {
 
   for (uint8_t depth = 0; depth <= iter_depth; depth++)
@@ -173,32 +192,6 @@ constexpr void print_node(size_t index, uint8_t depth, const DenseTree& tree)
 
 constexpr void DenseTree::print()
 {
-
-  // std::cout << "Size:\t";
-  // for (auto s : _sizes)
-  //{
-  //   std::cout << static_cast<size_t>(s) << "\t";
-  // }
-  // std::cout << std::endl;
-
-  // std::cout << "Idx:\t";
-  // for (auto idx : _indices)
-  //{
-  //   std::cout << idx << "\t";
-  // }
-  // std::cout << std::endl;
-  // std::cout << "Cache:\t";
-  // for (auto s : _index_cache)
-  //{
-  //   std::cout << static_cast<size_t>(s) << "\t";
-  // }
-  // std::cout << std::endl;
-  // std::cout << "Depth:\t";
-  // for (auto d : _depths)
-  //{
-  //   std::cout << static_cast<size_t>(d) << "\t";
-  // }
-  // std::cout << std::endl;
   /*
    * * Prints Tree Structure to dot syntax
    */

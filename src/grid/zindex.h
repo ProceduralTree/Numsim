@@ -56,4 +56,9 @@ constexpr Index ZorderToIndex(Zindex Z)
   return Index { x, y, Z.depth };
 };
 
+constexpr Zindex IndexToZOrder(Index I)
+{
+  return { IndexToZOrder(I.x, I.y), I.depth };
+};
+
 #endif // ZIDEX_H_

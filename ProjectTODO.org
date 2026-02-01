@@ -4,11 +4,14 @@
 ** DONE x,y,(z) to zorder
 ** TODO Neighbour indexing
 
-* TODO Replace Ranges with list of indices
+* DONE Replace Ranges with list of indices
+Using Boundary Flags Tree instead
 
-* TODO Sparse Quadtree Index Datastruct [0/0]
-** Index Element
-** Remeshing / Building of new tree.
+
+* TODO Sparse Quadtree Index Datastruct [1/2]
+** [X] Index Element
+** [ ] Remeshing / Building of new tree.
+
 
 * TODO Sparse Grid data storage [0/2]
 ** TODO Level based access

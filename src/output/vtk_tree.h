@@ -6,6 +6,7 @@
 #include "pde/system.h"
 #include "utils/index.h"
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 #include <vtkDoubleArray.h>
 #include <vtkImageData.h>
@@ -81,7 +82,7 @@ constexpr void write_depth(std::string name, const DenseTree::DenseTree& tree, v
 };
 
 template <typename T>
-void write_field(std::string name, const DenseTree::DenseTree& tree, const std::vector<T>& data, vtkSmartPointer<vtkImageData> dataSet)
+void write_field(std::string name, const DenseTree::DenseTree& tree, const std::vector<T>& data, uint16_t level, vtkSmartPointer<vtkImageData> dataSet)
 {
   ProfileScope("Write Field");
   vtkSmartPointer<vtkDoubleArray> array = vtkDoubleArray::New();
@@ -97,7 +98,7 @@ void write_field(std::string name, const DenseTree::DenseTree& tree, const std::
     {
       {
 
-        Index I = { i, j, tree.maxDepth };
+        Index I = { i, j, level };
         Zindex Z = Zindex(I);
         size_t index = DenseTree::get_dense_index(tree, Z);
 
@@ -109,8 +110,13 @@ void write_field(std::string name, const DenseTree::DenseTree& tree, const std::
 constexpr void write(std::string name, const PDESystem& system, vtkSmartPointer<vtkImageData> dataSet)
 {
   write_data(set_pressure, "Pressure", 1, system.boundary.tree, dataSet, system);
-  write_data(set_velocity, "Velocity", 1, system.boundary.tree, dataSet, system);
+  write_data(set_velocity, "Velocity", 2, system.boundary.tree, dataSet, system);
+};
+template <typename T>
+void write_field(std::string name, const DenseTree::DenseTree& tree, const std::vector<T>& data, vtkSmartPointer<vtkImageData> dataSet)
+{
+  write_field<T>(name, tree, data, tree.maxDepth, dataSet);
 };
 void save_dataset(vtkSmartPointer<vtkImageData> dataSet);
-vtkSmartPointer<vtkImageData> init(const DenseTree::DenseTree& tree);
+vtkSmartPointer<vtkImageData> init(const DenseTree::DenseTree& tree, bool interpolate);
 #endif // VTK_TREE_H_

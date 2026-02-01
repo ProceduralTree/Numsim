@@ -12,7 +12,7 @@
 #include <vtkPointData.h>
 #include <vtkXMLImageDataWriter.h>
 
-vtkSmartPointer<vtkImageData> init(const DenseTree::DenseTree& tree)
+vtkSmartPointer<vtkImageData> init(const DenseTree::DenseTree& tree, bool interpolate)
 {
   vtkSmartPointer<vtkImageData> dataSet = vtkSmartPointer<vtkImageData>::New();
   dataSet->SetOrigin(0, 0, 0);
@@ -23,6 +23,9 @@ vtkSmartPointer<vtkImageData> init(const DenseTree::DenseTree& tree)
     = 1. / resolution;
   const double dy = 1. / resolution;
   const double dz = 1;
+  if (interpolate)
+    resolution -= 2;
+
   dataSet->SetSpacing(dx, dy, dz);
 
   // set number of points in each dimension, 1 cell in z direction

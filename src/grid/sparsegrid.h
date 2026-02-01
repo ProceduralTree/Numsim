@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <grid/densetree.h>
 #include <iterator>
 #include <vector>
@@ -29,7 +30,12 @@ struct SparseGrid2D
   constexpr const T& operator[](Index I) const
   {
     return _data.at(DenseTree::get_dense_index(tree, I));
-  };
+  }
+  SparseGrid2D(const SparseGrid2D&) = delete;
+  SparseGrid2D& operator=(const SparseGrid2D&) = delete;
+
+  SparseGrid2D(SparseGrid2D&&) = default;
+  SparseGrid2D& operator=(SparseGrid2D&&) = default;
 
   SparseGrid2D(const DenseTree::DenseTree& tree)
     : tree(tree)
@@ -58,6 +64,7 @@ void mipmap(Operator&& O, SparseGrid2D<T>& grid, Args&&... args)
 
   for (uint16_t depth = grid.tree.maxDepth; depth > 0; depth--)
   {
+    // std::cerr << "Depth:" << depth << std::endl;
     for (size_t local_index = grid.tree._sizes.at(depth - 1); local_index < grid.tree._sizes.at(depth); local_index++)
     {
       if (grid.tree._depths[local_index] > 0)

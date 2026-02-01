@@ -83,10 +83,10 @@ void set_uv_boundary(PDESystem& system)
   broadcast(set                , system.boundary , static_cast<uint16_t>(BoundaryType::U_RIGHT)  ,  Ix , system.u , system.settings.dirichletBcRight[0]);
   // clang-format on
   // clang-format off
-  broadcast(set_with_neighbour , system.boundary , static_cast<uint16_t>(BoundaryType::V_TOP)    ,  Iy , system.v , system.settings.dirichletBcTop[1]);
-  broadcast(set_with_neighbour , system.boundary , static_cast<uint16_t>(BoundaryType::V_BOTTOM) , -Iy , system.v , system.settings.dirichletBcBottom[1]);
-  broadcast(set                , system.boundary , static_cast<uint16_t>(BoundaryType::V_LEFT)   , -Ix , system.v , system.settings.dirichletBcLeft[1]);
-  broadcast(set                , system.boundary , static_cast<uint16_t>(BoundaryType::V_RIGHT)  ,  Ix , system.v , system.settings.dirichletBcRight[1]);
+  broadcast(set                , system.boundary , static_cast<uint16_t>(BoundaryType::V_TOP)    ,  Iy , system.v , system.settings.dirichletBcTop[1]);
+  broadcast(set                , system.boundary , static_cast<uint16_t>(BoundaryType::V_BOTTOM) , -Iy , system.v , system.settings.dirichletBcBottom[1]);
+  broadcast(set_with_neighbour , system.boundary , static_cast<uint16_t>(BoundaryType::V_LEFT)   , -Ix , system.v , system.settings.dirichletBcLeft[1]);
+  broadcast(set_with_neighbour , system.boundary , static_cast<uint16_t>(BoundaryType::V_RIGHT)  ,  Ix , system.v , system.settings.dirichletBcRight[1]);
   // clang-format on
 };
 
@@ -103,7 +103,7 @@ void compute_dt(PDESystem& system)
   //   system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
   //   system.dt = std::min(system.settings.maximumDt, system.dt);
   //   system.dt = std::max(1e-10, system.dt);
-  system.dt = 1e-5;
+  system.dt = 1e-3;
 };
 
 void update_velocity(PDESystem& system)
@@ -116,7 +116,7 @@ void update_velocity(PDESystem& system)
   // delete v_comm_buffer;
 }
 
-void step(PDESystem& system, CGSolver solver, double time)
+void step(PDESystem& system, CGSolver& solver, double time)
 {
   ProfileScope("Time Step");
 
@@ -125,18 +125,23 @@ void step(PDESystem& system, CGSolver solver, double time)
   compute_dt(system);
   //
   broadcast(copy, system.boundary, static_cast<uint16_t>(BoundaryType::U_BOUNDARY), Offset { 0, 0 }, system.u, system.F);
-  broadcast(copy, system.boundary, static_cast<uint16_t>(BoundaryType::U_BOUNDARY), Offset { 0, 0 }, system.v, system.G);
+  broadcast(copy, system.boundary, static_cast<uint16_t>(BoundaryType::V_BOUNDARY), Offset { 0, 0 }, system.v, system.G);
 
   broadcast(calculate_F, system.boundary, static_cast<uint16_t>(BoundaryType::U_Inside), system);
+  mipmap(_mean<double>, system.F);
   broadcast(calculate_G, system.boundary, static_cast<uint16_t>(BoundaryType::V_Inside), system);
+  mipmap(_mean<double>, system.G);
 
   broadcast(calculate_pressure_rhs, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), system);
+  mipmap(_mean<double>, system.rhs);
 
   solve_pressure(system, solver);
 
   update_velocity(system);
 
   set_uv_boundary(system);
+  mipmap(_mean<double>, system.u);
+  mipmap(_mean<double>, system.v);
 }
 
 void print_pde_system(const PDESystem& sys)

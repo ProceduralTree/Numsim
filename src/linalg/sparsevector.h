@@ -30,7 +30,7 @@ inline void Atimes(size_t index, uint16_t depth, const SparseGrid2D<double>& a, 
 constexpr double dot(SparseGrid2D<double>& a, SparseGrid2D<double>& b, const BoundaryFlags& flags)
 {
   ProfileScope("sparse dot Product");
-  size_t p_with_boundary = static_cast<uint16_t>(BoundaryType::P);
+  size_t p_with_boundary = static_cast<uint16_t>(BoundaryType::P_Inside);
   double result = 0;
 
   broadcast_cell_type(times, 0, flags.tree.maxDepth, flags, p_with_boundary, a, b, result);
@@ -40,22 +40,26 @@ constexpr double dot(SparseGrid2D<double>& a, SparseGrid2D<double>& b, const Bou
 constexpr double dot(SparseGrid2D<double>& a, SparseMatrixOperator A, SparseGrid2D<double>& b, const BoundaryFlags& flags)
 {
   ProfileScope("sparse dot Product");
-  size_t p_with_boundary = static_cast<uint16_t>(BoundaryType::P);
+  size_t p_with_boundary = static_cast<uint16_t>(BoundaryType::P_Inside);
   double result = 0;
 
-  broadcast_cell_type(times, 0, flags.tree.maxDepth, flags, p_with_boundary, a, b, result);
+  broadcast_cell_type(Atimes, 0, flags.tree.maxDepth, flags, p_with_boundary, a, A, b, result);
   return result;
 };
 constexpr void max_(size_t index, uint16_t depth, SparseGrid2D<double>& v, double& result)
 {
   result = std::max(result, v[index]);
 };
+constexpr void min_(size_t index, uint16_t depth, SparseGrid2D<double>& v, double& result)
+{
+  result = std::min(result, v[index]);
+};
 
 constexpr double max(SparseGrid2D<double>& v, const BoundaryFlags& flags)
 {
 
   size_t p_with_boundary = static_cast<uint16_t>(BoundaryType::P);
-  double result = 0.;
+  double result = -INFINITY;
   broadcast_cell_type(max_, 0, flags.tree.maxDepth, flags, p_with_boundary, v, result);
   return result;
 };
@@ -63,8 +67,8 @@ constexpr double min(SparseGrid2D<double>& v, const BoundaryFlags& flags)
 {
 
   size_t p_with_boundary = static_cast<uint16_t>(BoundaryType::P);
-  double result = -INFINITY;
-  broadcast_cell_type(max_, 0, flags.tree.maxDepth, flags, p_with_boundary, v, result);
+  double result = INFINITY;
+  broadcast_cell_type(min_, 0, flags.tree.maxDepth, flags, p_with_boundary, v, result);
   return result;
 };
 
