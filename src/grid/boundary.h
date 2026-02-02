@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <grid/densetree.h>
+#include <grid/quadtree.h>
 #include <grid/sparsegrid.h>
 
 enum class BoundaryType : uint16_t
@@ -109,6 +110,15 @@ constexpr void set_rectangle_p_boundary_type(size_t local_index, uint16_t depth,
   }
 };
 
+constexpr void set_p_boundary_from_image(size_t local_index, uint16_t depth, const QuadTree& quadTree, SparseGrid2D<uint16_t>& flags)
+{
+  auto I = ZorderToIndex(flags.tree._index_cache[local_index].index);
+  I.depth = depth;
+  QuadTree::CellType p = quadTree.GetPData(I);
+  uint8_t pType = (uint8_t)p & (uint8_t)QuadTree::CellType::BOUNDARYMASK;
+  flags[local_index] = static_cast<uint16_t>(pType) << __builtin_ctz((uint16_t)BoundaryType::P_BOTTOM);
+};
+
 struct BoundaryFlags
 {
   const DenseTree::DenseTree& tree;
@@ -122,6 +132,15 @@ struct BoundaryFlags
     DenseTree::broadcast_breath_first(set_v_boundary, tree, tree.maxDepth, flags);
     mipmap(_or<uint16_t>, flags);
   };
+  BoundaryFlags(const DenseTree::DenseTree& tree, const QuadTree& quadTree)
+    : tree(tree)
+    , flags(tree)
+  {
+    DenseTree::broadcast_breath_first(set_p_boundary_from_image, tree, tree.maxDepth, quadTree, flags);
+    DenseTree::broadcast_breath_first(set_u_boundary, tree, tree.maxDepth, flags);
+    DenseTree::broadcast_breath_first(set_v_boundary, tree, tree.maxDepth, flags);
+    mipmap(_or<uint16_t>, flags);
+  }
 };
 
 template <typename Operator, typename... Args>
