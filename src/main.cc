@@ -48,12 +48,16 @@ auto main(int argc, char* argv[]) -> int
   }
   // Settings::get().printSettings();
   auto r = Range { Index { 1, 1, 0 }, Index { static_cast<uint16_t>(Settings::get().nCells[0] + 1), static_cast<uint16_t>(Settings::get().nCells[1] + 1), 0 } };
-  auto t = DenseTree::from_range(r);
+  auto t0 = DenseTree::from_range(r);
 
-  auto tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
+  auto t = dilate(t0);
+  auto flags0 = BoundaryFlags(t, r);
+  auto tree = dilate(flags0);
+  // auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth - 1, t);
+  //  updated_tree.print();
   auto flags = BoundaryFlags(tree, r);
   PDESystem system = PDESystem(Settings::get(), flags);
-  CGSolver solver = CGSolver(tree);
+  auto solver = Jacoby(tree);
 
   double time = 0;
 
@@ -90,13 +94,23 @@ auto main(int argc, char* argv[]) -> int
       printf("%s", s.str().c_str());
 
       fflush(stdout);
-      auto data_set = init(tree, true);
-      write("Solve", system, data_set);
-      save_dataset(data_set);
 
       fflush(stdout);
       next_written_time += 1;
+      auto data_set = init(tree, false);
+      write_field("Boundary Data", system.boundary.tree, system.boundary.flags._data, data_set);
+      write_field("U raw data", system.boundary.tree, system.u._data, data_set);
+      write_field("V raw data", system.boundary.tree, system.v._data, data_set);
+      write_field("P raw data", system.boundary.tree, system.p._data, data_set);
+      write_field("F raw data", system.boundary.tree, system.F._data, data_set);
+      write_field("G raw data", system.boundary.tree, system.G._data, data_set);
+      write_field("RHS raw data", system.boundary.tree, system.rhs._data, data_set);
+      write_field("Residual", system.boundary.tree, solver.residual._data, data_set);
+      save_dataset(data_set);
     }
+    // auto data_set = init(tree, true);
+    // write("Solve", system, data_set);
+    // save_dataset(data_set);
   }
   std::cout << std::endl;
 

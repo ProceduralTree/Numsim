@@ -4,6 +4,7 @@
 #include "grid/boundary.h"
 #include "grid/sparsegrid.h"
 #include "linalg/matrix.h"
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -17,6 +18,14 @@ inline void axpy(size_t index, uint16_t depth, SparseGrid2D<double>& result, dou
 inline void aAxpy(size_t index, uint16_t depth, SparseGrid2D<double>& result, double a, SparseMatrixOperator A, const SparseGrid2D<double>& x, const SparseGrid2D<double>& y)
 {
   result[index] = a * A(index, depth, x) + y[index];
+};
+inline void precondition(size_t index, uint16_t depth, SparseGrid2D<double>& result, SparseMatrixOperator A, const SparseGrid2D<double>& x)
+{
+  result[index] = (1. / A[depth]) * x[index];
+};
+inline void axpy_with_jacoby_precondition(size_t index, uint16_t depth, SparseGrid2D<double>& result, double a, SparseMatrixOperator A, const SparseGrid2D<double>& x, const SparseGrid2D<double>& y)
+{
+  result[index] = (1. / A[depth]) * a * x[index] + y[index];
 };
 inline void times(size_t index, uint16_t depth, const SparseGrid2D<double>& a, const SparseGrid2D<double>& b, double& result)
 {

@@ -48,6 +48,12 @@ struct SparseGrid2D
     assert(data.size() == _data.size());
     std::copy(data.begin(), data.end(), _data);
   };
+  constexpr friend void swap(SparseGrid2D& a, SparseGrid2D& b) noexcept
+  {
+    assert(&a.tree == &b.tree && "SparseGrid2D swap: tree references must match");
+    using std::swap;
+    swap(a._data, b._data);
+  }
 };
 
 template <typename T>
