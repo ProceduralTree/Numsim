@@ -313,6 +313,10 @@ struct QuadTree
 
   uint16_t hasChildrenP(size_t zorder, uint8_t d)
   {
+    if (d == 0)
+      return true;
+    if (d > depth)
+      return false;
     size_t index = (zorder >> (2 * (depth - d))) + depthOffset[d - 1];
     return pTree[index];
   }
