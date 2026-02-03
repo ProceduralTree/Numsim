@@ -1,6 +1,7 @@
 
 #include "grid/adjacencymap.h"
 #include "grid/boundary.h"
+#include "grid/quadtree.h"
 #include "grid/rectangle.h"
 #include "grid/sparsegrid.h"
 #include "linalg/matrix.h"
@@ -17,6 +18,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <fstream>
 #include <grid/densetree.h>
 #include <grid/util.h>
 #include <iostream>
@@ -64,6 +66,24 @@ void test_build_tree()
   write_depth("Tree Depth", t, data_set);
   save_dataset(data_set);
 };
+
+void test_build_tree_from_image()
+{
+  QuadTree imageTree("input/test32xp.png");
+  // std::ofstream file("outputTest.txt");
+  // file << imageTree;
+  // file.close();
+  // std::cout << imageTree;
+
+  auto t = DenseTree::build_tree([&](auto z, auto d) { return imageTree.hasChildrenP(z, d); }, imageTree.getDepth());
+
+  BoundaryFlags b(t, imageTree);
+
+  auto data_set = init(t, false);
+  write_depth("depth", t, data_set);
+  write_field("BoundaryFlags", b.tree, b.flags._data, data_set);
+  save_dataset(data_set);
+}
 
 void test_tree_refinement()
 {
@@ -410,22 +430,20 @@ int main()
     return -1;
   }
 
+  test_build_tree_from_image();
+
   // test_build_tree();
   // test_tree_refinement();
   // test_set_cartesian_index();
   // test_set_boundary();
   // test_set_values();
-  //// test_vector_operations();
+  // // test_vector_operations();
   // test_init_system();
   // test_step_system();
   // test_set_pressure_boundary();
-  //// test_mat_mult();
+  // test_mat_mult();
   // test_build_better_tree();
-  // test_mipmap();
-  // test_time_step_mipmap();
-  //// test_heterogenious_aAxpy();
-  // test_adjacency_map();
-  test_print();
+  // test_print();
 
   LOG::Close();
   Profiler::Close();
