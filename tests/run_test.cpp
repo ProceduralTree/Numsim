@@ -1,5 +1,7 @@
 
+#include "grid/adjacencymap.h"
 #include "grid/boundary.h"
+#include "grid/rectangle.h"
 #include "grid/sparsegrid.h"
 #include "linalg/matrix.h"
 #include "output/vtk_tree.h"
@@ -41,8 +43,8 @@ void signalInt(int sig)
 
 struct Range get_test_range()
 {
-  auto begin = Index { 1, 1, 0 };
-  auto end = Index { 201, 201, 0 };
+  auto begin = Index { 2, 2, 0 };
+  auto end = Index { 51, 51, 0 };
   return { begin, end };
 }
 
@@ -164,10 +166,17 @@ void test_vector_operations()
 
 void test_init_system()
 {
-  auto t = get_test_tree();
-  auto updated_tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
-  auto flags = BoundaryFlags(updated_tree, get_test_range());
+  auto r = Range { Index { 1, 1, 0 }, Index { static_cast<uint16_t>(Settings::get().nCells[0] + 1), static_cast<uint16_t>(Settings::get().nCells[1] + 1), 0 } };
+  auto t = DenseTree::from_range(r);
+
+  auto tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
+  auto flags = BoundaryFlags(tree, r);
   PDESystem system = PDESystem(Settings::get(), flags);
+  CGSolver solver = CGSolver(tree);
+  auto data_set = init(tree, false);
+  write_field("boundary", system.boundary.tree, system.boundary.flags._data, data_set);
+  write_depth("Depth", system.boundary.tree, data_set);
+  save_dataset(data_set);
 };
 
 void test_step_system()
@@ -178,11 +187,10 @@ void test_step_system()
   auto tree = DenseTree::build_tree(is_desired_depth, t.maxDepth, t.maxDepth, t.maxDepth, t);
   auto flags = BoundaryFlags(tree, r);
   PDESystem system = PDESystem(Settings::get(), flags);
-  CGSolver solver = CGSolver(tree);
+  // CGSolver solver = CGSolver(tree);
+  Jacoby solver = Jacoby(tree);
   auto data_set = init(tree, false);
   write_field("Boundary Data", system.boundary.tree, system.boundary.flags._data, data_set);
-  step(system, solver, 0.);
-  step(system, solver, 0.);
   step(system, solver, 0.);
   write_field("U raw data", system.boundary.tree, system.u._data, data_set);
   write_field("V raw data", system.boundary.tree, system.v._data, data_set);
@@ -191,7 +199,8 @@ void test_step_system()
   write_field("G raw data", system.boundary.tree, system.G._data, data_set);
   write_field("RHS raw data", system.boundary.tree, system.rhs._data, data_set);
   write_field("Residual", system.boundary.tree, solver.residual._data, data_set);
-  write_field("Search Direction", system.boundary.tree, solver.search_direction._data, data_set);
+  // write_field("TMP", system.boundary.tree, solver.tmp._data, data_set);
+  //  write_field("Search Direction", system.boundary.tree, solver.search_direction._data, data_set);
   save_dataset(data_set);
 };
 
@@ -220,11 +229,21 @@ void test_mat_mult()
   CGSolver solver = CGSolver(updated_tree);
   auto data_set = init(updated_tree, false);
   system.p[{ 25, 25, updated_tree.maxDepth }] = 1.;
-  auto A = SparseMatrixOperator(system.h);
+  auto A = SparseMatrixOperator(system.h, system.adjacency_map);
   tree_broadcast(SparseVector::aAxpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), system.u, 1., A, system.p, system.p);
   write_field("Mat Mult", flags.tree, system.u._data, data_set);
   save_dataset(data_set);
 };
+
+void test_print()
+{
+  auto r = Range { Index { 0, 0, 0 }, Index { 40, 40, 0 } };
+  auto t = DenseTree::from_range(r);
+  auto data_set = init(t, false);
+  write_data(set_index, "Indices", 1, t, data_set, false, t);
+  write_depth("Depth", t, data_set);
+  save_dataset(data_set);
+}
 
 void test_build_better_tree()
 {
@@ -242,6 +261,140 @@ void test_build_better_tree()
   save_dataset(data_set);
 }
 
+void test_mipmap()
+{
+  auto t = get_test_tree();
+  auto tree = dilate(t);
+  auto flags = BoundaryFlags(tree, get_test_range());
+  PDESystem system = PDESystem(Settings::get(), flags);
+  system.p[{ 4, 3, tree.maxDepth }] = 5.;
+  mipmap(_mean<double>, system.p);
+
+  auto data_set = init(tree, false);
+  write_field("P(N-0)  raw data", system.boundary.tree, system.p._data, system.boundary.tree.maxDepth - 0, data_set);
+  write_field("P(N-1)  raw data", system.boundary.tree, system.p._data, system.boundary.tree.maxDepth - 1, data_set);
+  write_field("P(N-2)  raw data", system.boundary.tree, system.p._data, system.boundary.tree.maxDepth - 2, data_set);
+  save_dataset(data_set);
+};
+
+void test_heterogenious_aAxpy()
+{
+  auto t = get_test_tree();
+  auto tree = dilate(t);
+  auto flags = BoundaryFlags(tree, get_test_range());
+  PDESystem system = PDESystem(Settings::get(), flags);
+  system.p[{ 4, 3, tree.maxDepth }] = 5.;
+  auto A = SparseMatrixOperator(system.h, system.adjacency_map);
+  mipmap(_mean<double>, system.p);
+  tree_broadcast(SparseVector::aAxpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), system.u, 1., A, system.p, system.p);
+  mipmap(_mean<double>, system.u);
+
+  auto data_set = init(tree, false);
+  write_field("P(N-0)  raw data", system.boundary.tree, system.u._data, system.boundary.tree.maxDepth - 0, data_set);
+  write_field("P(N-1)  raw data", system.boundary.tree, system.u._data, system.boundary.tree.maxDepth - 1, data_set);
+  write_field("P(N-2)  raw data", system.boundary.tree, system.u._data, system.boundary.tree.maxDepth - 2, data_set);
+  save_dataset(data_set);
+};
+
+void test_time_step_mipmap()
+{
+  auto r = Range { Index { 1, 1, 0 }, Index { static_cast<uint16_t>(Settings::get().nCells[0] + 1), static_cast<uint16_t>(Settings::get().nCells[1] + 1), 0 } };
+  auto t = DenseTree::from_range(r);
+
+  // auto t = dilate(t0);
+  auto flags0 = BoundaryFlags(t, r);
+  auto tree = dilate(flags0);
+  auto flags = BoundaryFlags(tree, r);
+  PDESystem system = PDESystem(Settings::get(), flags);
+  // CGSolver solver = CGSolver(tree);
+  auto solver = CGSolver(tree);
+  for (int i = 0; i < 1; i++)
+  {
+    step(system, solver, 0.);
+  }
+
+  auto data_set = init(tree, false);
+  write_depth("Boundary", tree, data_set);
+  write_field("Boundary Data", system.boundary.tree, system.boundary.flags._data, data_set);
+  write_field("U raw data", system.boundary.tree, system.u._data, data_set);
+  write_field("V raw data", system.boundary.tree, system.v._data, data_set);
+  write_field("P raw data", system.boundary.tree, system.p._data, data_set);
+  write_field("F raw data", system.boundary.tree, system.F._data, data_set);
+  write_field("G raw data", system.boundary.tree, system.G._data, data_set);
+  write_field("RHS raw data", system.boundary.tree, system.rhs._data, data_set);
+  write_field("Residual", system.boundary.tree, solver.residual._data, data_set);
+  save_dataset(data_set);
+  // auto data_set = init(tree, false);
+  // write_field("G raw data", system.boundary.tree, system.G._data, data_set);
+  // write_field("F raw data", system.boundary.tree, system.F._data, data_set);
+  // write_field("P(N-0)  raw data", system.boundary.tree, system.p._data, system.boundary.tree.maxDepth - 0, data_set);
+  // write_field("P(N-1)  raw data", system.boundary.tree, system.p._data, system.boundary.tree.maxDepth - 1, data_set);
+  // write_field("P(N-2)  raw data", system.boundary.tree, system.p._data, system.boundary.tree.maxDepth - 2, data_set);
+  // write_field("P(N-3)  raw data", system.boundary.tree, system.p._data, system.boundary.tree.maxDepth - 3, data_set);
+  // write_field("RHS raw data", system.boundary.tree, system.rhs._data, data_set);
+  // write_field("Residual", system.boundary.tree, solver.residual._data, data_set);
+  //// write_field("Search Direction", system.boundary.tree, solver.search_direction._data, data_set);
+  // write_depth("Boundary", tree, data_set);
+  // save_dataset(data_set);
+};
+
+void test_adjacency_map()
+{
+  auto r = Range { Index { 1, 1, 0 }, Index { static_cast<uint16_t>(Settings::get().nCells[0] + 1), static_cast<uint16_t>(Settings::get().nCells[1] + 1), 0 } };
+  auto t0 = DenseTree::from_range(r);
+
+  auto t = dilate(t0);
+  auto flags0 = BoundaryFlags(t, r);
+  auto tree = dilate(flags0);
+  auto flags = BoundaryFlags(tree, r);
+  auto adjacency_map = AdjMap(flags);
+  auto grid = SparseGrid2D<double>(flags.tree);
+  Index I = { 10, 10, static_cast<uint16_t>(tree.maxDepth) };
+  size_t local_index = DenseTree::get_dense_index(tree, I);
+  uint16_t local_depth = tree._index_cache[local_index].depth;
+  I.depth = local_depth;
+  size_t local_cell_size = 1ULL << (tree.maxDepth - local_depth);
+
+  grid[local_index] = 1.;
+  size_t left_index = adjacency_map._left[local_index];
+  size_t left = DenseTree::get_dense_index(tree, I - local_cell_size * Ix);
+  grid[left_index] = 3.;
+
+  size_t right_index = adjacency_map._right[local_index];
+  size_t right = DenseTree::get_dense_index(tree, I - local_cell_size * Ix);
+  grid[right_index] = 2.;
+
+  size_t top_index = adjacency_map._top[local_index];
+  size_t top = DenseTree::get_dense_index(tree, I + local_cell_size * Iy);
+  grid[top_index] = 4.;
+
+  size_t bottom_index = adjacency_map._bottom[local_index];
+  size_t bottom = DenseTree::get_dense_index(tree, I - local_cell_size * Iy);
+  grid[bottom_index] = 5.;
+
+  auto data_set = init(tree, false);
+  write_depth("Depth", tree, data_set);
+  write_field("Adjacency setter (N-0)", tree, grid._data, tree.maxDepth - 0, data_set);
+  write_field("Adjacency setter (N-1)", tree, grid._data, tree.maxDepth - 1, data_set);
+  write_field("Adjacency setter (N-2)", tree, grid._data, tree.maxDepth - 2, data_set);
+  write_field("Adjacency setter (N-3)", tree, grid._data, tree.maxDepth - 3, data_set);
+  write_field("Adjacency setter (N-4)", tree, grid._data, tree.maxDepth - 4, data_set);
+  save_dataset(data_set);
+
+  ASSERT(
+    (grid[I - local_cell_size * Iy] == 5.),
+    (std::format("Failed setting bottom neighbour using Adjacency map \n set_value={},\n expected value={},\n bottom_index={},\n real_index={},\n local_depth={}", grid[I - local_cell_size * Iy], 5., bottom_index, bottom, local_depth)));
+  ASSERT(
+    (grid[I + local_cell_size * Iy] == 4.),
+    (std::format("Failed setting top neighbour using Adjacency map \n set_value={},\n expected value={},\n bottom_index={},\n real_index={},\n local_depth={}", grid[I + local_cell_size * Iy], 4., top_index, top, local_depth)));
+  ASSERT(
+    (grid[I + local_cell_size * Ix] == 2.),
+    (std::format("Failed setting right neighbour using Adjacency map \n set_value={},\n expected value={},\n bottom_index={},\n real_index={},\n local_depth={}", grid[I + local_cell_size * Ix], 2., left_index, right, local_depth)));
+  ASSERT(
+    (grid[I - local_cell_size * Ix] == 3.),
+    (std::format("Failed setting left neighbour using Adjacency map \n set_value={},\n expected value={},\n bottom_index={},\n real_index={},\n local_depth={}", grid[I - local_cell_size * Ix], 3., left_index, left, local_depth)));
+}
+
 int main()
 {
   signal(SIGINT, signalInt);
@@ -257,17 +410,22 @@ int main()
     return -1;
   }
 
-  test_build_tree();
-  test_tree_refinement();
-  test_set_cartesian_index();
-  test_set_boundary();
-  test_set_values();
-  // test_vector_operations();
-  test_init_system();
-  test_step_system();
-  test_set_pressure_boundary();
-  test_mat_mult();
-  test_build_better_tree();
+  // test_build_tree();
+  // test_tree_refinement();
+  // test_set_cartesian_index();
+  // test_set_boundary();
+  // test_set_values();
+  //// test_vector_operations();
+  // test_init_system();
+  // test_step_system();
+  // test_set_pressure_boundary();
+  //// test_mat_mult();
+  // test_build_better_tree();
+  // test_mipmap();
+  // test_time_step_mipmap();
+  //// test_heterogenious_aAxpy();
+  // test_adjacency_map();
+  test_print();
 
   LOG::Close();
   Profiler::Close();

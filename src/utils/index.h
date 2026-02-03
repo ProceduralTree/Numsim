@@ -11,12 +11,18 @@ struct Offset
   int y;
 };
 
-inline bool operator==(Offset lhs, Offset rhs)
+enum class Sign
+{
+  Plus,
+  Minus
+};
+
+constexpr bool operator==(Offset lhs, Offset rhs)
 {
   return lhs.x == rhs.x && lhs.y == rhs.y;
 }
 inline const Offset operator*(int n, const Offset& O) { return Offset { static_cast<int>(n * O.x), static_cast<int>(n * O.y) }; };
-inline const Offset operator-(const Offset& O) { return { -O.x, -O.y }; };
+constexpr const Offset operator-(const Offset& O) { return { -O.x, -O.y }; };
 
 struct Index
 {
@@ -73,9 +79,9 @@ struct Range
   }
 };
 
-inline Offset Ix = { 1, 0 };
-inline Offset Iy = { 0, 1 };
-inline Offset II { 1, 1 };
+const inline constexpr Offset Ix = { 1, 0 };
+const inline constexpr Offset Iy = { 0, 1 };
+const inline constexpr Offset II { 1, 1 };
 
 inline bool operator==(Index lhs, Index rhs)
 {

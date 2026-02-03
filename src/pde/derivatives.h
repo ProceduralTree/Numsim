@@ -1,10 +1,13 @@
 #ifndef DERIVATIVES_H_
 #define DERIVATIVES_H_
 
+#include "grid/adjacencymap.h"
 #include "grid/sparsegrid.h"
 #include <cassert>
+#include <cstddef>
 #include <grid/grid.h>
 #include <pde/system.h>
+
 #include <utils/index.h>
 template <typename T>
 concept Grid = std::same_as<T, Grid2D> || std::same_as<T, SparseGrid2D<double>>;
@@ -19,47 +22,43 @@ concept Grid = std::same_as<T, Grid2D> || std::same_as<T, SparseGrid2D<double>>;
     }                                                            \
   } while (0)
 
-template <Grid G>
-inline double d(Offset Direction, const G& field, Index I, double h)
+template <Grid G, Offset Direction>
+inline double d(const G& field, size_t index, double h, const AdjMap& map)
 {
-  assert(Direction.x <= I.x + 1);
-  assert(Direction.y <= I.y + 1);
-  return 1 / h * (field[I + Direction] - field[I]);
+  return 1 / h * (field[get_index<Direction, Sign::Plus>(index, map)] - field[index]);
 }
-template <Grid G>
-inline double dd(Offset Direction, const G& field, Index I, double h_squared)
+template <Grid G, Offset Direction>
+inline double dd(const G& field, size_t index, double h_squared, const AdjMap& map)
 {
-  assert(Direction.x <= I.x);
-  assert(Direction.y <= I.y);
-  return 1 / h_squared * (field[I + Direction] + field[I - Direction] - 2 * field[I]);
+  return 1 / h_squared * (field[get_index<Direction, Sign::Plus>(index, map)] + field[get_index<Direction, Sign::Minus>(index, map)] - 2 * field[index]);
 }
-template <Grid G>
-inline double duv(Offset Direction, const G& field1, const G& field2, Index I, double h, double alpha)
+template <Grid G, Offset Direction>
+inline double duv(const G& field1, const G& field2, size_t index, double h, double alpha, const AdjMap& map)
 {
-  assert(Direction.x <= I.x);
-  assert(Direction.y <= I.y);
-  if (Direction == Ix)
+  size_t top = get_index<Iy, Sign::Plus>(index, map);
+  size_t bottom = get_index<Iy, Sign::Minus>(index, map);
+  size_t left = get_index<Ix, Sign::Minus>(index, map);
+  size_t right = get_index<Ix, Sign::Plus>(index, map);
+  size_t top_left = get_index<Iy, Sign::Plus>(left, map);
+  size_t bottom_right = get_index<Ix, Sign::Plus>(bottom, map);
+  if constexpr (Direction == Ix)
   {
-    double donor_cell_correction = alpha * (1 / h) * ((std::abs(field1[I + Iy] + field1[I]) * (field2[I] - field2[I + Ix])) / 4 - (std::abs(field1[I - Ix] + field1[I - Ix + Iy]) * (field2[I - Ix] - field2[I])) / 4);
-    return (1 / h) * (((field1[I + Iy] + field1[I]) * (field2[I + Ix] + field2[I])) / 4 - ((field1[I - Ix] + field1[I - Ix + Iy]) * (field2[I] + field2[I - Ix])) / 4) + donor_cell_correction;
-  } else if (Direction == Iy)
+    double donor_cell_correction = alpha * (1 / h) * ((std::abs(field1[top] + field1[index]) * (field2[index] - field2[right])) / 4 - (std::abs(field1[left] + field1[top_left]) * (field2[left] - field2[index])) / 4);
+    return (1 / h) * (((field1[top] + field1[index]) * (field2[right] + field2[index])) / 4 - ((field1[left] + field1[top_left]) * (field2[index] + field2[left])) / 4) + donor_cell_correction;
+  } else if constexpr (Direction == Iy)
   {
-    double donor_cell_correction = alpha * (1 / h) * ((std::abs(field2[I + Ix] + field2[I]) * (field1[I] - field1[I + Iy])) / 4 - (std::abs(field2[I - Iy] + field2[I - Iy + Ix]) * (field1[I - Iy] - field1[I])) / 4);
-    return (1 / h) * (((field1[I + Iy] + field1[I]) * (field2[I + Ix] + field2[I])) / 4 - ((field1[I] + field1[I - Iy]) * (field2[I - Iy] + field2[I - Iy + Ix])) / 4) + donor_cell_correction;
-  } else
-  {
-    assert(false && "Invalid Direction for duv");
-    return 0.0;
+    double donor_cell_correction = alpha * (1 / h) * ((std::abs(field2[right] + field2[index]) * (field1[index] - field1[top])) / 4 - (std::abs(field2[bottom] + field2[bottom_right]) * (field1[bottom] - field1[index])) / 4);
+    return (1 / h) * (((field1[top] + field1[index]) * (field2[right] + field2[index])) / 4 - ((field1[index] + field1[bottom]) * (field2[bottom] + field2[bottom_right])) / 4) + donor_cell_correction;
   }
 }
 
-template <Grid G>
-inline double dxx(Offset Direction, const G& field1, const G& field2, Index I, double h, double alpha)
+template <Grid G, Offset Direction>
+inline double dxx(const G& field1, const G& field2, size_t I, double h, double alpha, const AdjMap& map)
 {
-  assert(Direction.x <= I.x);
-  assert(Direction.y <= I.y);
-  double donor_cell_correction = alpha * (1 / h) * ((std::abs(field1[I + Direction] + field1[I]) * (field2[I] - field2[I + Direction])) / 4 - (std::abs(field1[I - Direction] + field1[I]) * (field2[I - Direction] - field2[I])) / 4);
-  return (1 / h) * (((field1[I + Direction] + field1[I]) * (field2[I + Direction] + field2[I])) / 4 - ((field1[I - Direction] + field1[I]) * (field2[I] + field2[I - Direction])) / 4) + donor_cell_correction;
+  size_t Iplus = get_index<Direction, Sign::Plus>(I, map);
+  size_t Iminus = get_index<Direction, Sign::Minus>(I, map);
+  double donor_cell_correction = alpha * (1 / h) * ((std::abs(field1[Iplus] + field1[I]) * (field2[I] - field2[Iplus])) / 4 - (std::abs(field1[Iminus] + field1[I]) * (field2[Iminus] - field2[I])) / 4);
+  return (1 / h) * (((field1[Iplus] + field1[I]) * (field2[Iplus] + field2[I])) / 4 - ((field1[Iminus] + field1[I]) * (field2[I] + field2[Iminus])) / 4) + donor_cell_correction;
 }
 
 #endif // DERIVATIVES_H_

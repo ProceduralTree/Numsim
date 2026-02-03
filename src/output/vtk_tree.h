@@ -13,9 +13,14 @@
 #include <vtkIntArray.h>
 #include <vtkPointData.h>
 #include <vtkXMLImageDataWriter.h>
+constexpr void set_index(vtkSmartPointer<vtkDoubleArray> array, size_t idx, Index I, const DenseTree::DenseTree& tree)
+{
+  size_t index = DenseTree::get_dense_index(tree, I);
+  array->SetValue(idx, static_cast<double>(index));
+};
 
 template <typename T>
-constexpr void set_value(vtkSmartPointer<vtkDoubleArray> array, size_t idx, Index I, SparseGrid2D<T> data)
+constexpr void set_value(vtkSmartPointer<vtkDoubleArray> array, size_t idx, Index I, const SparseGrid2D<T>& data)
 {
   array->SetValue(idx, static_cast<double>(data[I]));
 };
@@ -35,7 +40,7 @@ constexpr void set_velocity(vtkSmartPointer<vtkDoubleArray> array, size_t idx, I
 };
 
 template <typename Operator, typename... Args>
-constexpr void write_data(Operator&& O, std::string name, int num_components, const DenseTree::DenseTree& tree, vtkSmartPointer<vtkImageData> dataSet, Args&&... args)
+constexpr void write_data(Operator&& O, std::string name, int num_components, const DenseTree::DenseTree& tree, vtkSmartPointer<vtkImageData> dataSet, bool interpolate, Args&&... args)
 {
   vtkSmartPointer<vtkDoubleArray> array = vtkDoubleArray::New();
   array->SetNumberOfTuples(dataSet->GetNumberOfPoints());
@@ -43,8 +48,8 @@ constexpr void write_data(Operator&& O, std::string name, int num_components, co
   array->SetNumberOfComponents(num_components);
   array->SetNumberOfTuples(dataSet->GetNumberOfPoints());
   size_t idx = 0;
-  for (uint16_t j = 1; j < (1ULL << tree.maxDepth) - 1; j++)
-    for (uint16_t i = 1; i < (1ULL << tree.maxDepth) - 1; i++)
+  for (uint16_t j = interpolate ? 1 : 0; j < (1ULL << tree.maxDepth) - interpolate ? 1 : 0; j++)
+    for (uint16_t i = interpolate ? 1 : 0; i < (1ULL << tree.maxDepth) - interpolate ? 1 : 0; i++)
     {
       {
 
@@ -109,8 +114,8 @@ void write_field(std::string name, const DenseTree::DenseTree& tree, const std::
 };
 constexpr void write(std::string name, const PDESystem& system, vtkSmartPointer<vtkImageData> dataSet)
 {
-  write_data(set_pressure, "Pressure", 1, system.boundary.tree, dataSet, system);
-  write_data(set_velocity, "Velocity", 2, system.boundary.tree, dataSet, system);
+  write_data(set_pressure, "Pressure", 1, system.boundary.tree, dataSet, true, system);
+  write_data(set_velocity, "Velocity", 2, system.boundary.tree, dataSet, true, system);
 };
 template <typename T>
 void write_field(std::string name, const DenseTree::DenseTree& tree, const std::vector<T>& data, vtkSmartPointer<vtkImageData> dataSet)

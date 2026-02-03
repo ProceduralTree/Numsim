@@ -3,7 +3,9 @@
 
 #include "grid/zindex.h"
 #include "utils/index.h"
+#include "utils/settings.h"
 #include <bitset>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <grid/densetree.h>
@@ -125,20 +127,36 @@ struct BoundaryFlags
 };
 
 template <typename Operator, typename... Args>
-void broadcast_cell_type(Operator&& O, size_t index, uint8_t depth, const BoundaryFlags& flags, uint16_t cell_type, Args&&... args)
+void broadcast_cell_type(Operator&& O, size_t index, uint16_t depth, const BoundaryFlags& flags, uint16_t cell_type, Args&&... args)
 {
   bool has_subtree = flags.tree._depths.at(index) > 0;
-  bool contains_cell_type = cell_type & flags.flags[index];
-  if (contains_cell_type && !has_subtree)
-  {
-    std::forward<Operator>(O)(index, depth, std::forward<Args>(args)...);
-    return;
-  }
+  bool contains_cell_type = (cell_type & flags.flags[index]) != 0;
   if (contains_cell_type && has_subtree && depth > 0)
   {
     for (int i = 0; i < 4; i++)
     {
       broadcast_cell_type(std::forward<Operator>(O), flags.tree._indices.at(index) + i, depth - 1, flags, cell_type, std::forward<Args>(args)...);
+    }
+  } else if (contains_cell_type && depth == 0)
+  {
+    std::forward<Operator>(O)(index, depth, std::forward<Args>(args)...);
+  }
+}
+
+template <typename Operator, typename... Args>
+void bfbroadcast_cell_type(Operator&& O, size_t index, uint16_t iter_depth, const BoundaryFlags& flags, uint16_t cell_type, Args&&... args)
+{
+  for (uint8_t depth = 0; depth <= iter_depth; depth++)
+  {
+
+    for (size_t local_index = flags.tree._sizes.at(depth); local_index < flags.tree._sizes.at(depth + 1); local_index++)
+    {
+      // bool has_subtree = flags.tree._depths.at(local_index) > 0;
+      bool contains_cell_type = (cell_type & flags.flags[local_index]) != 0;
+      if ((flags.tree._depths.at(local_index) == 0 || depth == flags.tree.maxDepth) && contains_cell_type)
+      {
+        std::forward<Operator>(O)(local_index, iter_depth - depth, std::forward<Args>(args)...);
+      }
     }
   }
 }
@@ -147,14 +165,15 @@ constexpr uint16_t needs_boundary_resolution(size_t index, uint16_t depth, const
 {
   Zindex Z = { index, static_cast<uint16_t>(depth) };
   Index I = ZorderToIndex(Z);
-  std::array<Offset, 4> neighbours = { Ix, Iy, -Ix, -Iy };
+  double local_cell_size = static_cast<double>(1ULL << (flags.tree.maxDepth - depth + 1));
+  std::array<Offset, 4> neighbours = { local_cell_size * Ix, local_cell_size * Iy, -Ix, -Iy };
   bool neighbours_contain_boundary = (flags.flags[I] & static_cast<uint16_t>(BoundaryType::BOUNDARY)) != 0;
-  // for (Offset o : neighbours)
-  //{
-  //   uint16_t cell_type = flags.flags[I + o];
-  //   bool contains_boundary = cell_type & static_cast<uint16_t>(BoundaryType::BOUNDARY);
-  //   neighbours_contain_boundary |= contains_boundary;
-  // }
+  for (Offset o : neighbours)
+  {
+    uint16_t cell_type = flags.flags[I + o];
+    bool contains_boundary = (cell_type & static_cast<uint16_t>(BoundaryType::BOUNDARY)) != 0;
+    neighbours_contain_boundary |= contains_boundary;
+  }
   if (neighbours_contain_boundary)
   {
     return 1;
@@ -198,6 +217,6 @@ constexpr DenseTree::DenseTree dilate(const BoundaryFlags& flags)
 template <typename Operator, typename... Args>
 void tree_broadcast(Operator&& O, const BoundaryFlags& flags, uint16_t B, Args&&... args)
 {
-  broadcast_cell_type(std::forward<Operator>(O), 0, flags.tree.maxDepth, flags, B, std::forward<Args>(args)...);
+  bfbroadcast_cell_type(std::forward<Operator>(O), 0, flags.tree.maxDepth, flags, B, std::forward<Args>(args)...);
 };
 #endif // BOUNDARY_H_

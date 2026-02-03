@@ -1,6 +1,7 @@
 #ifndef MATRIX_H_
 #define MATRIX_H_
 
+#include "grid/adjacencymap.h"
 #include "grid/boundary.h"
 #include "grid/densetree.h"
 #include "grid/grid.h"
@@ -8,67 +9,47 @@
 #include "grid/zindex.h"
 #include "pde/system.h"
 #include "utils/index.h"
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <format>
+#include <iostream>
 struct SparseMatrixOperator
 {
   const Gridsize h;
-  const double h_x_squared_inv;
-  const double h_y_squared_inv;
+  const AdjMap& map;
   const double a_ij;
-  // LaplaceMatrixOperator(const Gridsize& grid)
-  //: h(grid)
-  //, h_x_squared_inv(1.0 / (grid.x_squared))
-  //, h_y_squared_inv(1.0 / (grid.y_squared))
-  //, a_ij(-2.0 * (1.0 / (grid.x_squared) + 1.0 / (grid.y_squared))) {
-  //};
   SparseMatrixOperator(const SparseMatrixOperator&) = default;
   SparseMatrixOperator(SparseMatrixOperator&&) = default;
   SparseMatrixOperator& operator=(const SparseMatrixOperator&) = delete;
   SparseMatrixOperator& operator=(SparseMatrixOperator&&) = delete;
-  SparseMatrixOperator(const Gridsize& grid)
+  SparseMatrixOperator(const Gridsize& grid, const AdjMap& map)
     : h(grid)
-    , h_x_squared_inv(1.0 / (grid.x_squared))
-    , h_y_squared_inv(1.0 / (grid.y_squared))
-    , a_ij(-2.0 * (1.0 / (grid.x_squared) + 1.0 / (grid.y_squared))) {
+    , map(map)
+    , a_ij(-2.0 * (1.0 / (grid.x_squared(0)) + 1.0 / (grid.y_squared(0)))) {
     };
 
-  constexpr double operator()(size_t local_index, uint16_t depth, const SparseGrid2D<double>& vec) const
+  constexpr double operator()(size_t index, uint16_t depth, const SparseGrid2D<double>& vec) const
   {
-    double local_cell_size = static_cast<double>(1ULL << (depth + 1));
-    double local_hx_2_inv = h_x_squared_inv * (1. / (local_cell_size * local_cell_size));
-    double local_hy_2_inv = h_y_squared_inv * (1. / (local_cell_size * local_cell_size));
-    Index I = ZorderToIndex(vec.tree._index_cache[local_index]);
-    double res = ((vec[I - Ix] + vec[I + Ix]) * local_hx_2_inv) + ((vec[I - Iy] + vec[I + Iy]) * local_hy_2_inv);
-    res += a_ij * vec[local_index];
+    size_t top = get_index<Iy, Sign::Plus>(index, map);
+    size_t bottom = get_index<Iy, Sign::Minus>(index, map);
+    size_t left = get_index<Ix, Sign::Minus>(index, map);
+    size_t right = get_index<Ix, Sign::Plus>(index, map);
+
+    double local_hx_2_inv = 1. / h.x_squared(depth);
+    double local_hy_2_inv = 1. / h.y_squared(depth);
+    double res = ((vec[left] + vec[right]) * local_hx_2_inv) + ((vec[bottom] + vec[top]) * local_hy_2_inv);
+    double a_ij = -2. * (local_hx_2_inv + local_hy_2_inv);
+    res += a_ij * vec[index];
     return res;
   }
-};
-
-struct LaplaceMatrixOperator
-{
-  const Gridsize h;
-  const double h_x_squared_inv;
-  const double h_y_squared_inv;
-  const double a_ij;
-
-  LaplaceMatrixOperator(const LaplaceMatrixOperator&) = default;
-  LaplaceMatrixOperator(LaplaceMatrixOperator&&) = default;
-  LaplaceMatrixOperator& operator=(const LaplaceMatrixOperator&) = delete;
-  LaplaceMatrixOperator& operator=(LaplaceMatrixOperator&&) = delete;
-  LaplaceMatrixOperator(const Gridsize& grid)
-    : h(grid)
-    , h_x_squared_inv(1.0 / (grid.x_squared))
-    , h_y_squared_inv(1.0 / (grid.y_squared))
-    , a_ij(-2.0 * (1.0 / (grid.x_squared) + 1.0 / (grid.y_squared))) {
-    };
-
-  inline double operator()(const Grid2D& vec, Index I) const
+  constexpr double operator[](uint16_t depth)
   {
-    double res = ((vec[I - Ix] + vec[I + Ix]) * h_x_squared_inv) + ((vec[I - Iy] + vec[I + Iy]) * h_y_squared_inv);
-    res += a_ij * vec[I];
-    return res;
-  }
+    double local_hx_2_inv = 1. / h.x_squared(depth);
+    double local_hy_2_inv = 1. / h.y_squared(depth);
+    double a_ij = -2. * (local_hx_2_inv + local_hy_2_inv);
+    return a_ij;
+  };
 };
 
 #endif // MATRIX_H_
