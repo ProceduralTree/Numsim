@@ -176,7 +176,8 @@ constexpr void print_node(size_t index, uint8_t depth, const DenseTree& tree)
 {
   auto [x, y, d] = ZorderToIndex(tree._index_cache.at(index).index);
 
-  std::cout << "N" << index << " [label=\"x:" << x << "\ny:" << y << "\nd:" << static_cast<size_t>(tree._depths.at(index)) << "\nh:" << (1 << (tree.maxDepth - depth)) << "\"]" << ";" << std::endl;
+  // std::cout << "N" << index << " [label=\"x:" << x << "\ny:" << y << "\nd:" << static_cast<size_t>(tree._depths.at(index)) << "\nh:" << (1 << (tree.maxDepth - depth)) << "\"]" << ";" << std::endl;
+  std::cout << "N" << index << " [label=\"C:" << ((tree._indices[index] == SIZE_MAX) ? "Leaf" : std::format("{}", tree._indices[index])) << "\n I:" << index << "\n Z:" << tree._index_cache[index].index << "\"]" << ";" << std::endl;
   if (tree._depths.at(index) > 0)
   {
     for (size_t i = 0; i < 4; i++)

@@ -101,7 +101,7 @@ void compute_dt(PDESystem& system)
   //   system.dt = std::min(dt1, std::min(dt2, dt3)) * system.settings.tau;
   //   system.dt = std::min(system.settings.maximumDt, system.dt);
   //   system.dt = std::max(1e-10, system.dt);
-  system.dt = 1e-2;
+  system.dt = 1e-3;
 };
 
 void update_velocity(PDESystem& system)

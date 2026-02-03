@@ -47,7 +47,7 @@ void solve(CGSolver& cg, PDESystem& system)
     // A.a_ij modification for pcg mit diagonal jacoby preconditioner
     //  system.p = system.p + a * cg.search_direction;
     tree_broadcast(SparseVector::axpy_with_jacoby_precondition, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), system.p, alpha, A, cg.search_direction, system.p);
-    // tree_broadcast(SparseVector::axpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), system.p, A.a_ij * alpha, cg.search_direction, system.p);
+    // tree_broadcast(SparseVector::axpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), system.p, A[0] * alpha, cg.search_direction, system.p);
 
     // cg.residual = cg.residual - a * A * cg.search_direction;
     tree_broadcast(SparseVector::aAxpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), cg.residual, -alpha, A, cg.search_direction, cg.residual);
@@ -89,8 +89,8 @@ void solve(CGSolver& cg, PDESystem& system)
     tree_broadcast(SparseVector::axpy, system.boundary, static_cast<uint16_t>(BoundaryType::P_Inside), cg.search_direction, beta, cg.search_direction, cg.residual);
     mipmap(_mean<double>, cg.search_direction);
   }
-  broadcast_boundary(copy_with_offset, system.boundary, static_cast<uint16_t>(BoundaryType::P_BOUNDARY), system.p);
   mipmap(_mean<double>, system.p);
+  broadcast_boundary(copy_with_offset, system.boundary, static_cast<uint16_t>(BoundaryType::P_BOUNDARY), system.p);
 }
 
 using std::swap;

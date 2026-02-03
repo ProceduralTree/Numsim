@@ -25,7 +25,7 @@ inline void precondition(size_t index, uint16_t depth, SparseGrid2D<double>& res
 };
 inline void axpy_with_jacoby_precondition(size_t index, uint16_t depth, SparseGrid2D<double>& result, double a, SparseMatrixOperator A, const SparseGrid2D<double>& x, const SparseGrid2D<double>& y)
 {
-  result[index] = (1. / A[depth]) * a * x[index] + y[index];
+  result[index] = A[depth] * a * x[index] + y[index];
 };
 inline void times(size_t index, uint16_t depth, const SparseGrid2D<double>& a, const SparseGrid2D<double>& b, double& result)
 {

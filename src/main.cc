@@ -97,19 +97,19 @@ auto main(int argc, char* argv[]) -> int
 
       fflush(stdout);
       next_written_time += 1;
-      auto data_set = init(tree, false);
-      write_field("Boundary Data", system.boundary.tree, system.boundary.flags._data, data_set);
-      write_field("U raw data", system.boundary.tree, system.u._data, data_set);
-      write_field("V raw data", system.boundary.tree, system.v._data, data_set);
-      write_field("P raw data", system.boundary.tree, system.p._data, data_set);
-      write_field("F raw data", system.boundary.tree, system.F._data, data_set);
-      write_field("G raw data", system.boundary.tree, system.G._data, data_set);
-      write_field("RHS raw data", system.boundary.tree, system.rhs._data, data_set);
-      write_field("Residual", system.boundary.tree, solver.residual._data, data_set);
+      auto data_set = init(tree, true);
+      write("Solve", system, data_set);
       save_dataset(data_set);
     }
-    // auto data_set = init(tree, true);
-    // write("Solve", system, data_set);
+    auto data_set = init(tree, false);
+    // write_field("Boundary Data", system.boundary.tree, system.boundary.flags._data, data_set);
+    // write_field("U raw data", system.boundary.tree, system.u._data, data_set);
+    // write_field("V raw data", system.boundary.tree, system.v._data, data_set);
+    // write_field("P raw data", system.boundary.tree, system.p._data, data_set);
+    // write_field("F raw data", system.boundary.tree, system.F._data, data_set);
+    // write_field("G raw data", system.boundary.tree, system.G._data, data_set);
+    // write_field("RHS raw data", system.boundary.tree, system.rhs._data, data_set);
+    // write_field("Residual", system.boundary.tree, solver.residual._data, data_set);
     // save_dataset(data_set);
   }
   std::cout << std::endl;

@@ -18,16 +18,13 @@ struct SparseMatrixOperator
 {
   const Gridsize h;
   const AdjMap& map;
-  const double a_ij;
   SparseMatrixOperator(const SparseMatrixOperator&) = default;
   SparseMatrixOperator(SparseMatrixOperator&&) = default;
   SparseMatrixOperator& operator=(const SparseMatrixOperator&) = delete;
   SparseMatrixOperator& operator=(SparseMatrixOperator&&) = delete;
   SparseMatrixOperator(const Gridsize& grid, const AdjMap& map)
     : h(grid)
-    , map(map)
-    , a_ij(-2.0 * (1.0 / (grid.x_squared(0)) + 1.0 / (grid.y_squared(0)))) {
-    };
+    , map(map) { };
 
   constexpr double operator()(size_t index, uint16_t depth, const SparseGrid2D<double>& vec) const
   {

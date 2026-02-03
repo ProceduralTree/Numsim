@@ -257,9 +257,13 @@ void test_mat_mult()
 
 void test_print()
 {
-  auto r = Range { Index { 0, 0, 0 }, Index { 40, 40, 0 } };
-  auto t = DenseTree::from_range(r);
+  auto r = Range { Index { 0, 0, 0 }, Index { 3, 3, 0 } };
+  size_t x_power = std::bit_width<size_t>(r.end.x - 1);
+  size_t y_power = std::bit_width<size_t>(r.end.y - 1);
+  const uint16_t maxDepth = std::max(x_power, y_power);
+  auto t = DenseTree::build_tree(intersects_top, maxDepth, r, maxDepth);
   auto data_set = init(t, false);
+  t.print();
   write_data(set_index, "Indices", 1, t, data_set, false, t);
   write_depth("Depth", t, data_set);
   save_dataset(data_set);
