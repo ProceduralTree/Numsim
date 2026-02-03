@@ -147,17 +147,17 @@ private:
 struct QuadTree
 {
   // for image import the following values will be converted to the following boundary types:
-  // 0 = OUTSIDE 1,2,3,4,5 = INSIDE,BOT,TOP,LEFT,RIGHT
+  // 0 = OUTSIDE 1,2,3,4,5 = BOT,TOP,LEFT,RIGHT,INSIDE
   //
   enum class CellType : uint8_t
   {
     // sides
     OUTSIDE = 0b0000'0000,
-    INSIDE = 0b0000'0001,
-    BOTTOM = 0b0000'0010,
-    TOP = 0b0000'0100,
-    LEFT = 0b0000'1000,
-    RIGHT = 0b0001'0000,
+    BOTTOM = 0b0000'0001,
+    TOP = 0b0000'0010,
+    LEFT = 0b0000'0100,
+    RIGHT = 0b0000'1000,
+    INSIDE = 0b0001'0000,
     MIXED = 0b0010'0000, // used for building tree, if we merged 4 cells with different types we will set this flag
     BOUNDARYMASK = INSIDE | BOTTOM | TOP | LEFT | RIGHT
   };
@@ -289,14 +289,14 @@ struct QuadTree
     size_t offsetCounter = 0;
     for (uint8_t* t = (uint8_t*)tree._dataP; t < (uint8_t*)tree._dataP + tree.dataAllocSize; t++, offsetCounter++)
     {
-      if (tree.depthOffset[offsetIndex] == offsetCounter)
+      if (offsetCounter % 4 == 0)
+        o << " ";
+      if (offsetIndex < tree.depth && tree.depthOffset[offsetIndex] == offsetCounter)
       {
         o << "\n";
         offsetIndex++;
       }
       o << (int)*t << "|";
-      if (offsetCounter % 4 == 0)
-        o << " ";
     }
     o << "\nu:";
     // for (uint8_t* t = tree._dataU; t < tree._dataU + tree.dataAllocSize; t++)
@@ -358,17 +358,18 @@ private:
     size_t size = ((((uint32_t)-1) >> 1) + 1) >> (leadingZeros); // so 32 bit only -> cast -1 to uint32 instead of size_t
     DebugF("found image with size {}, {} and chose {}, channels {}", width, height, size, channels);
     createWithSize(size, size);
-    for (int x = 0; x < width; x++)
+    for (int y = 0; y < height; y++)
     {
-      for (int y = 0; y < width; y++)
+      for (int x = 0; x < width; x++)
       {
+        int destY = height - 1 - y;
         // int8_t down = (int8_t)data[(width * clamp(0, height - 1, y - 1) + x) * channels]; // this is boundary check down
         // int8_t left = (int8_t)data[(width * y + clamp(0, width - 1, x - 1)) * channels]; // this is boundary check left
         uint8_t p = (uint8_t)data[(width * y + x) * channels + 0];
         int8_t u = (int8_t)data[(width * y + x) * channels + 1];
         int8_t v = (int8_t)data[(width * y + x) * channels + 2];
-        Index I(x, y, depth);
-        // 0 = OUTSIDE 1,2,3,4,5 = INSIDE,BOT,TOP,LEFT,RIGHT
+        Index I(x, destY, depth);
+        // 0 = OUTSIDE 1,2,3,4,5 = BOT,TOP,LEFT,RIGHT,INSIDE
         if (p != 0)
         {
           SetPData(I, (CellType)(1 << (p - 1)));
@@ -406,6 +407,7 @@ private:
     _dataP = (CellType*)malloc(sizeof(CellType) * allocSize);
     _dataU = (uint8_t*)malloc(sizeof(uint8_t) * allocSize);
     _dataV = (uint8_t*)malloc(sizeof(uint8_t) * allocSize);
+    std::fill(_dataP, _dataP + dataAllocSize, CellType::OUTSIDE);
     std::fill(_dataU, _dataU + dataAllocSize, 0);
     std::fill(_dataV, _dataV + dataAllocSize, 0);
     pTree.resize(allocSize - sizeX * sizeY);

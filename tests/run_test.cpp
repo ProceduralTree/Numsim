@@ -67,10 +67,11 @@ void test_build_tree()
 
 void test_build_tree_from_image()
 {
-  QuadTree imageTree("input/boundaryTestP.png");
+  QuadTree imageTree("input/test32xp.png");
   // std::ofstream file("outputTest.txt");
   // file << imageTree;
   // file.close();
+  // std::cout << imageTree;
 
   auto t = DenseTree::build_tree([&](auto z, auto d) { return imageTree.hasChildrenP(z, d); }, imageTree.getDepth());
 
