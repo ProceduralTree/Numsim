@@ -40,8 +40,8 @@ Using Boundary Flags Tree instead
 
 * Solver
 \begin{align}
-(Ap)_{\mathrm{index}} &= \frac{p_{\mathrm{top}} + p_{\mathrm{bottom}} }{h_x^2(d)}+ \frac{p_{\mathrm{top}} + p_{\mathrm{bottom}} }{h_y^2(d)} - 2* \left( \frac{1}{h_{x}^2(d)} + \frac{1}{h_{x}^2(d)}\right) * p_{\mathrm{index}}\\
-\Sigma_{\mathrm{neighbour}} &= \frac{p_{\mathrm{top}} + p_{\mathrm{bottom}} }{h_x^2(d)}+ \frac{p_{\mathrm{top}} + p_{\mathrm{bottom}} }{h_y^2(d)}\\
+(Ap)_{\mathrm{index}} &= \frac{p_{\mathrm{left}} + p_{\mathrm{right}} }{h_x^2(d)}+ \frac{p_{\mathrm{top}} + p_{\mathrm{bottom}} }{h_y^2(d)} - 2* \left( \frac{1}{h_{x}^2(d)} + \frac{1}{h_{x}^2(d)}\right) * p_{\mathrm{index}}\\
+\Sigma_{\mathrm{neighbour}} &= \frac{p_{\mathrm{left}} + p_{\mathrm{right}} }{h_x^2(d)}+ \frac{p_{\mathrm{top}} + p_{\mathrm{bottom}} }{h_y^2(d)}\\
 a_{\mathrm{index}} &= 2* \left( \frac{1}{h_{x}^2(d)} + \frac{1}{h_{x}^2(d)}\right) * p_{\mathrm{index}}\\
 p^{n+1}_{\mathrm{index}} &= \left( rhs_{\mathrm{index}} - \Sigma_{\mathrm{neighbour}} \right) / a_{\mathrm{index}}
 \end{align}
